@@ -68,4 +68,8 @@ int32_t sys_get_register_snapshot(int64_t * registers);
 // Get character without showing
 int32_t sys_get_character_without_display(void);
 
+// Memory manager syscalls prototypes
+void * sys_malloc(uint64_t size);
+void sys_free(void * ap);
+
 #endif

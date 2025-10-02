@@ -35,6 +35,7 @@ echo "${GREEN}Container $CONTAINER_NAME started.${NC}"
 # Compiles
 docker exec -it "$CONTAINER_NAME" make clean -C /root/ && \
 docker exec -it "$CONTAINER_NAME" make all -C /root/Toolchain && \
+docker exec -it "$CONTAINER_NAME" bash -c "echo '--- CONTENIDO DEL MAKEFILE EN DOCKER ---'; cat /root/Kernel/Makefile; echo '--- FIN DEL MAKEFILE ---'" && \
 docker exec -it "$CONTAINER_NAME" make all -C /root/
 
 

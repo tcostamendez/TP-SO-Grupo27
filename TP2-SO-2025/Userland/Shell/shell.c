@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <exceptions.h>
 #include <sys.h>
+#include "test_util.h"
 
 #ifdef ANSI_4_BIT_COLOR_SUPPORT
 #include <ansiColors.h>
@@ -45,6 +45,34 @@ typedef struct {
   char *description;
 } Command;
 
+//wrapper de test_mm
+int run_mm_test(void) {
+  // 1. Parseamos el siguiente token, que debería ser la cantidad de memoria
+  char *max_mem_str = strtok(NULL, " ");
+
+  if (max_mem_str == NULL) {
+    printf("Error: Faltó especificar la memoria máxima.\n");
+    printf("Uso: testmm <bytes>\n");
+    return 1; // Devolvemos un código de error
+  }
+
+  // 2. "Falsificamos" argc y argv para pasárselos a test_mm
+  char *fake_argv[] = { max_mem_str };
+  uint64_t fake_argc = 1;
+
+  // 3. Llamamos a la función de test original
+  printf("Iniciando test de memoria con %s bytes...\n", max_mem_str);
+  uint64_t result = test_mm(fake_argc, fake_argv);
+
+  if (result == 0) {
+      printf("Test de memoria finalizado con éxito.\n");
+  } else {
+      printf("Test de memoria falló!\n");
+  }
+
+  return result;
+}
+
 /* All available commands. Sorted alphabetically by their name */
 Command commands[] = {
     {.name = "clear",
@@ -82,6 +110,9 @@ Command commands[] = {
     {.name = "snake",
      .function = (int (*)(void))(unsigned long long)snake,
      .description = "Launches the snake game"},
+    {.name = "testmm",
+     .function = (int (*)(void))(unsigned long long)run_mm_test,
+     .description = "Corre el test de stress del Memory Manager.\n\t\t\t\tUso: testmm <bytes>"},
     {.name = "time",
      .function = (int (*)(void))(unsigned long long)time,
      .description = "Prints the current time"},

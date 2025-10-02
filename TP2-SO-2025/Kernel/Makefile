@@ -35,3 +35,42 @@ clean:
 	rm -rf */*.o *.o *.bin
 
 .PHONY: all clean
+
+#aca se separan los makefiles
+
+# # Incluye las variables de configuración (GCC, GCCFLAGS, etc.)
+# include Makefile.inc
+
+# # Agregamos los directorios de 'includes' que no están en Makefile.inc
+# GCCFLAGS += -I./include -I./font_assets
+
+# # --- Detección automática de archivos ---
+# C_SOURCES   := $(shell find . -name "*.c")
+# ASM_SOURCES := $(shell find . -name "*.asm")
+# OBJECTS     := $(C_SOURCES:.c=.o) $(ASM_SOURCES:.asm=.o)
+# TARGET      = kernel.bin
+
+# # --- Reglas de compilación ---
+# .PHONY: all clean
+
+# all: $(TARGET)
+
+# # Regla de enlace
+# $(TARGET): $(OBJECTS)
+# 	@echo "Enlazando el kernel..."
+# 	$(LD) $(LDFLAGS) -T kernel.ld -o $(TARGET) $(OBJECTS)
+
+# # Regla para compilar C
+# %.o: %.c
+# 	@echo "Compilando C: $<"
+# 	$(GCC) $(GCCFLAGS) -c $< -o $@
+
+# # Regla para ensamblar ASM
+# %.o: %.asm
+# 	@echo "Ensamblando: $<"
+# 	$(ASM) $(ASMFLAGS) $< -o $@
+
+# # Regla de limpieza
+# clean:
+# 	@echo "Limpiando archivos del Kernel..."
+# 	rm -f $(TARGET) $(shell find . -name "*.o")

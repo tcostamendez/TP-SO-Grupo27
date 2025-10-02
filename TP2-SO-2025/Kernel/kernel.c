@@ -8,6 +8,7 @@
 #include <syscallDispatcher.h>
 #include <video.h>
 #include <test.h>
+#include "memory_manager.h"
 #include <alloc.h>
 
 // extern uint8_t text;
@@ -18,7 +19,7 @@ extern uint8_t endOfKernelBinary;
 extern uint8_t endOfKernel;
 
 static const uint64_t PageSize = 0x1000;
-
+static void * const HEAP_END_ADDRESS = (void *)0x7800000;//120mb
 static void *const shellModuleAddress = (void *)0x400000;
 static void *const snakeModuleAddress = (void *)0x500000;
 
@@ -50,8 +51,11 @@ void *initializeKernelBinary() {
 
 int main() {
   load_idt();
-  initMemoryAllocator(getStackBase(), (shellModuleAddress - getStackBase()) );
 
+  void *heapStart = (void *)((uint64_t)&endOfKernel + PageSize * 8);
+  uint64_t heapSize = (uint64_t)HEAP_END_ADDRESS - (uint64_t)heapStart;
+
+  mm_init(heapStart, heapSize);
   setFontSize(2);
 
   runTests();

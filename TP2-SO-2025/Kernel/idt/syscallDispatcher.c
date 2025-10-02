@@ -6,7 +6,8 @@
 #include <syscallDispatcher.h>
 #include <time.h>
 #include <video.h>
-
+#include "first_fit_mm.h"
+#include "alloc.h"
 extern int64_t register_snapshot[18];
 extern int64_t register_snapshot_taken;
 
@@ -81,6 +82,10 @@ int32_t syscallDispatcher(Registers *registers) {
   case 0x800000F0:
     return sys_get_character_without_display();
 
+  case 0x80000100:
+      return sys_malloc(registers->rdi);
+  case 0x80000200:
+      sys_free(registers->rdi);
   default:
     return 0;
   }
@@ -255,4 +260,15 @@ int32_t sys_get_register_snapshot(int64_t *registers) {
 
 int32_t sys_get_character_without_display(void) {
   return getKeyboardCharacter(0);
+}
+// ==================================================================
+// Memory managment systemcall
+// ==================================================================
+
+void * sys_malloc(size_t size){
+  return mm_alloc(size);
+}
+
+void sys_free(void * ap){
+  mm_free(ap);
 }

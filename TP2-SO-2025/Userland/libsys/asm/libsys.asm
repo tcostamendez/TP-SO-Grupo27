@@ -29,6 +29,9 @@ GLOBAL sys_get_register_snapshot
 
 GLOBAL sys_get_character_without_display
 
+GLOBAL sys_malloc
+GLOBAL sys_free
+
 section .text
 
 %macro sys_int80 1
@@ -76,3 +79,6 @@ sys_sleep_milis: sys_int80 0x800000D0
 sys_get_register_snapshot: sys_int80 0x800000E0
 
 sys_get_character_without_display: sys_int80 0x800000F0
+
+sys_malloc: sys_int80 0x80000100
+sys_free: sys_int80 0x80000200
