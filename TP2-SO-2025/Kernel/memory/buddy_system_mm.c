@@ -1,123 +1,146 @@
-// #include "../include/buddy_system_mm.h"
-// #include "../include/memory_manager.h"
+#include "../include/buddy_system_mm.h"
+#include "../include/memory_manager.h"
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
 
-// // Inicialización del arreglo de listas (global)
-// free_block_t *buddy_lists[MAX_ORDER + 1] = {NULL};
-// static void *start_addr = NULL;
+// --- VARIABLES GLOBALES ---
+free_block_t *buddy_lists[MAX_ORDER + 1];
+static void *start_addr = NULL;
 
-// void mm_init(void *base_address, size_t total_size) {
-//     // 1. Limpiar todas las listas
-//     for (int i = 0; i <= MAX_ORDER; i++) {
-//         buddy_lists[i] = NULL;
-//     }
+// --- DECLARACIÓN DE FUNCIONES AUXILIARES ---
+static void remove_from_list(free_block_t *block_to_remove, int order);
+static int is_buddy_free(free_block_t *buddy, int order);
 
-//     // 2. Determinar el orden más alto
-//     // Encontrar la potencia de 2 más cercana y menor que total_size.
-//     int max_k = 0;
-//     while ((1 << (max_k + 1)) * MIN_BLOCK_SIZE <= total_size) {
-//         max_k++;
-//     }
 
-//     // 3. Colocar el bloque inicial grande en la lista del orden más alto
-//     start_addr = base_address;
-//     free_block_t *initial_block = (free_block_t *)base_address;
-//     initial_block->next = NULL;
-    
-//     // Asumiendo que max_k no excede MAX_ORDER
-//     buddy_lists[max_k] = initial_block;
-    
-//     // (Actualizar estadísticas)
-// }
+// --- IMPLEMENTACIÓN CORREGIDA ---
 
-// void *mm_alloc(size_t size) {
-//     // 1. Determinar el tamaño y orden de bloque requerido (nuestro destino)
-//     size_t required_size = size + sizeof(alloc_metadata_t); // Overhead del metadato
-//     if (required_size < MIN_BLOCK_SIZE) {
-//         required_size = MIN_BLOCK_SIZE;
-//     }
-    
-//     int target_order = 0;
-//     while ((1 << target_order) * MIN_BLOCK_SIZE < required_size) {
-//         target_order++;
-//     }
+void mm_init(void *base_address, size_t total_size) {
+    for (int i = 0; i <= MAX_ORDER; i++) {
+        buddy_lists[i] = NULL;
+    }
 
-//     // 2. Buscar el bloque libre: Empezamos en el orden destino y subimos
-//     for (int current_order = target_order; current_order <= MAX_ORDER; current_order++) {
-        
-//         if (buddy_lists[current_order] != NULL) {
-//             // ¡Bloque encontrado!
-//             free_block_t *block = buddy_lists[current_order];
-//             buddy_lists[current_order] = block->next; // Eliminar de la lista
-            
-//             // 3. Dividir si el bloque es más grande que el solicitado
-//             while (current_order > target_order) {
-//                 current_order--;
-                
-//                 // Dividir el bloque en dos buddies de 2^(k-1)
-//                 size_t half_size = (1 << current_order) * MIN_BLOCK_SIZE;
-                
-//                 // El primer buddy es 'block', el segundo es 'buddy'
-//                 free_block_t *buddy = (free_block_t *)((uint8_t *)block + half_size);
-                
-//                 // El segundo buddy va a la lista de bloques libres del orden actual
-//                 buddy->next = buddy_lists[current_order];
-//                 buddy_lists[current_order] = buddy;
-//             }
+    // Lógica simplificada y más segura para encontrar el orden máximo
+    int k = 0;
+    while ((((uint64_t)1 << k) * MIN_BLOCK_SIZE <= total_size) && (k <= MAX_ORDER)) {
+        k++;
+    }
+    int max_k = k - 1;
 
-//             // 4. Asignar y devolver: Guardar metadatos en el bloque y devolver el puntero de datos
-//             alloc_metadata_t *metadata = (alloc_metadata_t *)block;
-//             metadata->order = (uint8_t)target_order;
-            
-//             // Devolver la dirección *después* de los metadatos
-//             return (void *)((uint8_t *)block + sizeof(alloc_metadata_t));
-//         }
-//     }
+    if (max_k < 0) {
+        return; // No hay suficiente memoria ni para el bloque más chico
+    }
+  
+    start_addr = base_address;
+    free_block_t *initial_block = (free_block_t *)base_address;
+    initial_block->next = NULL;
+  
+    buddy_lists[max_k] = initial_block;
+}
 
-//     return NULL; // Memoria agotada
-// }
+void *mm_alloc(size_t size) {
+    if (size == 0) return NULL;
 
-// void mm_free(void *ptr) {
-//     if (ptr == NULL) return;
+    size_t required_space = size + sizeof(alloc_metadata_t);
+    if (required_space < sizeof(free_block_t)) {
+        required_space = sizeof(free_block_t);
+    }
+  
+    int target_order = 0;
+    uint64_t block_size = MIN_BLOCK_SIZE;
+    while (block_size < required_space) {
+        block_size <<= 1;
+        target_order++;
+    }
+  
+    if (target_order > MAX_ORDER) return NULL;
 
-//     // 1. Obtener metadatos: Volver al inicio del bloque asignado
-//     alloc_metadata_t *metadata = (alloc_metadata_t *)((uint8_t *)ptr - sizeof(alloc_metadata_t));
-//     free_block_t *block_to_free = (free_block_t *)metadata;
-//     int current_order = metadata->order;
+    int current_order = target_order;
+    while (current_order <= MAX_ORDER) {
+        if (buddy_lists[current_order] != NULL) {
+            free_block_t *block = buddy_lists[current_order];
+            buddy_lists[current_order] = block->next;
+          
+            while (current_order > target_order) {
+                current_order--;
+                // Lógica simplificada y más segura para calcular la mitad del tamaño
+                uint64_t half_size = (uint64_t)MIN_BLOCK_SIZE << current_order;
+              
+                free_block_t *buddy = (free_block_t *)((uintptr_t)block + half_size);
+                buddy->next = buddy_lists[current_order];
+                buddy_lists[current_order] = buddy;
+            }
 
-//     // 2. Coalescing (Unión) con el Buddy
-//     while (current_order < MAX_ORDER) {
-//         size_t block_size = (1 << current_order) * MIN_BLOCK_SIZE;
-        
-//         // Calcular la dirección del buddy (XORing la dirección base con el tamaño del bloque)
-//         // Esta es la propiedad mágica de los Buddies.
-//         uint64_t block_addr = (uint64_t)block_to_free;
-//         uint64_t buddy_addr = block_addr ^ block_size; 
-        
-//         free_block_t *buddy = (free_block_t *)buddy_addr;
-        
-//         // Comprobar si el buddy está libre en la lista del mismo orden
-//         if (is_buddy_free(buddy, current_order)) { 
-//             // Sí, el buddy está libre -> UNIR
-            
-//             // Eliminar al buddy de la lista
-//             remove_from_list(buddy, current_order);
-            
-//             // El nuevo bloque unificado es el que tiene la dirección más baja
-//             if (block_addr < buddy_addr) {
-//                 // block_to_free ya es el bloque menor
-//             } else {
-//                 // El buddy original es ahora el inicio del bloque grande
-//                 block_to_free = buddy; 
-//             }
-            
-//             current_order++; // Pasamos al siguiente orden
-            
-//         } else {
-//             break; // El buddy no está libre o no está en el mismo orden, se detiene la unión
-//         }
-//     }
+            alloc_metadata_t *metadata = (alloc_metadata_t *)block;
+            metadata->order = (uint8_t)target_order;
+          
+            return (void *)((uintptr_t)block + sizeof(alloc_metadata_t));
+        }
+        current_order++;
+    }
 
-//     // 3. Colocar el bloque (posiblemente unido) en su lista final
-//     block_to_free->next = buddy_lists[current_order];
-//     buddy_lists[current_order] = block_to_free;
-// }
+    return NULL;
+}
+
+void mm_free(void *ptr) {
+    if (ptr == NULL) return;
+
+    alloc_metadata_t *metadata = (alloc_metadata_t *)((uintptr_t)ptr - sizeof(alloc_metadata_t));
+    free_block_t *block_to_free = (free_block_t *)metadata;
+    int current_order = metadata->order;
+
+    while (current_order < MAX_ORDER) {
+        // Lógica simplificada y más segura para calcular el tamaño del bloque
+        uint64_t block_size = (uint64_t)MIN_BLOCK_SIZE << current_order;
+      
+        uintptr_t relative_addr = (uintptr_t)block_to_free - (uintptr_t)start_addr;
+        uintptr_t buddy_relative_addr = relative_addr ^ block_size;
+        free_block_t *buddy = (free_block_t *)(buddy_relative_addr + (uintptr_t)start_addr);
+      
+        if (is_buddy_free(buddy, current_order)) {
+            remove_from_list(buddy, current_order);
+          
+            if ((uintptr_t)buddy < (uintptr_t)block_to_free) {
+                block_to_free = buddy;
+            }
+          
+            current_order++;
+        } else {
+            break;
+        }
+    }
+
+    block_to_free->next = buddy_lists[current_order];
+    buddy_lists[current_order] = block_to_free;
+}
+
+// --- FUNCIONES AUXILIARES (sin cambios) ---
+
+static int is_buddy_free(free_block_t *buddy, int order) {
+    free_block_t *current = buddy_lists[order];
+    while (current != NULL) {
+        if (current == buddy) {
+            return 1;
+        }
+        current = current->next;
+    }
+    return 0;
+}
+
+static void remove_from_list(free_block_t *block_to_remove, int order) {
+    free_block_t *current = buddy_lists[order];
+    free_block_t *prev = NULL;
+
+    while (current != NULL) {
+        if (current == block_to_remove) {
+            if (prev == NULL) {
+                buddy_lists[order] = current->next;
+            } else {
+                prev->next = current->next;
+            }
+            return;
+        }
+        prev = current;
+        current = current->next;
+    }
+}

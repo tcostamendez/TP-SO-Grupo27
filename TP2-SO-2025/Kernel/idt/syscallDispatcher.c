@@ -6,7 +6,8 @@
 #include <syscallDispatcher.h>
 #include <time.h>
 #include <video.h>
-#include "first_fit_mm.h"
+//#include "first_fit_mm.h"
+#include "buddy_system_mm.h"
 #include "alloc.h"
 extern int64_t register_snapshot[18];
 extern int64_t register_snapshot_taken;
