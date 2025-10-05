@@ -9,10 +9,12 @@
 
 typedef struct List * ListADT;
 
-ListADT listCreate(int (*cmp)(void * elemA, void * elemB), uint64_t sizeOfElem);
+ListADT listCreate(int (*cmp)(void *, void *), uint64_t sizeOfElem);
 ListADT listAdd(ListADT list, void * data);
 ListADT listRemove(ListADT list, void * data);
 void listFree(ListADT list);
+void * listRemoveFromHead(ListADT list); // Removes head node and returns its data pointer
+void listAddToTail(ListADT list, void * data); // Convenience tail insertion (non-ordered)
 ListADT listBeginIter(ListADT list);
 int hasNext(ListADT list);
 void * listGetNext(ListADT list, void * buffer);

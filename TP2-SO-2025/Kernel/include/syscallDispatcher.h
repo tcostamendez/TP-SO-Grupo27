@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <keyboard.h>
+#include "scheduler.h"
 
 typedef struct {
     int64_t r15;
