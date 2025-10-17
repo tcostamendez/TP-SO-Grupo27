@@ -2,6 +2,7 @@
 GLOBAL _cli
 GLOBAL _sti
 GLOBAL _hlt
+GLOBAL _force_scheduler_interrupt
 
 GLOBAL picMasterMask
 GLOBAL picSlaveMask
@@ -20,6 +21,7 @@ EXTERN irqDispatcher
 EXTERN syscallDispatcher
 EXTERN exceptionDispatcher
 EXTERN getStackBase
+EXTERN schedule
 
 SECTION .text
 
@@ -159,9 +161,44 @@ picSlaveMask:
 	pop rbp
 	ret
 
-; 8254 Timer (Timer Tick)
+; --- INICIO: CAMBIO CRÍTICO ---
+; Ya NO usamos la macro para el timer.
+; Implementamos el handler manualmente para llamar al scheduler.
 _irq00Handler:
-	irqHandlerMaster 0
+    ; 1. Guardar todos los registros del Proceso A
+    pushState
+
+    ; 2. Llamar al irqDispatcher (para que timer_handler() siga corriendo)
+    mov rdi, 0          ; Argumento 0 (IRQ 0)
+    call irqDispatcher
+
+    ; 3. Llamar a nuestro scheduler en C
+    mov rdi, rsp        ; Pasamos el RSP (Proceso A) como argumento a schedule
+    call schedule       ; El scheduler elige un Proceso B
+    
+    ; 4. *** EL CAMBIO DE CONTEXTO ***
+    ; 'schedule' retorna en 'rax' el NUEVO RSP (el del Proceso B)
+    mov rsp, rax        ; Cambiamos el stack de la CPU al del Proceso B
+
+    ; 5. Enviar EOI (End of Interrupt) al PIC
+    mov al, 20h
+    out 20h, al
+
+    ; 6. Restaurar los registros del Proceso B
+    popState
+
+    ; 7. Volver de la interrupción (ahora ejecutando Proceso B)
+    iretq
+
+; --- FIN: CAMBIO CRÍTICO ---
+
+; --- INICIO: NUEVA FUNCIÓN (si no la tenías) ---
+; Esta es la función que llama yield_cpu() y semWait()
+; para forzar un context switch.
+_force_scheduler_interrupt:
+    int 0x20    ; Dispara manualmente _irq00Handler
+    ret
+; --- FIN: NUEVA FUNCIÓN ---
 
 ; Keyboard
 _irq01Handler:

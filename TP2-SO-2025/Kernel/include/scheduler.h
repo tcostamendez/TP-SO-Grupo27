@@ -2,25 +2,41 @@
 #define SCHEDULER_H
 
 #include <stdint.h>
-#include "process.h"
+#include "process.h" // Depende de la definición de 'Process'
 
 /**
  * @brief Inicializa el scheduler.
+ * (Para Round Robin, esto inicializa la lista/array de procesos).
  */
-void initializeScheduler();
+void init_scheduler();
 
 /**
- * @brief Añade un proceso a la lista de procesos listos para ser ejecutados.
- * @param pid El PID del proceso a añadir.
+ * @brief Añade un proceso a la cola de 'READY' del scheduler.
+ * @param p Puntero al PCB del proceso.
  */
-void addToScheduler(int pid);
+void add_to_scheduler(Process *p);
 
 /**
- * @brief El corazón del scheduler. Decide qué proceso se ejecuta a continuación.
- * Esta función es llamada por la interrupción del timer.
- * @param currentRsp El puntero de pila del proceso que se estaba ejecutando.
- * @return El puntero de pila del SIGUIENTE proceso que debe ejecutarse.
+ * @brief Elimina un proceso de la cola del scheduler.
+ * (Generalmente porque ha terminado o se ha bloqueado).
+ * @param p Puntero al PCB del proceso.
  */
-uint8_t* schedule(uint8_t* currentRsp);
+void remove_from_scheduler(Process *p);
+
+/**
+ * @brief El corazón del scheduler.
+ * * Esta función es llamada en C desde el handler de ASM (irq00Handler).
+ * * 1. Obtiene el proceso actual (el que fue interrumpido).
+ * 2. Si el proceso está 'RUNNING', guarda su 'current_rsp' en process->rsp
+ * y lo pone en 'READY'.
+ * 3. Elige el siguiente proceso 'READY' de la cola (Round Robin).
+ * 4. Marca el nuevo proceso como 'RUNNING'.
+ * 5. Retorna el 'process->rsp' del nuevo proceso.
+ * * @param current_rsp El RSP del proceso que acaba de ser interrumpido 
+ * (pasado desde el handler ASM).
+ * @return El RSP del proceso que debe ejecutarse ahora.
+ */
+uint64_t schedule(uint64_t current_rsp);
+
 
 #endif // SCHEDULER_H

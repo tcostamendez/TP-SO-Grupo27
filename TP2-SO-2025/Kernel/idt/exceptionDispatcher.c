@@ -19,13 +19,21 @@ static void invalid_opcode(uint64_t *registers, int errorCode);
 void printExceptionData(uint64_t *registers, int errorCode);
 
 void exceptionDispatcher(int exception, uint64_t *registers) {
-  clear();
+  //clear();
   switch (exception) {
   case ZERO_EXCEPTION_ID:
     return zero_division(registers, exception);
   case INVALID_OPCODE_ID:
     return invalid_opcode(registers, exception);
   default:
+    // --- AÑADE ESTO ---
+      setFontSize(2);
+      print("!! UNHANDLED EXCEPTION: 0x");
+      printHex(exception);
+      print(" !!\n");
+      // (Aquí puedes llamar a printExceptionData(registers, exception) si quieres)
+      while(1) _hlt(); // Congela el kernel aquí
+      // --- FIN DE AÑADIDO ---
     return; // returns to the asm exceptionHandler which will return to the
             // shell
   }

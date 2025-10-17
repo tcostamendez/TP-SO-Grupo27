@@ -1,7 +1,7 @@
 #include <keyboard.h>
 #include <stdint.h>
 #include <time.h>
-
+#include <video.h>
 static uint8_t int_20();
 static uint8_t int_21();
 
@@ -15,6 +15,7 @@ uint8_t irqDispatcher(uint64_t irq) {
 }
 
 static uint8_t int_20() {
+  print("T");
   timer_handler();
   return 0;
 }
