@@ -55,7 +55,7 @@ void remove_from_scheduler(Process *p) {
  * (Las interrupciones ya están deshabilitadas en este punto).
  */
 uint64_t schedule(uint64_t current_rsp) {
-    print("S");
+    //print("S");
     // 1. Guardar el RSP del proceso que acaba de ser interrumpido.
     Process* old_process = get_current_process();
     if (old_process != NULL && old_process->state != TERMINATED) {
@@ -69,7 +69,7 @@ uint64_t schedule(uint64_t current_rsp) {
         }
     }
 
-    print("["); //debug
+    //print("["); //debug
 
     // 2. Buscar el siguiente proceso para ejecutar (Round Robin).
     // Damos MAX_PROCESSES vueltas para asegurarnos de encontrar uno.
@@ -82,7 +82,7 @@ uint64_t schedule(uint64_t current_rsp) {
         
         if (p != NULL && p->state == READY) {
             // ¡Encontramos un proceso listo para ejecutar!
-            print("F]"); // "F" de "Found"
+            //print("F]"); // "F" de "Found"
             // Lo marcamos como el 'proceso actual' (en process.c)
             // Esta función también lo pone en estado RUNNING.
             set_current_process(p);
@@ -92,7 +92,7 @@ uint64_t schedule(uint64_t current_rsp) {
         }
     }
     
-    print("N]"); // "N" de "Not Found"
+    //print("N]"); // "N" de "Not Found"
 
     // 3. ¿Qué pasa si no se encontró nada?
     // Esto NUNCA debería pasar si tenemos un "Proceso Idle"

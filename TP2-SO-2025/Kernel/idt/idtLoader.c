@@ -1,4 +1,6 @@
 #include <idtLoader.h>
+#include <stdint.h> // Necesario para uint64_t, etc.
+#include <interrupts.h> // Para las declaraciones de los handlers
 
 #pragma pack(push) // save current alignment values into the compilers stack
 #pragma pack(1)    // set alignment
@@ -15,23 +17,54 @@ typedef struct {
   uint32_t other_zero; // reserved
 } DESCR_INT;
 
+// --- INICIO DE CAMBIOS ---
+
+// Estructura para el registro IDTR
+typedef struct {
+    uint16_t limit;
+    uint64_t base;
+} IDTR;
+
+// ¡NO APUNTAR A CERO!
+// Declaramos la IDT como un array estático (256 entradas).
+// Esto la ubicará de forma segura en la sección .bss
+static DESCR_INT idt[256];
+
+// Declaramos la estructura para el IDTR
+static IDTR idtr;
+
+// Lee el registro CS actual
+static inline uint16_t get_cs(void) {
+    uint16_t cs;
+    __asm__ volatile("mov %%cs, %0" : "=r"(cs));
+    return cs;
+}
+
 #pragma pack(pop) // restore previous alignment
 
-DESCR_INT *idt = (DESCR_INT *)0;
-
-static void setup_IDT_entry(int index, uint64_t offset);
+static void setup_IDT_entry(int index, uint64_t offset, uint16_t cs_selector);
 
 void load_idt() {
   _cli();
+
+  idtr.limit = sizeof(idt) - 1;
+  idtr.base = (uint64_t)&idt;
+
+  // Obtenemos el selector de código (CS) actual
+  uint16_t kernel_cs = get_cs();
+
   // Load exception handlers
-  setup_IDT_entry(0x00, (uint64_t)&_exceptionHandler00);
-  setup_IDT_entry(0x06, (uint64_t)&_exceptionHandler06);
+  setup_IDT_entry(0x00, (uint64_t)&_exceptionHandler00, kernel_cs);
+  setup_IDT_entry(0x06, (uint64_t)&_exceptionHandler06, kernel_cs);
+  setup_IDT_entry(0x08, (uint64_t)&_exceptionHandler08, kernel_cs); // <-- AÑADIR
+  setup_IDT_entry(0x0D, (uint64_t)&_exceptionHandler0D, kernel_cs); // <-- AÑADIR
+  setup_IDT_entry(0x0E, (uint64_t)&_exceptionHandler0E, kernel_cs); // <-- AÑADIR
 
   // Load ISRs
   // https://wiki.osdev.org/Interrupts#General_IBM-PC_Compatible_Interrupt_Information
-  setup_IDT_entry(0x20, (uint64_t)&_irq00Handler);
-  setup_IDT_entry(0x21, (uint64_t)&_irq01Handler);
-  setup_IDT_entry(0x80, (uint64_t)&_irq80Handler);
+  setup_IDT_entry(0x20, (uint64_t)&_irq00Handler, kernel_cs);
+  setup_IDT_entry(0x21, (uint64_t)&_irq01Handler, kernel_cs);
+  setup_IDT_entry(0x80, (uint64_t)&_irq80Handler, kernel_cs);
 
   // Enable:
   // IRQ0 -> TimerTick
@@ -39,12 +72,14 @@ void load_idt() {
   picMasterMask(KEYBOARD_PIC_MASTER & TIMER_PIC_MASTER);
   picSlaveMask(NO_INTERRUPTS);
 
+  _load_idt_asm(&idtr);
+
   _sti();
 }
 
-static void setup_IDT_entry(int index, uint64_t offset) {
+static void setup_IDT_entry(int index, uint64_t offset, uint16_t cs_selector) {
   idt[index].offset_l = offset & 0xFFFF;
-  idt[index].selector = 0x08;
+  idt[index].selector = cs_selector;
   idt[index].zero = 0;
   idt[index].access = ACS_INT;
   idt[index].offset_m = (offset >> 16) & 0xFFFF;

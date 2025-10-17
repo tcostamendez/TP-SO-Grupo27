@@ -13,9 +13,14 @@ GLOBAL _irq80Handler
 
 GLOBAL _exceptionHandler00
 GLOBAL _exceptionHandler06
+GLOBAL _exceptionHandler08     ; <-- AÑADIR
+GLOBAL _exceptionHandler0D     ; <-- AÑADIR
+GLOBAL _exceptionHandler0E     ; <-- AÑADIR
 
 GLOBAL register_snapshot
 GLOBAL register_snapshot_taken
+
+GLOBAL _load_idt_asm
 
 EXTERN irqDispatcher
 EXTERN syscallDispatcher
@@ -79,52 +84,92 @@ SECTION .text
 	iretq
 %endmacro
 
-%macro exceptionHandler 1
-	cli
-	
-	mov [exception_register_snapshot + 0x00], rax
-	mov [exception_register_snapshot + 0x08], rbx
-	mov [exception_register_snapshot + 0x10], rcx
-	mov [exception_register_snapshot + 0x18], rdx
-	mov [exception_register_snapshot + 0x20], rbp
-	mov [exception_register_snapshot + 0x28], rdi
-	mov [exception_register_snapshot + 0x30], rsi
-	mov [exception_register_snapshot + 0x38], r8
-	mov [exception_register_snapshot + 0x40], r9
-	mov [exception_register_snapshot + 0x48], r10
-	mov [exception_register_snapshot + 0x50], r11
-	mov [exception_register_snapshot + 0x58], r12
-	mov [exception_register_snapshot + 0x60], r13
-	mov [exception_register_snapshot + 0x68], r14
-	mov [exception_register_snapshot + 0x70], r15
+; --- INICIO: REEMPLAZAR MACROS POR ESTAS VERSIONES COMPLETAS ---
 
-	mov [exception_register_snapshot + 0x78], rsp ; rsp
+; Macro para excepciones SIN código de error (ej: 0x0, 0x6)
+%macro exceptionHandler_no_err 1
+    cli
+    
+    ; Guardar TODOS los registros
+    mov [exception_register_snapshot + 0x00], rax
+    mov [exception_register_snapshot + 0x08], rbx
+    mov [exception_register_snapshot + 0x10], rcx
+    mov [exception_register_snapshot + 0x18], rdx
+    mov [exception_register_snapshot + 0x20], rbp
+    mov [exception_register_snapshot + 0x28], rdi
+    mov [exception_register_snapshot + 0x30], rsi
+    mov [exception_register_snapshot + 0x38], r8
+    mov [exception_register_snapshot + 0x40], r9
+    mov [exception_register_snapshot + 0x48], r10
+    mov [exception_register_snapshot + 0x50], r11
+    mov [exception_register_snapshot + 0x58], r12
+    mov [exception_register_snapshot + 0x60], r13
+    mov [exception_register_snapshot + 0x68], r14
+    mov [exception_register_snapshot + 0x70], r15
+    mov [exception_register_snapshot + 0x78], rsp
 
-	; after the exception, the rip's value that points 
-	; to the faulting instruction is, among other things, pushed to the stack
-	; it is the last thing pushed in the stack frame
+    ; Leer RIP y RFLAGS (sin código de error)
+    ; Stack: [RIP] [CS] [RFLAGS]
+    mov rax, [rsp + 0x00] ; RIP
+    mov [exception_register_snapshot + 0x80], rax
+    mov rax, [rsp + 0x10] ; RFLAGS
+    mov [exception_register_snapshot + 0x88], rax
+    
+    ; Pila: HW (3 pushes) -> Desalineada (...x8)
+    ; 'call' (1 push) -> ALINEADA para C (...x0)
+    mov rdi, %1
+    mov rsi, exception_register_snapshot
+    call exceptionDispatcher
 
-	; https://os.phil-opp.com/cpu-exceptions/#the-interrupt-stack-frame
-
-	mov rax, [rsp + 0x00] ; RIP
-	mov [exception_register_snapshot + 0x80], rax
-
-	mov rax, [rsp + 0x10] ; RFLAGS
-	mov [exception_register_snapshot + 0x88], rax
-
-	mov rdi, %1 ; pass argument to exceptionDispatcher
-	mov rsi, exception_register_snapshot ;pass current register values to exceptionDispatcher
-	
-	call exceptionDispatcher
-
-	call getStackBase ; reset the stack
-	mov [rsp + 0x18], rax
-
-	mov QWORD [rsp], USERLAND ; set return address to userland
-
-	sti
-	iretq ; will pop USERLAND and jmp to it
+.hang_no_err:
+    hlt
+    jmp .hang_no_err
 %endmacro
+
+; Macro para excepciones CON código de error (ej: 0x8, 0xD, 0xE)
+%macro exceptionHandler_err 1
+    cli
+    
+    ; Guardar TODOS los registros
+    mov [exception_register_snapshot + 0x00], rax
+    mov [exception_register_snapshot + 0x08], rbx
+    mov [exception_register_snapshot + 0x10], rcx
+    mov [exception_register_snapshot + 0x18], rdx
+    mov [exception_register_snapshot + 0x20], rbp
+    mov [exception_register_snapshot + 0x28], rdi
+    mov [exception_register_snapshot + 0x30], rsi
+    mov [exception_register_snapshot + 0x38], r8
+    mov [exception_register_snapshot + 0x40], r9
+    mov [exception_register_snapshot + 0x48], r10
+    mov [exception_register_snapshot + 0x50], r11
+    mov [exception_register_snapshot + 0x58], r12
+    mov [exception_register_snapshot + 0x60], r13
+    mov [exception_register_snapshot + 0x68], r14
+    mov [exception_register_snapshot + 0x70], r15
+    mov [exception_register_snapshot + 0x78], rsp
+    
+    ; Leer RIP y RFLAGS (CON código de error)
+    ; Stack: [Error] [RIP] [CS] [RFLAGS]
+    mov rax, [rsp + 0x08] ; RIP (saltamos el error code)
+    mov [exception_register_snapshot + 0x80], rax
+    mov rax, [rsp + 0x18] ; RFLAGS (saltamos error, RIP, CS)
+    mov [exception_register_snapshot + 0x88], rax
+    
+    ; Pila: HW (4 pushes) -> Alineada (...x0)
+    ; 'call' (1 push) -> DESALINEADA para C
+    
+    ; --- FIX DE ALINEACIÓN ---
+    sub rsp, 8
+    
+    mov rdi, %1
+    mov rsi, exception_register_snapshot
+    call exceptionDispatcher
+    
+.hang_err:
+    hlt
+    jmp .hang_err
+%endmacro
+; --- FIN DEL REEMPLAZO ---
 
 _hlt:
 	sti
@@ -161,24 +206,32 @@ picSlaveMask:
 	pop rbp
 	ret
 
+_load_idt_asm:
+    ; RDI (primer argumento) contiene el puntero a la estructura IDTR
+    lidt [rdi]
+    ret	
+
 ; --- INICIO: CAMBIO CRÍTICO ---
-; Ya NO usamos la macro para el timer.
-; Implementamos el handler manualmente para llamar al scheduler.
 _irq00Handler:
     ; 1. Guardar todos los registros del Proceso A
     pushState
+    ; Pila: HW(3) + pushState(15) = 18 pushes (ALINEADA, ...x0)
 
-    ; 2. Llamar al irqDispatcher (para que timer_handler() siga corriendo)
+    ; --- INICIO: CORRECCIÓN DE ALINEACIÓN ---
+    
+    ; 2. Llamar a irqDispatcher (alineado)
     mov rdi, 0          ; Argumento 0 (IRQ 0)
     call irqDispatcher
-
-    ; 3. Llamar a nuestro scheduler en C
-    mov rdi, rsp        ; Pasamos el RSP (Proceso A) como argumento a schedule
-    call schedule       ; El scheduler elige un Proceso B
+    
+    ; 3. Llamar a nuestro scheduler en C (alineado)
+    ; Pasamos el RSP actual (que apunta a r15)
+    mov rdi, rsp        
+    call schedule
     
     ; 4. *** EL CAMBIO DE CONTEXTO ***
-    ; 'schedule' retorna en 'rax' el NUEVO RSP (el del Proceso B)
-    mov rsp, rax        ; Cambiamos el stack de la CPU al del Proceso B
+    ; 'schedule' retorna en 'rax' el NUEVO RSP
+    mov rsp, rax        ; Cambiamos al stack del Proceso B
+                        ; (El 'sub rsp, 8' se descarta, lo cual es correcto)
 
     ; 5. Enviar EOI (End of Interrupt) al PIC
     mov al, 20h
@@ -189,7 +242,6 @@ _irq00Handler:
 
     ; 7. Volver de la interrupción (ahora ejecutando Proceso B)
     iretq
-
 ; --- FIN: CAMBIO CRÍTICO ---
 
 ; --- INICIO: NUEVA FUNCIÓN (si no la tenías) ---
@@ -253,30 +305,53 @@ _irq01Handler:
 ; System Call
 ; Not using the %irqHandlerMaster macro because it needs to pass the stack pointer to the syscall
 _irq80Handler:
-	pushState
+    pushState
 
-	mov rdi, rsp ; pass REGISTERS (stack) to irqDispatcher, see: `pushState` two lines above
-	call syscallDispatcher
+    ; --- INICIO: CORRECCIÓN DE ALINEACIÓN ---
+    push rax            ; Pushes 1 más (total 19, desalineado)
+    ; --- FIN: CORRECCIÓN DE ALINEACIÓN ---
 
-	mov rbx, rax
+    lea rdi, [rsp + 8]
+    call syscallDispatcher
 
-	; signal pic EOI (End of Interrupt)
-	mov al, 20h
-	out 20h, al
+    mov rbx, rax
 
-	mov rax, rbx
+    ; signal pic EOI (End of Interrupt)
+    mov al, 20h
+    out 20h, al
 
-	popStateButRAX
-	add rsp, 8 ; skip the error code pushed by irqDispatcher
-	iretq
+    mov rax, rbx
 
-; Zero Division Exception
+    ; --- INICIO: CORRECCIÓN DE ALINEACIÓN ---
+    ; Devolvemos los 8 bytes que restamos
+    add rsp, 8
+    ; --- FIN: CORRECCIÓN DE ALINEACIÓN ---
+
+    popStateButRAX
+    add rsp, 8 ; skip the error code pushed by irqDispatcher
+    iretq
+
+; --- INICIO: CORRECCIÓN DE LLAMADAS ---
+; Zero Division Exception (SIN código de error)
 _exceptionHandler00:
-	exceptionHandler 0
+    exceptionHandler_no_err 0
 
-; Invalid Opcode Exception
+; Invalid Opcode Exception (SIN código de error)
 _exceptionHandler06:
-	exceptionHandler 6
+    exceptionHandler_no_err 6
+
+; Double Fault Exception (CON código de error)
+_exceptionHandler08:
+    exceptionHandler_err 8
+
+; General Protection Fault Exception (CON código de error)
+_exceptionHandler0D:
+    exceptionHandler_err 13
+
+; Page Fault Exception (CON código de error)
+_exceptionHandler0E:
+    exceptionHandler_err 14
+; --- FIN: CORRECCIÓN DE LLAMADAS ---
 
 section .bss
 	exception_register_snapshot resq 18

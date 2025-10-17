@@ -24,7 +24,8 @@ extern uint8_t endOfKernelBinary;
 extern uint8_t endOfKernel;
 
 static const uint64_t PageSize = 0x1000;
-static void * const HEAP_END_ADDRESS = (void *)0x10600000; //256mb
+// static void * const HEAP_END_ADDRESS = (void *)0x10600000; //256mb
+static void * const HEAP_END_ADDRESS = (void *)0x800000; // 8MB
 static void *const shellModuleAddress = (void *)0x400000;
 static void *const snakeModuleAddress = (void *)0x500000;
 
@@ -57,13 +58,13 @@ void *initializeKernelBinary() {
 
 void test_proc_A(void) {
     while(1) {
-        print("A");
+       //print("A");
         for (volatile int j = 0; j < 500000; j++);
     }
 }
 void test_proc_B(void) {
     while(1) {
-        print("B");
+        //print("B");
         for (volatile int j = 0; j < 500000; j++);
     }
 }

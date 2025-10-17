@@ -15,7 +15,7 @@ uint8_t irqDispatcher(uint64_t irq) {
 }
 
 static uint8_t int_20() {
-  print("T");
+  //print("T");
   timer_handler();
   return 0;
 }

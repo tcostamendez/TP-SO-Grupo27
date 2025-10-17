@@ -23,9 +23,10 @@ section .text
 ; Este wrapper es el "entry point" real al que saltará 'iretq'.
 ; La pila (RSP) está 16-byte alineada al entrar aquí.
 _process_wrapper:
+    sub rsp, 8
     ; (RDX y RCX fueron cargados por popState)
     mov r12, rdx    ; r12 = entry_point
-    mov r13, rcx    ; r13 = process_terminator
+    mov r13, rbp    ; r13 = process_terminator
     
     ; Llamamos a la función principal del proceso (ej: test_proc_A)
     ; La pila está alineada, por lo que esta llamada es segura.
@@ -51,12 +52,15 @@ stackInit:
     and rax, -16    ; Alinea rax (stack_top) a 16 bytes (hacia abajo)
     
     ; --- 2. Frame IRETQ (3 qwords) ---
+    ; Guardamos el valor actual de CS en r14
+    mov r14, cs
+
     sub rax, 8
-    mov qword [rax], 0x202  ; RFLAGS (Interrupciones habilitadas)
+    mov qword [rax], 0x202  ; RFLAGS
     sub rax, 8
-    mov qword [rax], 0x08   ; CS (Selector de código)
+    mov qword [rax], r14    ; CS (Guardamos el selector CS actual)
     sub rax, 8
-    mov qword [rax], _process_wrapper ; RIP (Apunta a nuestro wrapper)
+    mov qword [rax], _process_wrapper ; RIP
     
     ; --- 3. Frame 'pushState' (15 qwords) ---
     ; (r15, r14, r13, r12, r11, r10, r9, r8)
@@ -73,14 +77,16 @@ stackInit:
     ; (rsi, rdi, rbp, rdx, rcx, rbx, rax)
     sub rax, 8 * 7  ; Espacio para los 7 registros restantes
     
-    mov qword [rax + 8*0], 0    ; rsi
-    mov qword [rax + 8*1], 0    ; rdi
-    mov qword [rax + 8*2], 0    ; rbp
-    mov qword [rax + 8*3], rsi  ; rdx (pop rdx -> entry_point)
-    mov qword [rax + 8*4], rdx  ; rcx (pop rcx -> terminator)
-    mov qword [rax + 8*5], 0    ; rbx
-    mov qword [rax + 8*6], 0    ; rax
+    mov qword [rax + 8*0], 0    ; rax_val (pop rax)
+    mov qword [rax + 8*1], 0    ; rbx_val (pop rbx)
+    mov qword [rax + 8*2], rsi  ; rcx_val (pop rcx -> terminator)
+    mov qword [rax + 8*3], rdx  ; rdx_val (pop rdx -> entry_point)
+    mov qword [rax + 8*4], 0    ; rbp_val (pop rbp)
+    mov qword [rax + 8*5], 0    ; rdi_val (pop rdi)
+    mov qword [rax + 8*6], 0    ; rsi_val (pop rsi)
     
+    add rax, 8 * 14
+
     ret
 ; --- FIN: FUNCION stackInit ---
 
