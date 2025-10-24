@@ -10,14 +10,14 @@ struct Node {
 	uint8_t *data;
 };
 
-struct QueueCDT {
+typedef struct QueueCDT {
 	struct Node *head;
 	struct Node *tail;
 	struct Node *cyclicIter;
 	size_t dataSize;
 	size_t elemCount;
 	QueueElemCmpFn cmp;
-};
+}QueueCDT;
 
 QueueADT createQueue(QueueElemCmpFn cmp, size_t elemSize) {
 	QueueADT queue = (QueueADT)mm_alloc(sizeof(struct QueueCDT));

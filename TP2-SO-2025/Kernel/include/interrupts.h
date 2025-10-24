@@ -28,7 +28,7 @@ void picMasterMask(uint8_t mask);
 
 void picSlaveMask(uint8_t mask);
 
-void _load_idt_asm(void *idtr);
+//void _load_idt_asm(void *idtr);
 
 #define TIMER_PIC_MASTER 0xFE
 #define KEYBOARD_PIC_MASTER 0xFD

@@ -45,51 +45,111 @@ _process_wrapper:
 ; rdi: stack_top
 ; rsi: entry_point
 ; rdx: process_terminator
+; stackInit:
+;     mov rax, rdi    ; rax = stack_top
+
+;     ; 1. Forzar alineamiento de 16-bytes
+;     and rax, -16    ; Alinea rax (stack_top) a 16 bytes (hacia abajo)
+    
+;     ; --- 2. Frame IRETQ (3 qwords) ---
+;     ; Guardamos el valor actual de CS en r14
+;     mov r14, cs
+
+;     sub rax, 8
+;     mov qword [rax], 0x202  ; RFLAGS
+;     sub rax, 8
+;     mov qword [rax], r14    ; CS (Guardamos el selector CS actual)
+;     sub rax, 8
+;     mov qword [rax], _process_wrapper ; RIP
+    
+;     ; --- 3. Frame 'pushState' (15 qwords) ---
+;     ; (r15, r14, r13, r12, r11, r10, r9, r8)
+;     sub rax, 8 * 8  ; Relleno para 8 registros (todos 0)
+;     mov qword [rax + 8*0], 0
+;     mov qword [rax + 8*1], 0
+;     mov qword [rax + 8*2], 0
+;     mov qword [rax + 8*3], 0
+;     mov qword [rax + 8*4], 0
+;     mov qword [rax + 8*5], 0
+;     mov qword [rax + 8*6], 0
+;     mov qword [rax + 8*7], 0
+    
+;     ; (rsi, rdi, rbp, rdx, rcx, rbx, rax)
+;     sub rax, 8 * 7  ; Espacio para los 7 registros restantes
+    
+;     mov qword [rax + 8*0], 0    ; rax_val (pop rax)
+;     mov qword [rax + 8*1], 0    ; rbx_val (pop rbx)
+;     mov qword [rax + 8*2], rsi  ; rcx_val (pop rcx -> terminator)
+;     mov qword [rax + 8*3], rdx  ; rdx_val (pop rdx -> entry_point)
+;     mov qword [rax + 8*4], 0    ; rbp_val (pop rbp)
+;     mov qword [rax + 8*5], 0    ; rdi_val (pop rdi)
+;     mov qword [rax + 8*6], 0    ; rsi_val (pop rsi)
+    
+;     add rax, 8 * 14
+
+;     ret
+; ; --- FIN: FUNCION stackInit ---
+
 stackInit:
-    mov rax, rdi    ; rax = stack_top
+    push rbp
+    mov rbp, rsp
+    
+    ; rdi = stack_top
+    ; rsi = entry_point
+    ; rdx = process_terminator
 
-    ; 1. Forzar alineamiento de 16-bytes
-    and rax, -16    ; Alinea rax (stack_top) a 16 bytes (hacia abajo)
-    
-    ; --- 2. Frame IRETQ (3 qwords) ---
-    ; Guardamos el valor actual de CS en r14
-    mov r14, cs
+    ; Alineamos el stack a 16 bytes
+    and rdi, -16
+    mov rax, rdi    ; Guardamos stack_top alineado
 
+    ; Preparamos frame para iretq
     sub rax, 8
-    mov qword [rax], 0x202  ; RFLAGS
+    mov QWORD [rax], 0x0      ; SS
     sub rax, 8
-    mov qword [rax], r14    ; CS (Guardamos el selector CS actual)
+    mov QWORD [rax], rdi      ; RSP (stack original)
     sub rax, 8
-    mov qword [rax], _process_wrapper ; RIP
-    
-    ; --- 3. Frame 'pushState' (15 qwords) ---
-    ; (r15, r14, r13, r12, r11, r10, r9, r8)
-    sub rax, 8 * 8  ; Relleno para 8 registros (todos 0)
-    mov qword [rax + 8*0], 0
-    mov qword [rax + 8*1], 0
-    mov qword [rax + 8*2], 0
-    mov qword [rax + 8*3], 0
-    mov qword [rax + 8*4], 0
-    mov qword [rax + 8*5], 0
-    mov qword [rax + 8*6], 0
-    mov qword [rax + 8*7], 0
-    
-    ; (rsi, rdi, rbp, rdx, rcx, rbx, rax)
-    sub rax, 8 * 7  ; Espacio para los 7 registros restantes
-    
-    mov qword [rax + 8*0], 0    ; rax_val (pop rax)
-    mov qword [rax + 8*1], 0    ; rbx_val (pop rbx)
-    mov qword [rax + 8*2], rsi  ; rcx_val (pop rcx -> terminator)
-    mov qword [rax + 8*3], rdx  ; rdx_val (pop rdx -> entry_point)
-    mov qword [rax + 8*4], 0    ; rbp_val (pop rbp)
-    mov qword [rax + 8*5], 0    ; rdi_val (pop rdi)
-    mov qword [rax + 8*6], 0    ; rsi_val (pop rsi)
-    
-    add rax, 8 * 14
+    mov QWORD [rax], 0x202    ; RFLAGS (interrupts enabled)
+    sub rax, 8
+    mov QWORD [rax], 0x8      ; CS
+    sub rax, 8
+    mov QWORD [rax], rsi      ; RIP (entry_point)
 
+    ; Guardamos estado inicial de registros
+    sub rax, 8
+    mov QWORD [rax], 0        ; rax
+    sub rax, 8
+    mov QWORD [rax], 0        ; rbx
+    sub rax, 8
+    mov QWORD [rax], rsi      ; rcx (entry_point)
+    sub rax, 8
+    mov QWORD [rax], rdx      ; rdx (process_terminator)
+    sub rax, 8
+    mov QWORD [rax], 0        ; rbp
+    sub rax, 8
+    mov QWORD [rax], 0        ; rdi
+    sub rax, 8
+    mov QWORD [rax], 0        ; rsi
+    sub rax, 8
+    mov QWORD [rax], 0        ; r8
+    sub rax, 8
+    mov QWORD [rax], 0        ; r9
+    sub rax, 8
+    mov QWORD [rax], 0        ; r10
+    sub rax, 8
+    mov QWORD [rax], 0        ; r11
+    sub rax, 8
+    mov QWORD [rax], rdx      ; r12 (process_terminator)
+    sub rax, 8
+    mov QWORD [rax], rsi      ; r13
+    sub rax, 8
+    mov QWORD [rax], 0        ; r14
+    sub rax, 8
+    mov QWORD [rax], 0        ; r15
+
+    ; Retornamos el nuevo RSP
+    mov rsp, rbp
+    pop rbp
     ret
-; --- FIN: FUNCION stackInit ---
-
 getKeyboardBuffer:
 	push rbp
 	mov rbp, rsp

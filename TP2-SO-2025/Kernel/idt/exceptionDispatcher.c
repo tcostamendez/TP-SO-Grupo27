@@ -12,6 +12,9 @@ const static int registers_amount =
 
 #define ZERO_EXCEPTION_ID 0
 #define INVALID_OPCODE_ID 6
+#define DOUBLE_FAULT_EXCEPTION_ID 8
+#define GENERAL_PROTECTION_FAULT_ID 13
+#define PAGE_FAULT_ID 14
 
 static void zero_division(uint64_t *registers, int errorCode);
 static void invalid_opcode(uint64_t *registers, int errorCode);
@@ -25,16 +28,24 @@ void exceptionDispatcher(int exception, uint64_t *registers) {
     return zero_division(registers, exception);
   case INVALID_OPCODE_ID:
     return invalid_opcode(registers, exception);
+  case DOUBLE_FAULT_EXCEPTION_ID:
+    return _exceptionHandler08();
+  case GENERAL_PROTECTION_FAULT_ID:
+    return _exceptionHandler0D();
+  case PAGE_FAULT_ID:
+    return _exceptionHandler0E();
   default:
-    // --- AÑADE ESTO ---
-      setFontSize(2);
-      print("!! UNHANDLED EXCEPTION: 0x");
-      printHex(exception);
-      print(" !!\n");
-      // (Aquí puedes llamar a printExceptionData(registers, exception) si quieres)
-      while(1) _hlt(); // Congela el kernel aquí
-      // --- FIN DE AÑADIDO ---
-    return; // returns to the asm exceptionHandler which will return to the
+
+
+    // // --- AÑADE ESTO ---
+    //   setFontSize(2);
+    //   print("!! UNHANDLED EXCEPTION: 0x");
+    //   printHex(exception);
+    //   print(" !!\n");
+    //   // (Aquí puedes llamar a printExceptionData(registers, exception) si quieres)
+    //   while(1) _hlt(); // Congela el kernel aquí
+    //   // --- FIN DE AÑADIDO ---
+     return; // returns to the asm exceptionHandler which will return to the
             // shell
   }
 }

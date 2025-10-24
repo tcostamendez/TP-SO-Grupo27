@@ -21,7 +21,7 @@ void add_to_scheduler(Process *p);
  * (Generalmente porque ha terminado o se ha bloqueado).
  * @param p Puntero al PCB del proceso.
  */
-void remove_from_scheduler(Process *p);
+void remove_from_scheduler();
 
 /**
  * @brief El corazón del scheduler.

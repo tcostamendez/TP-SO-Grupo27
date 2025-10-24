@@ -2,22 +2,36 @@
 #include "process.h" // Necesitamos las definiciones de Process, ProcessState, etc.
 #include <stddef.h>  // Para NULL
 #include <video.h>
+#include "queue.h"
+#include "interrupts.h"
 
-// --- Variables Globales del Scheduler ---
+QueueADT ready_queue = NULL;
+QueueADT blocked_queue = NULL;
+Process* running_process = NULL;
 
-/**
- * @brief El índice del *último* proceso que se ejecutó.
- * El PID será (current_pid_index + 1).
- * Lo usamos para saber desde dónde empezar a buscar el próximo proceso.
- */
-static int current_pid_index = -1;
+static int compareProcesses(void *a, void *b) {
+	Process *procA = *(Process **)a;
+	Process *procB = *(Process **)b;
 
-// --- Implementación de la Interfaz (scheduler.h) ---
+	return procA->pid - procB->pid;
+}
+
+void idleProcess(){
+    while(1){
+        _hlt();
+    }
+}
 
 void init_scheduler() {
-    // Empezamos en -1 para que la primera búsqueda comience en el índice 0
-    // (PID 1).
-    current_pid_index = -1;
+    ready_queue = createQueue(compareProcesses, sizeof(Process*));
+    Process* idle=create_process("Idle", idleProcess);
+    blocked_queue = createQueue(compareProcesses, sizeof(Process*));
+    if(ready_queue == NULL || blocked_queue == NULL){
+        print("AYUDAAAAA");
+    }   
+    running_process=idle;
+    idle->state=RUNNING;
+    print("init scheduler");
 }
 
 /**
@@ -33,7 +47,8 @@ void add_to_scheduler(Process *p) {
     }
     // (Asumimos que la función que llama a esta, ej: set_process_state,
     // ya se encarga de la atomicidad (cli/sti))
-    p->state = READY;
+    p->state=READY;
+    ready_queue = enqueue(ready_queue,&p);
 }
 
 /**
@@ -45,8 +60,17 @@ void add_to_scheduler(Process *p) {
  * El scheduler simplemente lo "saltará" en la próxima iteración
  * porque no está en estado READY.
  */
-void remove_from_scheduler(Process *p) {
-    (void)p; // No-op
+void remove_from_scheduler() { //saca al proceso que esta corriendo
+    if(running_process == NULL){
+        return;
+    }
+    _cli();
+    running_process->state = BLOCKED;
+    blocked_queue = enqueue(blocked_queue, &running_process);
+    if(blocked_queue == NULL){
+        print("BLOCKED NULL");
+    }
+    _sti();
 }
 
 /**
@@ -55,60 +79,57 @@ void remove_from_scheduler(Process *p) {
  * (Las interrupciones ya están deshabilitadas en este punto).
  */
 uint64_t schedule(uint64_t current_rsp) {
-    //print("S");
     // 1. Guardar el RSP del proceso que acaba de ser interrumpido.
-    Process* old_process = get_current_process();
-    if (old_process != NULL && old_process->state != TERMINATED) {
-        
-        old_process->rsp = current_rsp;
-
+    if (running_process != NULL) {
+        running_process->rsp = current_rsp;
         // Si estaba RUNNING, lo ponemos en READY para que pueda
         // volver a ser elegido en la siguiente vuelta.
-        if (old_process->state == RUNNING) {
-            old_process->state = READY;
+        if (running_process->state == RUNNING) {
+            running_process->state=READY;
+            add_to_scheduler(running_process);            
         }
     }
-
-    //print("["); //debug
-
-    // 2. Buscar el siguiente proceso para ejecutar (Round Robin).
-    // Damos MAX_PROCESSES vueltas para asegurarnos de encontrar uno.
-    for (int i = 0; i < MAX_PROCESSES; i++) {
-        
-        // Avanzamos al siguiente índice en la tabla
-        current_pid_index = (current_pid_index + 1) % MAX_PROCESSES;
-        
-        Process* p = get_process(current_pid_index + 1); // PID = index + 1
-        
-        if (p != NULL && p->state == READY) {
-            // ¡Encontramos un proceso listo para ejecutar!
-            //print("F]"); // "F" de "Found"
-            // Lo marcamos como el 'proceso actual' (en process.c)
-            // Esta función también lo pone en estado RUNNING.
-            set_current_process(p);
-            
-            // Retornamos el RSP del *nuevo* proceso al handler ASM.
-            return p->rsp;
+    Process* next=NULL;
+    if(queueIsEmpty(ready_queue)){
+        //si no hay procesos ready sigo con idle
+        if (running_process != NULL && running_process->state == RUNNING) {
+            return current_rsp;
         }
+        //si ni siquiera hay un proceso corriendo estamos en problemas
+        print("CRITICAL: No processes available to run\n");
+        return current_rsp;
     }
-    
-    //print("N]"); // "N" de "Not Found"
-
-    // 3. ¿Qué pasa si no se encontró nada?
-    // Esto NUNCA debería pasar si tenemos un "Proceso Idle"
-    // (un proceso que nunca se bloquea).
-    // Pero si llegara a pasar (ej: todos los procesos están BLOCKED),
-    // no podemos crashear. Simplemente devolvemos el RSP del
-    // proceso que ya estaba corriendo. El kernel se "congelará"
-    // en ese proceso hasta que una interrupción (ej. teclado)
-    // desbloquee a otro.
-    
-    if (old_process != NULL) {
-        set_current_process(old_process);
-        return old_process->rsp;
+    // Obtener siguiente proceso
+    if (dequeue(ready_queue, &next) == NULL) {
+        print("ERROR: Failed to dequeue next process\n");
+        return current_rsp;
     }
+    next->state=RUNNING;
+    running_process=next;
+    return next->rsp;
+}
 
-    // Pánico total: No había proceso anterior y no hay procesos nuevos.
-    // Devolvemos el RSP que nos dieron (probablemente el RSP del kernel).
-    return current_rsp;
+Process* get_running_process() {
+    return running_process;
+}
+
+int get_ready_process_count() {
+    return queueSize(ready_queue);
+}
+
+int get_blocked_process_count() {
+    return queueSize(blocked_queue);
+}
+
+void unblock_process(Process* p) {
+    if (p == NULL || p->state != BLOCKED) {
+        return;
+    }
+    _cli();
+        // Remover de la cola de bloqueados
+    if (queueRemove(blocked_queue, &p) != NULL) {
+        // Añadir a la cola de listos
+        add_to_scheduler(p);
+    }
+    _sti();
 }

@@ -73,7 +73,7 @@ void init_pcb();
  * @param argv Array de argumentos.
  * @return El PID del nuevo proceso, o -1 si hay error.
  */
-int create_process(char *name, ProcessEntryPoint entry_point);
+Process* create_process(char *name, ProcessEntryPoint entry_point);
 
 /**
  * @brief Obtiene el PID del proceso que se está ejecutando.
@@ -87,20 +87,6 @@ int get_pid();
  */
 void yield_cpu();
 
-/**
- * @brief Obtiene la estructura del proceso actual.
- * (Usado internamente por el scheduler)
- * @return Puntero a la struct Process del proceso 'RUNNING'.
- */
-Process* get_current_process();
-
-/**
- * @brief Cambia el estado de un proceso.
- * @param pid PID del proceso.
- * @param newState El nuevo estado.
- * @return 0 en éxito, -1 si el PID no existe.
- */
-int set_process_state(int pid, ProcessState newState);
 
 /**
  * @brief Obtiene la estructura de un proceso por su PID.
