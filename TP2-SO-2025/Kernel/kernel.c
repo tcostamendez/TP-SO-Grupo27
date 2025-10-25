@@ -24,8 +24,8 @@ extern uint8_t endOfKernelBinary;
 extern uint8_t endOfKernel;
 
 static const uint64_t PageSize = 0x1000;
-// static void * const HEAP_END_ADDRESS = (void *)0x10600000; //256mb
-static void * const HEAP_END_ADDRESS = (void *)0x800000; // 8MB
+//static void *const HEAP_END_ADDRESS = (void *)0x10600000; //256mb
+static void *const HEAP_END_ADDRESS = (void *)0x20000000;  //512mb
 static void *const shellModuleAddress = (void *)0x400000;
 static void *const snakeModuleAddress = (void *)0x500000;
 
@@ -102,3 +102,58 @@ int main() {
   __builtin_unreachable();
   return 0;
 }
+
+//funciones para calcular el heap end address segun gemini
+//para usarlo hay que agregar el llamado en main y cambiar HEAP_END_ADDRESS
+
+// #include <stdint.h>
+
+// // Definimos la estructura de una entrada del mapa E820
+// // __attribute__((packed)) le dice al compilador que no agregue
+// // "padding" extra, para que la estructura coincida exactamente
+// // con los datos en memoria.
+// typedef struct {
+//     uint64_t base_address;  // 8 bytes (Dirección de inicio)
+//     uint64_t length;        // 8 bytes (Tamaño de la región)
+//     uint32_t type;          // 4 bytes (Tipo 1 = Usable)
+    
+//     // El manual dice 24 bytes. 8+8+4 = 20. 
+//     // Faltan 4 bytes, que son los "atributos extendidos" de ACPI.
+//     // Los incluimos para que el tamaño sea correcto, aunque no los usemos.
+//     uint32_t extended_attributes; 
+// } __attribute__((packed)) E820Entry;
+
+// #define E820_MAP_START ((E820Entry *)0x4000)
+// #define E820_TYPE_USABLE 1
+
+// /**
+//  * @brief Lee el mapa E820 para encontrar el final de la memoria física usable.
+//  * @return La dirección física más alta que se puede usar (fin del último bloque usable).
+//  */
+// uint64_t detect_memory_end() {
+//     E820Entry *entry = E820_MAP_START;
+//     uint64_t max_memory_end = 0;
+
+//     // Iteramos mientras la entrada no sea "en blanco" (length > 0)
+//     while (entry->length > 0) {
+        
+//         // Buscamos solo las regiones de Tipo 1 (Usable)
+//         if (entry->type == E820_TYPE_USABLE) {
+            
+//             // Calculamos dónde termina esta región
+//             uint64_t region_end = entry->base_address + entry->length;
+
+//             // Guardamos la dirección final más alta que hayamos encontrado
+//             if (region_end > max_memory_end) {
+//                 max_memory_end = region_end;
+//             }
+//         }
+
+//         // Avanzamos al siguiente registro.
+//         // Como el puntero 'entry' es del tipo E820Entry*,
+//         // 'entry++' avanza automáticamente 24 bytes.
+//         entry++;
+//     }
+
+//     return max_memory_end;
+// }
