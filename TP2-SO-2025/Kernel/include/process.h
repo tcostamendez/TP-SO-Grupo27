@@ -15,7 +15,7 @@
 #define MAX_PROCESS_NAME 32
 
 // El entry point de un proceso.
-typedef void (*ProcessEntryPoint)(void);
+typedef void (*ProcessEntryPoint)(int argc, char**argv);
 
 // Enumeración de los estados de un proceso
 typedef enum {
@@ -33,7 +33,9 @@ typedef struct Process {
     int pid;                // Process ID
     int ppid;               // Parent Process ID
     ProcessState state;     // Estado actual (READY, RUNNING, etc.)
-    char name[MAX_PROCESS_NAME];
+    char *name;
+    int argc;
+    char ** argv;
 
     // --- Contexto de la CPU ---
     // El RSP es lo único que necesitamos guardar para el context switch.
@@ -73,7 +75,7 @@ void init_pcb();
  * @param argv Array de argumentos.
  * @return El PID del nuevo proceso, o -1 si hay error.
  */
-Process* create_process(char *name, ProcessEntryPoint entry_point);
+Process* create_process(int argc, char ** argv, ProcessEntryPoint entry_point);
 
 /**
  * @brief Obtiene el PID del proceso que se está ejecutando.

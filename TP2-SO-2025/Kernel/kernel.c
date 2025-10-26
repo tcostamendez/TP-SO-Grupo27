@@ -56,17 +56,19 @@ void *initializeKernelBinary() {
   return getStackBase();
 }
 
-void test_proc_A(void) {
-    while(1) {
-       print("A");
-        for (volatile int j = 0; j < 500000; j++);
-    }
+void test_proc_A(int argc, char** argv) {
+  const char *msg = (argc > 0) ? argv[1] : "A";
+  while(1){
+    print(msg);
+      for(volatile int i=0; i<1000000; i++);
+  }
 }
-void test_proc_B(void) {
-    while(1) {
-        print("B");
-        for (volatile int j = 0; j < 500000; j++);
-    }
+void test_proc_B(int argc, char** argv) {
+  const char *msg = (argc > 0) ? argv[1] : "B";
+  while(1){
+    print(msg);
+    for(volatile int i=0; i<1000000; i++);
+  }
 }
 
 
@@ -91,8 +93,11 @@ int main() {
 
   init_scheduler();
 
-  create_process("proc_A", test_proc_A);
-  create_process("proc_B", test_proc_B);
+  char* arga[] ={"A","TOMAS\n"};
+  char* argb[]={"B","SANTI\n"};
+
+  //create_process(2, arga, test_proc_A);
+  create_process(2,argb, test_proc_B);
 
   _sti();
   print("Kernel IDLE. Waiting for interrupt...\n");
