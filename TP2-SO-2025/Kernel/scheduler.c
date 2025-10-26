@@ -31,6 +31,8 @@ void init_scheduler() {
     }   
     running_process=idle;
     idle->state=RUNNING;
+    idle->priority = MIN_PRIORITY; // Idle tiene la menor prioridad
+    idle->quantum_remaining = 1;
     print("init scheduler");
 }
 
@@ -77,20 +79,34 @@ void remove_from_scheduler() { //saca al proceso que esta corriendo
  * @brief El corazón del scheduler.
  * Es llamado ÚNICAMENTE por el handler de interrupción (ASM).
  * (Las interrupciones ya están deshabilitadas en este punto).
+ * 
+ * Implementa Round Robin con prioridades:
+ * - Los procesos con mayor prioridad obtienen más tiempo de CPU (quantum más largo)
+ * - Quantum = priority + 1 ticks
  */
 uint64_t schedule(uint64_t current_rsp) {
     // 1. Guardar el RSP del proceso que acaba de ser interrumpido.
     if (running_process != NULL) {
         running_process->rsp = current_rsp;
-        // Si estaba RUNNING, lo ponemos en READY para que pueda
-        // volver a ser elegido en la siguiente vuelta.
+        
+        // Decrementar el quantum restante
         if (running_process->state == RUNNING) {
-            running_process->state=READY;
-            add_to_scheduler(running_process);            
+            running_process->quantum_remaining--;
+            
+            // Si aún tiene quantum restante, no cambiar de proceso
+            if (running_process->quantum_remaining > 0) {
+                return current_rsp; // Continuar con el mismo proceso
+            }
+            
+            // Quantum agotado, resetear y volver a la cola
+            running_process->quantum_remaining = running_process->priority + 1;
+            running_process->state = READY;
+            add_to_scheduler(running_process);
         }
     }
-    Process* next=NULL;
-    if(queueIsEmpty(ready_queue)){
+    
+    Process* next = NULL;
+    if(queueIsEmpty(ready_queue)) {
         //si no hay procesos ready sigo con idle
         if (running_process != NULL && running_process->state == RUNNING) {
             return current_rsp;
@@ -99,13 +115,16 @@ uint64_t schedule(uint64_t current_rsp) {
         print("CRITICAL: No processes available to run\n");
         return current_rsp;
     }
+    
     // Obtener siguiente proceso
     if (dequeue(ready_queue, &next) == NULL) {
         print("ERROR: Failed to dequeue next process\n");
         return current_rsp;
     }
-    next->state=RUNNING;
-    running_process=next;
+    
+    next->state = RUNNING;
+    next->quantum_remaining = next->priority + 1; // Resetear quantum al iniciar
+    running_process = next;
     return next->rsp;
 }
 

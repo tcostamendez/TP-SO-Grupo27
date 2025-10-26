@@ -53,6 +53,8 @@ Process* create_process(char *name, ProcessEntryPoint entry_point) {
     p->ppid = 0;
     p->state = READY;
     p->rip = entry_point;
+    p->priority = DEFAULT_PRIORITY;  // Prioridad por defecto
+    p->quantum_remaining = p->priority + 1;  // Quantum basado en prioridad
     my_strcpy(p->name, name);
     
     uint64_t stack_top = (uint64_t)p->stackBase + PROCESS_STACK_SIZE;
@@ -87,4 +89,29 @@ Process* get_process(int pid) {
     return NULL;
 }
 
+int set_priority(int pid, int new_priority) {
+    if (new_priority < MIN_PRIORITY || new_priority > MAX_PRIORITY) {
+        return -1; // Prioridad inválida
+    }
+    
+    Process* p = get_process(pid);
+    if (p == NULL) {
+        return -1; // Proceso no encontrado
+    }
+    
+    _cli();
+    p->priority = new_priority;
+    p->quantum_remaining = new_priority + 1; // Resetear quantum
+    _sti();
+    
+    return 0;
+}
+
+int get_priority(int pid) {
+    Process* p = get_process(pid);
+    if (p == NULL) {
+        return -1;
+    }
+    return p->priority;
+}
 

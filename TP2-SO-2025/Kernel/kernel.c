@@ -91,8 +91,18 @@ int main() {
 
   init_scheduler();
 
-  create_process("proc_A", test_proc_A);
-  create_process("proc_B", test_proc_B);
+  Process* procA = create_process("proc_A", test_proc_A);
+  Process* procB = create_process("proc_B", test_proc_B);
+  
+  // Configurar diferentes prioridades para ver el efecto
+  procA->priority = 0;  // Prioridad baja
+  procA->quantum_remaining = procA->priority + 1;
+  
+  procB->priority = 3;  // Prioridad alta
+  procB->quantum_remaining = procB->priority + 1;
+  
+  print("Process A priority: "); printDec(procA->priority); print("\n");
+  print("Process B priority: "); printDec(procB->priority); print("\n");
 
   _sti();
   print("Kernel IDLE. Waiting for interrupt...\n");

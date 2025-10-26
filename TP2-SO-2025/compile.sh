@@ -81,7 +81,7 @@ if [ ! "$(docker ps -a | grep "$CONTAINER_NAME")" ]; then
     echo "Pulling image..."
     docker pull agodio/itba-so-multi-platform:3.0
     echo "Creating container..."
-    docker run -d -v ${PWD}:/root --security-opt secomp:unconfined -it --name "$CONTAINER_NAME" agodio/itba-so-multi-platform:3.0
+    docker run -d -v ${PWD}:/root --security-opt seccomp=unconfined -it --name "$CONTAINER_NAME" agodio/itba-so-multi-platform:3.0
     echo -e "${GREEN}Container $CONTAINER_NAME created.${NC}"
 else
     echo -e "${GREEN}Container $CONTAINER_NAME exists.${NC}"

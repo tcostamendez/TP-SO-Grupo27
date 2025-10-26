@@ -14,6 +14,11 @@
 // Nombre máximo para un proceso (debugging)
 #define MAX_PROCESS_NAME 32
 
+// Prioridades del proceso
+#define MIN_PRIORITY 0
+#define MAX_PRIORITY 3
+#define DEFAULT_PRIORITY 0
+
 // El entry point de un proceso.
 typedef void (*ProcessEntryPoint)(void);
 
@@ -46,6 +51,10 @@ typedef struct Process {
     
     // --- Info de Ejecución ---
     ProcessEntryPoint rip;    // Puntero a la función a ejecutar
+    
+    // --- Scheduling ---
+    int priority;           // Prioridad del proceso (0-3, mayor = más prioridad)
+    int quantum_remaining;  // Ticks restantes en el quantum actual
     
     // (Más adelante podemos añadir FDs, semáforos, etc.)
 
@@ -94,5 +103,20 @@ void yield_cpu();
  * @return Puntero a la struct Process, o NULL si no existe.
  */
 Process* get_process(int pid);
+
+/**
+ * @brief Cambia la prioridad de un proceso.
+ * @param pid PID del proceso.
+ * @param new_priority Nueva prioridad (0-10).
+ * @return 0 en éxito, -1 en error.
+ */
+int set_priority(int pid, int new_priority);
+
+/**
+ * @brief Obtiene la prioridad de un proceso.
+ * @param pid PID del proceso.
+ * @return Prioridad del proceso, o -1 si no existe.
+ */
+int get_priority(int pid);
 
 #endif // PROCESS_H
