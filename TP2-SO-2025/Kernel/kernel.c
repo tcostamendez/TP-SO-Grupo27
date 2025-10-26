@@ -58,17 +58,30 @@ void *initializeKernelBinary() {
 
 void test_proc_A(void) {
     while(1) {
-       print("A");
-        for (volatile int j = 0; j < 500000; j++);
+        print("A");
+        yield_cpu();  // Voluntariamente cede la CPU
     }
 }
 void test_proc_B(void) {
     while(1) {
         print("B");
-        for (volatile int j = 0; j < 500000; j++);
+        yield_cpu();  // Voluntariamente cede la CPU
     }
 }
 
+void test_proc_C(void) {
+    while(1) {
+        print("C");
+        yield_cpu();  // Voluntariamente cede la CPU
+    }
+}
+
+void test_proc_D(void) {
+    while(1) {
+        print("D");
+        yield_cpu();  // Voluntariamente cede la CPU
+    }
+}
 
 int main() {
   load_idt();
@@ -91,18 +104,16 @@ int main() {
 
   init_scheduler();
 
-  Process* procA = create_process("proc_A", test_proc_A);
-  Process* procB = create_process("proc_B", test_proc_B);
-  
-  // Configurar diferentes prioridades para ver el efecto
-  procA->priority = 0;  // Prioridad baja
-  procA->quantum_remaining = procA->priority + 1;
-  
-  procB->priority = 3;  // Prioridad alta
-  procB->quantum_remaining = procB->priority + 1;
+  // Crear procesos con diferentes prioridades usando la interfaz correcta
+  Process* procA = create_process("proc_A", test_proc_A, 0);  // Prioridad muy baja
+  Process* procB = create_process("proc_B", test_proc_B, 1);  // Prioridad baja
+  Process* procC = create_process("proc_C", test_proc_C, 2);  // Prioridad media
+  Process* procD = create_process("proc_D", test_proc_D, 3);  // Prioridad alta
   
   print("Process A priority: "); printDec(procA->priority); print("\n");
   print("Process B priority: "); printDec(procB->priority); print("\n");
+  print("Process C priority: "); printDec(procC->priority); print("\n");
+  print("Process D priority: "); printDec(procD->priority); print("\n");
 
   _sti();
   print("Kernel IDLE. Waiting for interrupt...\n");

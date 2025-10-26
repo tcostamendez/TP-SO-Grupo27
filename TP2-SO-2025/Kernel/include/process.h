@@ -78,11 +78,10 @@ void init_pcb();
  *
  * @param name Nombre del proceso.
  * @param entry_point Puntero a la función que debe ejecutar.
- * @param argc Cantidad de argumentos.
- * @param argv Array de argumentos.
+ * @param priority Prioridad del proceso (0-10, usa DEFAULT_PRIORITY si no especificas).
  * @return El PID del nuevo proceso, o -1 si hay error.
  */
-Process* create_process(char *name, ProcessEntryPoint entry_point);
+Process* create_process(char *name, ProcessEntryPoint entry_point, int priority);
 
 /**
  * @brief Obtiene el PID del proceso que se está ejecutando.

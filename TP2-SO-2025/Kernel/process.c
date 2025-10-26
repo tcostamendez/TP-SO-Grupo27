@@ -29,7 +29,7 @@ static int pid = 0;
 // Contador para el próximo PID a asignar.
 static int next_pid = 1;
 
-Process* create_process(char *name, ProcessEntryPoint entry_point) {
+Process* create_process(char *name, ProcessEntryPoint entry_point, int priority) {
     Process* p = (Process*) mm_alloc(sizeof(Process));
     if (p == NULL) {
         print("PCB_ALLOC_FAIL\n"); // DEBUG
@@ -53,7 +53,12 @@ Process* create_process(char *name, ProcessEntryPoint entry_point) {
     p->ppid = 0;
     p->state = READY;
     p->rip = entry_point;
-    p->priority = DEFAULT_PRIORITY;  // Prioridad por defecto
+    
+    // Validar y establecer prioridad
+    if (priority < MIN_PRIORITY || priority > MAX_PRIORITY) {
+        priority = DEFAULT_PRIORITY;
+    }
+    p->priority = priority;
     p->quantum_remaining = p->priority + 1;  // Quantum basado en prioridad
     my_strcpy(p->name, name);
     

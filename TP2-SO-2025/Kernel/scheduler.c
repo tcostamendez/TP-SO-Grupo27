@@ -24,15 +24,13 @@ void idleProcess(){
 
 void init_scheduler() {
     ready_queue = createQueue(compareProcesses, sizeof(Process*));
-    Process* idle=create_process("Idle", idleProcess);
+    Process* idle = create_process("Idle", idleProcess, MIN_PRIORITY);
     blocked_queue = createQueue(compareProcesses, sizeof(Process*));
     if(ready_queue == NULL || blocked_queue == NULL){
         print("AYUDAAAAA");
     }   
-    running_process=idle;
-    idle->state=RUNNING;
-    idle->priority = MIN_PRIORITY; // Idle tiene la menor prioridad
-    idle->quantum_remaining = 1;
+    running_process = idle;
+    idle->state = RUNNING;
     print("init scheduler");
 }
 
