@@ -16,7 +16,7 @@
  * cuando 'rip' retorne.
  * @return El nuevo valor de RSP para este contexto.
  */
-extern uint64_t stackInit(uint64_t stack_top, ProcessEntryPoint rip, void (*terminator)());
+extern uint64_t stackInit(uint64_t stack_top, ProcessEntryPoint rip, void (*terminator)(), int argc, char*argv[]);
 
 /**
  * @brief Fuerza una interrupción de timer (int 0x20).
@@ -86,9 +86,40 @@ Process* create_process(char *name, ProcessEntryPoint entry_point, int priority)
     
     uint64_t stack_top = (uint64_t)p->stackBase + PROCESS_STACK_SIZE;
 
+    p->argc = argc;
+
+	if (argc > 0) {
+		p->argv = (char **)mm_alloc(sizeof(char *) * p->argc);
+
+		if (p->argv == NULL) {
+			mm_free(p);
+			return NULL;
+		}
+	}
+
+	for (int i = 0; i < p->argc; i++) {
+		p->argv[i] = (char *)mm_alloc(sizeof(char) * (strlen(argv[i]) + 1));
+		if (p->argv[i] == NULL) {
+			for (int j = 0; j < i; j++) {
+				mm_free(p->argv[j]);
+			}
+			mm_free(p->argv);
+			mm_free(p);
+			return NULL;
+		}
+		my_strcpy(p->argv[i], argv[i]);
+	}
+
+	if (p->argc) {
+		p->name = p->argv[0];
+	} else {
+		p->name = "unnamed_process";
+	}
+
+
     // --- CAMBIO ---
     // Llamada a stackInit simplificada
-    p->rsp = stackInit(stack_top, p->rip, entry_point);
+    p->rsp = stackInit(stack_top, p->rip, entry_point, p->argc, p->argv);
     
     // Agregar a la tabla de procesos
     if (add_to_process_table(p) != 0) {

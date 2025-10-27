@@ -24,7 +24,7 @@ void idleProcess(){
 
 void init_scheduler() {
     ready_queue = createQueue(compareProcesses, sizeof(Process*));
-    Process* idle = create_process("Idle", idleProcess, MIN_PRIORITY);
+    Process* idle=create_process(0,NULL, idleProcess); //! AGREGAR PRIORITY
     blocked_queue = createQueue(compareProcesses, sizeof(Process*));
     if(ready_queue == NULL || blocked_queue == NULL){
         print("AYUDAAAAA");

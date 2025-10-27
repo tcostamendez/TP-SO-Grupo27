@@ -126,9 +126,9 @@ stackInit:
     sub rax, 8
     mov QWORD [rax], 0        ; rbp
     sub rax, 8
-    mov QWORD [rax], 0        ; rdi
+    mov QWORD [rax], rcx        ; rdi
     sub rax, 8
-    mov QWORD [rax], 0        ; rsi
+    mov QWORD [rax], r8        ; rsi
     sub rax, 8
     mov QWORD [rax], 0        ; r8
     sub rax, 8

@@ -59,7 +59,7 @@ MEM_MANAGER_ARG=${1:-first_fit}
 
 
 # Validates the existance of the TPE-ARQ container, starts it up & compiles the project
-CONTAINER_NAME="TP2-SO-2025-g02-64018-64288-64646"
+CONTAINER_NAME="TP2-SO-2025-G27-65510-65625-65148"
 
 # COLORS
 RED='\033[0;31m'
