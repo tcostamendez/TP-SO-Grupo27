@@ -85,8 +85,24 @@ int32_t syscallDispatcher(Registers *registers) {
 
   case 0x80000100:
       return sys_malloc(registers->rdi);
-  case 0x80000200:
+  case 0x80000101:
       sys_free(registers->rdi);
+  case 0x80000102:
+      sys_create_process((int)registers->rdi, (char**)registers->rsi, (ProcessEntryPoint)registers->rdx, (int)registers->rcx);
+  case 0x80000103:
+      return sys_get_pid();
+  case 0x80000104:
+      sys_kill((int)registers->rdi);
+  case 0x80000105:
+      sys_modify_priority((int)registers->rdi, registers->rsi);
+  case 0x80000106:
+      sys_print_processes();
+  case 0x80000107:
+      sys_block_process((int)registers->rdi);
+  case 0x80000108:
+      sys_unblock_process((int)registers->rdi);
+  case 0x80000109:
+      sys_yield();
   default:
     return 0;
   }
@@ -298,45 +314,43 @@ void sys_modify_priority(int pid, int new_priority){
   set_priority(pid, new_priority);
 }
 
-//nombre, id, prioridad, stack y base pointer, foreground (si queremos agregar mas podemos)
-char *** sys_list_processes(){
-  int count = get_process_count();
-  char *** ans = mm_alloc(sizeof(char**) * (count + 2)); //+2 para la primera fila de headers y el null del final
-  if(ans == NULL){
-    return NULL;
-  }
-  char ** header = mm_alloc(sizeof(char*)*7); //7 porque son 6 headers y un null en el final
-  if(header == NULL){
-    return NULL;
-  }
-  header[0] = mm_alloc(strlen("NAME") + 1);
-  my_strcpy(header[0], "NAME");
-  header[1] = mm_alloc(strlen("PID") + 1);
-  my_strcpy(header[1], "PID" + 1);
-  header[2] = mm_alloc(strlen("PRIORITY (0 TO 3)") + 1);
-  my_strcpy(header[2], "PRIORITY (0 TO 3)");
-  header[3] = mm_alloc(strlen("STACK POINTER (DEC)") + 1);
-  my_strcpy(header[3], "STACK POINTER (DEC)");
-  header[4] = mm_alloc(strlen("BASE POINTER (DEC)") + 1);
-  my_strcpy(header[4], "BASE POINTER (DEC)");
-  header[5] = mm_alloc(strlen("fg(1)/bg(0)") + 1);
-  my_strcpy(header[5], "fg(1)/bg(0)");
-  header[6] = NULL;
-  ans[0] = header;
-  int i = 0, j = 0;
-  while(j < MAX_PROCESSES){
-    if(get_process(j) != NULL){
-      ans[i+1] = get_process_data(j);
-      i++;
-      if(ans[i+1] == NULL){
-        //free de todo
-        return NULL;
-      }
+void sys_print_processes() {
+    print("NAME         | PID | PRIO | FG/BG | STACK_PTR (DEC)      | BASE_PTR (DEC)\n");
+    print("----------------------------------------------------------------------------\n");
+    for (int j = 0; j < MAX_PROCESSES; j++) {
+        Process* p = get_process(j); 
+        if (p != NULL) {
+            char* pid_str    = num_to_str(p->pid);
+            char* prio_str   = num_to_str(p->priority);
+            char* ground_str = num_to_str(p->ground);
+            char* rsp_str    = num_to_str(p->rsp);
+            char* rbp_str    = num_to_str(p->rbp);
+            if (pid_str == NULL || prio_str == NULL || ground_str == NULL || rsp_str == NULL || rbp_str == NULL) {
+                print("Error: Fallo de memoria al listar proceso ID: ");
+                if (pid_str) print(pid_str); else print("?");
+                print("\n");
+                if (pid_str) mm_free(pid_str);
+                if (prio_str) mm_free(prio_str);
+                if (ground_str) mm_free(ground_str);
+                if (rsp_str) mm_free(rsp_str);
+                if (rbp_str) mm_free(rbp_str);
+                
+                continue; // Saltar al siguiente proceso
+            }
+            print("Process ");   print(pid_str); print("   | "); // NAME
+            print(pid_str);      print(" | ");                   // PID
+            print(prio_str);     print("  | ");                   // PRIO
+            print(ground_str);       print("     | ");                   // FG/BG
+            print(rsp_str);      print(" | ");                   // STACK
+            print(rbp_str);                                       // BASE
+            print("\n");                                          // Fin de línea
+            mm_free(pid_str);
+            mm_free(prio_str);
+            mm_free(ground_str);
+            mm_free(rsp_str);
+            mm_free(rbp_str);
+        }
     }
-    j++;
-  }
-  ans[i] = NULL;
-  return ans;
 }
 
 void sys_block_process(int pid){

@@ -1,5 +1,6 @@
 
 #include "strings.h"
+#include <stdint.h>
 #include <stddef.h>
 
 int strlen(const char *str) {
@@ -20,17 +21,17 @@ void my_strcpy(char *dest, const char *src) {
 }
 
 char * num_to_str(uint64_t num){
-    if(num < 0){
-        return NULL;
-    }
     if(num == 0){
         char * edge = mm_alloc(2);
+		if(edge == NULL){
+			return NULL;
+		}
         edge[0] = '0';
         edge[1] = 0;
         return edge;
     }
     int len = 0;
-    int aux = num;
+    uint64_t aux = num;
     while(aux > 0){
         aux /= 10;
         len++;
