@@ -58,7 +58,7 @@ void *initializeKernelBinary() {
   return getStackBase();
 }
 
-void test_proc_A(int argc, char** argv) {
+void test_proc(int argc, char** argv) {
   const char *msg = (argc > 0) ? argv[1] : "Tambien estoy Hardoceado";
   while(1){
     print(msg);
@@ -66,13 +66,6 @@ void test_proc_A(int argc, char** argv) {
   }
 }
 
-void test_proc_B(int argc, char** argv) {
-  const char *msg = (argc > 0) ? argv[1] : "Estoy hardcodeado";
-  while(1){
-    print(msg);
-      for(volatile int i=0; i<1000000; i++);
-  }
-}
 
 // Helper function to print process information
 void print_process_info(Process* p, void* arg) {
@@ -94,123 +87,6 @@ void print_process_info(Process* p, void* arg) {
     print("\n");
 }
 
-// Test function to demonstrate process table functionality
-void test_process_table() {
-    print("\n=== TESTING PROCESS TABLE ===\n");
-    
-    // Test 1: Process count
-    print("\n[TEST 1] Process count: ");
-    int count = get_process_count();
-    printDec(count);
-    print(" processes\n");
-    
-    // Test 2: List all processes
-    print("\n[TEST 2] Listing all processes:\n");
-    foreach_process(print_process_info, NULL);
-    
-    // Test 3: Get specific process
-    print("\n[TEST 3] Getting process with PID 1:\n");
-    Process* p = get_process(1);
-    if (p != NULL) {
-        print("  Found: ");
-        print(p->argv[0]);
-        print("\n");
-    } else {
-        print("  Not found!\n");
-    }
-    
-    // Test 4: Get current process
-    print("\n[TEST 4] Current running process:\n");
-    Process* current = get_current_process();
-    print("  PID: "); printDec(current->pid);
-    print(" Name: "); print(current->argv[0]);
-    print("\n");
-    
-    // Test 5: Change priority
-    print("\n[TEST 5] Changing priority of PID 2 from ");
-    int old_prio = get_priority(2);
-    printDec(old_prio);
-    print(" to 3...\n");
-    set_priority(2, 3);
-    print("  New priority: ");
-    printDec(get_priority(2));
-    print("\n");
-    
-    // Test 6: Kill a process
-    print("\n[TEST 6] Killing process with PID 3 (proc_C)...\n");
-    print("  Process count before: ");
-    printDec(get_process_count());
-    print("\n");
-    
-    int kill_result = kill_process(3);
-    if (kill_result == 0) {
-        print("  Successfully killed process 3\n");
-    } else {
-        print("  Failed to kill process 3\n");
-    }
-    
-    print("  Process count after: ");
-    printDec(get_process_count());
-    print("\n");
-    
-    print("  Trying to get killed process: ");
-    Process* killed = get_process(3);
-    if (killed == NULL) {
-        print("NULL (correctly removed)\n");
-    } else {
-        print("ERROR: Process still exists!\n");
-    }
-    
-    print("\n[TEST 7] Listing processes after kill:\n");
-    foreach_process(print_process_info, NULL);
-    
-    print("\n=== PROCESS TABLE TESTS COMPLETE ===\n\n");
-}
-
-// Test blocking and scheduler queue management
-void test_blocking_and_scheduler() {
-    print("\n=== TESTING BLOCKING & SCHEDULER ===\n");
-    
-    // Test 1: Check queue sizes
-    print("\n[TEST 1] Initial queue sizes:\n");
-    print("  Ready queue: "); printDec(get_ready_process_count()); print("\n");
-    print("  Blocked queue: "); printDec(get_blocked_process_count()); print("\n");
-    
-    // Test 2: Block a process (simulate blocking PID 1)
-    print("\n[TEST 2] Simulating block of process 1 (proc_A)...\n");
-    Process* p1 = get_process(1);
-    if (p1 != NULL) {
-        print("  Before: State = ");
-        if (p1->state == READY) print("READY");
-        else if (p1->state == RUNNING) print("RUNNING");
-        else if (p1->state == BLOCKED) print("BLOCKED");
-        print("\n");
-        
-        // Manually change state and move to blocked queue
-        _cli();
-        block_process(p1);
-        _sti();
-        
-        print("  After: State = ");
-        if (p1->state == READY) print("READY");
-        else if (p1->state == RUNNING) print("RUNNING");
-        else if (p1->state == BLOCKED) print("BLOCKED");
-        print("\n");
-    }
-    
-    // Test 3: Check queue sizes after blocking
-    print("\n[TEST 3] Queue sizes after blocking:\n");
-    print("  Ready queue: "); printDec(get_ready_process_count()); print("\n");
-    print("  Blocked queue: "); printDec(get_blocked_process_count()); print("\n");
-    
-    unblock_process(p1);
-    // Test 4: List all processes to see states
-    print("\n[TEST 4] All processes after blocking test:\n");
-    foreach_process(print_process_info, NULL);
-    
-
-    print("\n=== BLOCKING & SCHEDULER TESTS COMPLETE ===\n\n");
-}
 
 int main() {
   load_idt();
@@ -237,14 +113,8 @@ int main() {
   char* arga[] ={"procA", "A"};
   char* argb[]={"procB", "B"};
 
-  create_process(2, arga, test_proc_A, 2);
-  create_process(2, argb, test_proc_A, 1);
-
-  // Run process table tests before starting scheduler
-  test_process_table();
-  
-  // Run blocking and scheduler tests
-  test_blocking_and_scheduler();
+  Process* procA = create_process(2, arga, test_proc, 0);
+  // Process* procB = create_process(2, argb, test_proc, 0);
 
   _sti();
   print("Kernel IDLE. Waiting for interrupt...\n");
