@@ -24,9 +24,16 @@ void add_to_scheduler(Process *p);
 void remove_from_scheduler();
 
 /**
+ * @brief Remueve un proceso específico del scheduler (de cualquier cola).
+ * Busca el proceso en ready_queue y blocked_queue y lo elimina.
+ * @param p Puntero al PCB del proceso a remover.
+ */
+void remove_process_from_scheduler(Process* p);
+
+/**
  * @brief El corazón del scheduler.
- * * Esta función es llamada en C desde el handler de ASM (irq00Handler).
- * * 1. Obtiene el proceso actual (el que fue interrumpido).
+ * Esta función es llamada en C desde el handler de ASM (irq00Handler).
+ * 1. Obtiene el proceso actual (el que fue interrumpido).
  * 2. Si el proceso está 'RUNNING', guarda su 'current_rsp' en process->rsp
  * y lo pone en 'READY'.
  * 3. Elige el siguiente proceso 'READY' de la cola (Round Robin).
@@ -38,5 +45,34 @@ void remove_from_scheduler();
  */
 uint64_t schedule(uint64_t current_rsp);
 
+/**
+ * @brief Obtiene el proceso actualmente en ejecución.
+ * @return Puntero al proceso RUNNING.
+ */
+Process* get_running_process();
+
+/**
+ * @brief Cuenta cuántos procesos hay en la cola de listos.
+ * @return Cantidad de procesos en ready_queue.
+ */
+int get_ready_process_count();
+
+/**
+ * @brief Cuenta cuántos procesos hay en la cola de bloqueados.
+ * @return Cantidad de procesos en blocked_queue.
+ */
+int get_blocked_process_count();
+
+/**
+ * @brief Desbloquea un proceso y lo mueve a la cola de listos.
+ * @param p Puntero al proceso a desbloquear.
+ */
+void unblock_process(Process* p);
+
+/**
+ * @brief Bloquea un proceso y lo mueve a la cola de bloqueados.
+ * @param p Puntero al proceso a bloquear.
+ */
+void block_process(Process* p);
 
 #endif // SCHEDULER_H
