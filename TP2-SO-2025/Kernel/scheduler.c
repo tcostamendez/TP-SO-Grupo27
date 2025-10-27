@@ -9,6 +9,7 @@ QueueADT ready_queue = NULL;
 QueueADT blocked_queue = NULL;
 Process* running_process = NULL;
 Process* idle_proc = NULL;
+
 static volatile int scheduler_online = 0;   
 
 static int compareProcesses(void *a, void *b) {
