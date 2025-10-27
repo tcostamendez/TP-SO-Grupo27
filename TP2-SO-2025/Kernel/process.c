@@ -25,13 +25,21 @@ extern uint64_t stackInit(uint64_t stack_top, ProcessEntryPoint rip, void (*term
  */
 extern void _force_scheduler_interrupt();
 
-static int pid = 0;
-
-// Contador para el próximo PID a asignar.
-static int next_pid = 1;
-
 // Tabla global de procesos - almacena punteros a todos los procesos
 static Process* process_table[MAX_PROCESSES] = {NULL};
+
+/**
+ * @brief Encuentra y aloca un PID libre.
+ * @return PID libre (0 a MAX_PROCESSES-1), o -1 si no hay slots disponibles.
+ */
+static int allocate_pid(void) {
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (process_table[i] == NULL) {
+            return i;
+        }
+    }
+    return -1; // No hay PIDs disponibles
+}
 
 /**
  * @brief Agrega un proceso a la tabla global de procesos.
@@ -57,6 +65,13 @@ static void remove_from_process_table(int pid) {
 }
 
 Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, int priority) {
+    // Allocate a free PID first
+    int new_pid = allocate_pid();
+    if (new_pid == -1) {
+        print("Cannot create new process: no free PIDs available\n"); // DEBUG: No hay PIDs disponibles
+        return NULL;
+    }
+
     Process* p = (Process*) mm_alloc(sizeof(Process));
     if (p == NULL) {
         print("PCB_ALLOC_FAIL\n"); // DEBUG
@@ -70,7 +85,7 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
         return NULL;
     }
 
-    p->pid = pid++;
+    p->pid = new_pid;
     p->ppid = 0;
     p->state = READY;
     p->rip = entry_point;
@@ -262,24 +277,3 @@ int get_ground(int pid) {
     return p->ground;
 }
 
-char ** get_process_data(int process_id){
-    if(process_id == NULL){
-        return NULL;
-    }
-    if(process_id < 0 || process_id >= MAX_PROCESSES || process_id > pid){
-        return NULL;
-    }
-    char ** ans = mm_alloc(sizeof(char*) * 7); //7 porque son 6 campos y un null en el final
-    char * name = mm_alloc(16); //magic number, pero se tienen que crear demasiados procesos para pasarlo
-    char * id = num_to_str((uint64_t)process_table[process_id]->pid);
-    my_strcpy(name, "Process ");
-    catenate(name, id);
-    ans[0] = name;
-    ans[1] = id;
-    ans[2] = num_to_str((uint64_t)process_table[process_id]->priority);
-    ans[3] = num_to_str(process_table[process_id]->rsp);
-    ans[4] = num_to_str(process_table[process_id]->rbp);
-    ans[5] = num_to_str((uint64_t)process_table[process_id]->ground); //0 si esta en background, 1 si esta en foregorund
-    ans[6] = NULL;
-    return ans;
-}
