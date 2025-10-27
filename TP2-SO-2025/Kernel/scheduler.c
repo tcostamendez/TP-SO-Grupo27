@@ -8,6 +8,7 @@
 QueueADT ready_queue = NULL;
 QueueADT blocked_queue = NULL;
 Process* running_process = NULL;
+Process* idle_proc = NULL;
 
 static int compareProcesses(void *a, void *b) {
 	Process *procA = *(Process **)a;
@@ -16,22 +17,45 @@ static int compareProcesses(void *a, void *b) {
 	return procA->pid - procB->pid;
 }
 
+static void panic(const char *msg) {
+    print(msg);
+    for (;;) { _hlt(); }
+}
+
+static Process *last_switched = NULL;
+static inline void trace_switch(Process *next) {
+    if (next != last_switched) {
+        if (next == idle_proc) {
+            print("[sched] -> idle\n");
+        } else if (last_switched == idle_proc) {
+            print("[sched] idle -> running\n");
+        }
+        last_switched = next;
+    }
+}
+
 void idleProcess(){
     while(1){
+        _sti();
         _hlt();
     }
 }
 
 void init_scheduler() {
     ready_queue = createQueue(compareProcesses, sizeof(Process*));
-    char* idleArgs[] = {"idle"};
-    Process* idle = create_process(1, idleArgs, idleProcess, MIN_PRIORITY);
     blocked_queue = createQueue(compareProcesses, sizeof(Process*));
     if(ready_queue == NULL || blocked_queue == NULL){
-        print("AYUDAAAAA");
-    }   
-    running_process = idle;
-    idle->state = RUNNING;
+        panic("Failed to create scheduler queues");
+    } 
+    
+    char* idleArgs[] = {"idle"};
+    idle_proc = create_process(1, idleArgs, idleProcess, MIN_PRIORITY);
+    if (idle_proc == NULL) {
+        panic("Idle create failed\n");
+    }
+      
+    running_process = idle_proc;
+    idle_proc->state = RUNNING;
     print("init scheduler");
 }
 
@@ -43,7 +67,7 @@ void init_scheduler() {
  * Esta función es llamada por create_process() y unblock_process().
  */
 void add_to_scheduler(Process *p) {
-    if (p == NULL) {
+    if (p == NULL || p == idle_proc) {
         return;
     }
     // (Asumimos que la función que llama a esta, ej: set_process_state,
@@ -53,40 +77,18 @@ void add_to_scheduler(Process *p) {
 }
 
 /**
- * @brief Quita el proceso en ejecución del scheduler y lo bloquea.
- * Mueve el proceso actual a la cola de bloqueados.
- */
-//! FUNCION QUE NUNCA SE USA, MAL NOMBRE Y NO TIENE PROPOSITO...
-//! ------------------------------- REVISAR -------------------------------
-void remove_from_scheduler() { //saca al proceso que esta corriendo
-    if(running_process == NULL){
-        return;
-    }
-    _cli();
-    running_process->state = BLOCKED;
-    blocked_queue = enqueue(blocked_queue, &running_process);
-    if(blocked_queue == NULL){
-        print("BLOCKED NULL");
-    }
-    running_process = NULL; // FIX: Limpiar el puntero!
-    _sti();
-}
-
-/**
  * @brief Remueve un proceso específico de todas las colas del scheduler.
  * @param p Proceso a remover.
  */
 void remove_process_from_scheduler(Process* p) {
-    if (p == NULL) {
+    if (p == NULL || p == idle_proc) {
         return;
     }
     
     _cli();
     
-    // Intentar remover de la cola de listos
+    // Intentar remover de la cola de listos o bloqueados
     queueRemove(ready_queue, &p);
-    
-    // Intentar remover de la cola de bloqueados
     queueRemove(blocked_queue, &p);
     
     // Si es el proceso en ejecución, limpiarlo
@@ -110,33 +112,44 @@ void remove_process_from_scheduler(Process* p) {
  */
 uint64_t schedule(uint64_t current_rsp) {
     // 1. Guardar el RSP del proceso que acaba de ser interrumpido.
-    if (running_process != NULL) {
+    if (running_process) {
         running_process->rsp = current_rsp;
         
         // Decrementar el quantum restante
         if (running_process->state == RUNNING) {
             running_process->quantum_remaining--;
             
-            // Si aún tiene quantum restante, no cambiar de proceso
-            if (running_process->quantum_remaining > 0) {
+            // Si aún tiene quantum restante y no es el idle, no cambiar de proceso
+            // Si es el idle, siempre verificar si hay procesos listos
+            if (running_process->quantum_remaining > 0 && running_process != idle_proc) {
                 return current_rsp; // Continuar con el mismo proceso
             }
             
-            // Quantum agotado, resetear y volver a la cola
-            running_process->quantum_remaining = running_process->priority + 1;
-            running_process->state = READY;
-            add_to_scheduler(running_process);
+            // Si es el idle y hay procesos listos, o quantum agotado
+            if (running_process == idle_proc && !queueIsEmpty(ready_queue)) {
+                // Hay procesos listos, el idle debe ceder la CPU
+                running_process->state = READY; // El idle vuelve a estar listo
+                // No agregamos idle a la cola, solo cambiamos su estado
+            } else if (running_process != idle_proc) {
+                // Quantum agotado para proceso normal, resetear y volver a la cola
+                running_process->quantum_remaining = running_process->priority + 1;
+                running_process->state = READY;
+                add_to_scheduler(running_process);
+            }
         }
     }
     
     Process* next = NULL;
     if (queueIsEmpty(ready_queue)) {
-        // si no hay procesos ready sigo con idle
-        if (running_process != NULL && running_process->state == RUNNING) {
-            return current_rsp;
+        // No hay procesos ready, usar el proceso idle
+        if (idle_proc != NULL) {
+            idle_proc->state = RUNNING;
+            idle_proc->quantum_remaining = idle_proc->priority + 1;
+            running_process = idle_proc;
+            return idle_proc->rsp;
         }
-        // si ni siquiera hay un proceso corriendo estamos en problemas
-        print("CRITICAL: No processes available to run\n");
+        // si ni siquiera hay un proceso idle estamos en problemas
+        print("CRITICAL: No idle process available\n");
         return current_rsp;
     }
     
@@ -155,23 +168,31 @@ uint64_t schedule(uint64_t current_rsp) {
         next = NULL;
     }
     
-    // Si no encontramos ningún proceso válido, volver al idle
+    // Si no encontramos ningún proceso válido, usar el idle
     if (next == NULL || next->state == TERMINATED) {
-        if (running_process != NULL && running_process->state == RUNNING) {
-            return current_rsp;
+        if (idle_proc != NULL) {
+            idle_proc->state = RUNNING;
+            idle_proc->quantum_remaining = idle_proc->priority + 1;
+            running_process = idle_proc;
+            return idle_proc->rsp;
         }
-        print("WARNING: No valid process found\n");
+        print("WARNING: No valid process found and no idle process\n");
         return current_rsp;
     }
     
     next->state = RUNNING;
     next->quantum_remaining = next->priority + 1; // Resetear quantum al iniciar
     running_process = next;
+    trace_switch(next);
     return next->rsp;
 }
 
 Process* get_running_process() {
     return running_process;
+}
+
+Process* get_idle_process() {
+    return idle_proc;
 }
 
 int get_ready_process_count() {
@@ -183,7 +204,7 @@ int get_blocked_process_count() {
 }
 
 void unblock_process(Process* p) {
-    if (p == NULL || p->state != BLOCKED) {
+    if (p == NULL || p == idle_proc || p->state != BLOCKED) {
         return;
     }
     _cli();
@@ -196,12 +217,7 @@ void unblock_process(Process* p) {
 }
 
 void block_process(Process* p) {
-    if (p == NULL) {
-        return;
-    }
-    
-    // No se puede bloquear un proceso ya bloqueado o terminado
-    if (p->state == BLOCKED || p->state == TERMINATED) {
+    if (p == NULL || p == idle_proc || p->state == BLOCKED || p->state == TERMINATED) {
         return;
     }
     
