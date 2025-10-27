@@ -19,6 +19,9 @@
 #define MAX_PRIORITY 3
 #define DEFAULT_PRIORITY 0
 
+#define FOREGROUND 1
+#define BACKGROUND 0
+
 // El entry point de un proceso.
 typedef void (*ProcessEntryPoint)(void);
 
@@ -55,6 +58,10 @@ typedef struct Process {
     // --- Scheduling ---
     int priority;           // Prioridad del proceso (0-3, mayor = más prioridad)
     int quantum_remaining;  // Ticks restantes en el quantum actual
+    
+    // --- Estado de Ejecución ---
+    int ground;      // 1 si está en foreground, 0 si en background
+    uint64_t rbp;           // Base pointer (para debugging/listing)
     
     // (Más adelante podemos añadir FDs, semáforos, etc.)
 
@@ -117,5 +124,47 @@ int set_priority(int pid, int new_priority);
  * @return Prioridad del proceso, o -1 si no existe.
  */
 int get_priority(int pid);
+
+/**
+ * @brief Obtiene el proceso actualmente en ejecución.
+ * @return Puntero al proceso RUNNING (nunca NULL, siempre hay un proceso corriendo).
+ */
+Process* get_current_process();
+
+/**
+ * @brief Cuenta cuántos procesos existen en total.
+ * @return Cantidad de procesos activos (READY, RUNNING, BLOCKED).
+ */
+int get_process_count();
+
+/**
+ * @brief Itera sobre todos los procesos en la tabla.
+ * @param callback Función que se llama para cada proceso no NULL.
+ * @param arg Argumento adicional para pasar al callback.
+ */
+void foreach_process(void (*callback)(Process* p, void* arg), void* arg);
+
+/**
+ * @brief Termina un proceso dado su PID.
+ * Libera sus recursos y lo marca como TERMINATED.
+ * @param pid PID del proceso a terminar.
+ * @return 0 en éxito, -1 si el proceso no existe.
+ */
+int kill_process(int pid);
+
+/**
+ * @brief Establece si un proceso está en foreground o background.
+ * @param pid PID del proceso.
+ * @param ground FOREGROUND o BACKGROUND.
+ * @return 0 en éxito, -1 si el proceso no existe.
+ */
+int set_ground(int pid, int ground);
+
+/**
+ * @brief Obtiene si un proceso está en foreground o background.
+ * @param pid PID del proceso.
+ * @return FOREGROUND o BACKGROUND, -1 si no existe.
+ */
+int get_ground(int pid);
 
 #endif // PROCESS_H

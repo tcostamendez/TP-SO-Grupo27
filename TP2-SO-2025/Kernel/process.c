@@ -29,6 +29,32 @@ static int pid = 0;
 // Contador para el próximo PID a asignar.
 static int next_pid = 1;
 
+// Tabla global de procesos - almacena punteros a todos los procesos
+static Process* process_table[MAX_PROCESSES] = {NULL};
+
+/**
+ * @brief Agrega un proceso a la tabla global de procesos.
+ * @param p Puntero al proceso.
+ * @return 0 en éxito, -1 si la tabla está llena.
+ */
+static int add_to_process_table(Process* p) {
+    if (p == NULL || p->pid < 0 || p->pid >= MAX_PROCESSES) {
+        return -1;
+    }
+    process_table[p->pid] = p;
+    return 0;
+}
+
+/**
+ * @brief Remueve un proceso de la tabla global.
+ * @param pid PID del proceso a remover.
+ */
+static void remove_from_process_table(int pid) {
+    if (pid >= 0 && pid < MAX_PROCESSES) {
+        process_table[pid] = NULL;
+    }
+}
+
 Process* create_process(char *name, ProcessEntryPoint entry_point, int priority) {
     Process* p = (Process*) mm_alloc(sizeof(Process));
     if (p == NULL) {
@@ -43,16 +69,12 @@ Process* create_process(char *name, ProcessEntryPoint entry_point, int priority)
         return NULL;
     }
 
-    // --- DEBUG ---
-    // print("New Proc: "); print(name);
-    // print(" Stack Base: "); printHex((uint64_t)p->stackBase);
-    // print("\n");
-    // --- FIN DEBUG ---
-
     p->pid = pid++;
     p->ppid = 0;
     p->state = READY;
     p->rip = entry_point;
+    p->ground = BACKGROUND;  // Por defecto en background
+    p->rbp = 0;              // Se actualizará en runtime
     
     // Validar y establecer prioridad
     if (priority < MIN_PRIORITY || priority > MAX_PRIORITY) {
@@ -67,6 +89,14 @@ Process* create_process(char *name, ProcessEntryPoint entry_point, int priority)
     // --- CAMBIO ---
     // Llamada a stackInit simplificada
     p->rsp = stackInit(stack_top, p->rip, entry_point);
+    
+    // Agregar a la tabla de procesos
+    if (add_to_process_table(p) != 0) {
+        print("Error adding process to process table\n");
+        mm_free(p->stackBase);
+        mm_free(p);
+        return NULL;
+    }
     
     //para asegurar que se cargue
     _cli();
@@ -88,10 +118,10 @@ void yield_cpu() {
 }
 
 Process* get_process(int pid) {
-    if (pid < 1 || pid > MAX_PROCESSES) {
+    if (pid < 0 || pid >= MAX_PROCESSES) {
         return NULL;
     }
-    return NULL;
+    return process_table[pid];
 }
 
 int set_priority(int pid, int new_priority) {
@@ -120,3 +150,83 @@ int get_priority(int pid) {
     return p->priority;
 }
 
+Process* get_current_process() {
+    // Esta función debería llamar al scheduler para obtener el proceso running
+    extern Process* get_running_process();
+    return get_running_process();
+}
+
+int get_process_count() {
+    int count = 0;
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (process_table[i] != NULL) {
+            count++;
+        }
+    }
+    return count;
+}
+
+void foreach_process(void (*callback)(Process* p, void* arg), void* arg) {
+    if (callback == NULL) {
+        return;
+    }
+    
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (process_table[i] != NULL) {
+            callback(process_table[i], arg);
+        }
+    }
+}
+
+int kill_process(int pid) {
+    Process* p = get_process(pid);
+    if (p == NULL) {
+        return -1; // Proceso no existe
+    }
+    
+    _cli();
+    
+    // Marcar como terminado
+    p->state = TERMINATED;
+    
+    // Remover del scheduler (de todas las colas)
+    extern void remove_process_from_scheduler(Process* p);
+    remove_process_from_scheduler(p);
+    
+    // Liberar recursos
+    if (p->stackBase != NULL) {
+        mm_free(p->stackBase);
+        p->stackBase = NULL;
+    }
+    
+    // Remover de la tabla de procesos
+    remove_from_process_table(pid);
+    
+    // Liberar el PCB
+    mm_free(p);
+    
+    _sti();
+    
+    return 0;
+}
+
+int set_ground(int pid, int ground) {
+    Process* p = get_process(pid);
+    if (p == NULL) {
+        return -1;
+    }
+    
+    _cli();
+    p->ground = ground;
+    _sti();
+    
+    return 0;
+}
+
+int get_ground(int pid) {
+    Process* p = get_process(pid);
+    if (p == NULL) {
+        return -1;
+    }
+    return p->ground;
+}

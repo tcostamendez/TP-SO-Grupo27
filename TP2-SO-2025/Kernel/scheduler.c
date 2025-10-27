@@ -52,13 +52,8 @@ void add_to_scheduler(Process *p) {
 }
 
 /**
- * @brief Quita un proceso del scheduler.
- * En nuestro diseño, esto es un no-op.
- * El proceso que llama a esta función (ej: block_process() o
- * process_terminator()) se encargará de cambiar el estado del
- * proceso a BLOCKED o TERMINATED.
- * El scheduler simplemente lo "saltará" en la próxima iteración
- * porque no está en estado READY.
+ * @brief Quita el proceso en ejecución del scheduler y lo bloquea.
+ * Mueve el proceso actual a la cola de bloqueados.
  */
 void remove_from_scheduler() { //saca al proceso que esta corriendo
     if(running_process == NULL){
@@ -70,6 +65,32 @@ void remove_from_scheduler() { //saca al proceso que esta corriendo
     if(blocked_queue == NULL){
         print("BLOCKED NULL");
     }
+    running_process = NULL; // FIX: Limpiar el puntero!
+    _sti();
+}
+
+/**
+ * @brief Remueve un proceso específico de todas las colas del scheduler.
+ * @param p Proceso a remover.
+ */
+void remove_process_from_scheduler(Process* p) {
+    if (p == NULL) {
+        return;
+    }
+    
+    _cli();
+    
+    // Intentar remover de la cola de listos
+    queueRemove(ready_queue, &p);
+    
+    // Intentar remover de la cola de bloqueados
+    queueRemove(blocked_queue, &p);
+    
+    // Si es el proceso en ejecución, limpiarlo
+    if (running_process == p) {
+        running_process = NULL;
+    }
+    
     _sti();
 }
 
@@ -81,6 +102,8 @@ void remove_from_scheduler() { //saca al proceso que esta corriendo
  * Implementa Round Robin con prioridades:
  * - Los procesos con mayor prioridad obtienen más tiempo de CPU (quantum más largo)
  * - Quantum = priority + 1 ticks
+ * 
+ * Chequeamos si hay procesos TERMINATED y los saltamos, puede haber alguno por race conditions
  */
 uint64_t schedule(uint64_t current_rsp) {
     // 1. Guardar el RSP del proceso que acaba de ser interrumpido.
@@ -114,9 +137,27 @@ uint64_t schedule(uint64_t current_rsp) {
         return current_rsp;
     }
     
-    // Obtener siguiente proceso
-    if (dequeue(ready_queue, &next) == NULL) {
-        print("ERROR: Failed to dequeue next process\n");
+    // Obtener siguiente proceso (skip TERMINATED processes)
+    while (!queueIsEmpty(ready_queue)) {
+        if (dequeue(ready_queue, &next) == NULL) {
+            break; // Error dequeuing
+        }
+        
+        // Si el proceso está listo, usarlo
+        if (next->state != TERMINATED) {
+            break; // Found a valid process!
+        }
+        
+        // Si está terminado, continuar buscando
+        next = NULL;
+    }
+    
+    // Si no encontramos ningún proceso válido, volver al idle
+    if (next == NULL || next->state == TERMINATED) {
+        if (running_process != NULL && running_process->state == RUNNING) {
+            return current_rsp;
+        }
+        print("WARNING: No valid process found\n");
         return current_rsp;
     }
     
@@ -148,5 +189,34 @@ void unblock_process(Process* p) {
         // Añadir a la cola de listos
         add_to_scheduler(p);
     }
+    _sti();
+}
+
+void block_process(Process* p) {
+    if (p == NULL) {
+        return;
+    }
+    
+    // No se puede bloquear un proceso ya bloqueado o terminado
+    if (p->state == BLOCKED || p->state == TERMINATED) {
+        return;
+    }
+    
+    _cli();
+    
+    // Cambiar estado a BLOCKED
+    p->state = BLOCKED;
+    
+    // Si está en la cola de listos, removerlo
+    queueRemove(ready_queue, &p);
+    
+    // Si es el proceso en ejecución, limpiarlo
+    if (running_process == p) {
+        running_process = NULL;
+    }
+    
+    // Agregarlo a la cola de bloqueados
+    blocked_queue = enqueue(blocked_queue, &p);
+    
     _sti();
 }
