@@ -58,31 +58,20 @@ void *initializeKernelBinary() {
   return getStackBase();
 }
 
-void test_proc_A(void) {
-    while(1) {
-        print("A");
-        yield_cpu();  // Voluntariamente cede la CPU
-    }
-}
-void test_proc_B(void) {
-    while(1) {
-        print("B");
-        yield_cpu();  // Voluntariamente cede la CPU
-    }
+void test_proc_A(int argc, char** argv) {
+  const char *msg = (argc > 0) ? argv[1] : "Tambien estoy Hardoceado";
+  while(1){
+    print(msg);
+      for(volatile int i=0; i<1000000; i++);
+  }
 }
 
-void test_proc_C(void) {
-    while(1) {
-        print("C");
-        yield_cpu();  // Voluntariamente cede la CPU
-    }
-}
-
-void test_proc_D(void) {
-    while(1) {
-        print("D");
-        yield_cpu();  // Voluntariamente cede la CPU
-    }
+void test_proc_B(int argc, char** argv) {
+  const char *msg = (argc > 0) ? argv[1] : "Estoy hardcodeado";
+  while(1){
+    print(msg);
+      for(volatile int i=0; i<1000000; i++);
+  }
 }
 
 // Helper function to print process information
@@ -90,7 +79,7 @@ void print_process_info(Process* p, void* arg) {
     print("  PID: "); 
     printDec(p->pid);
     print(" | Name: ");
-    print(p->name);
+    print(p->argv[0]);
     print(" | Priority: ");
     printDec(p->priority);
     print(" | FG: ");
@@ -124,7 +113,7 @@ void test_process_table() {
     Process* p = get_process(1);
     if (p != NULL) {
         print("  Found: ");
-        print(p->name);
+        print(p->argv[0]);
         print("\n");
     } else {
         print("  Not found!\n");
@@ -134,7 +123,7 @@ void test_process_table() {
     print("\n[TEST 4] Current running process:\n");
     Process* current = get_current_process();
     print("  PID: "); printDec(current->pid);
-    print(" Name: "); print(current->name);
+    print(" Name: "); print(current->argv[0]);
     print("\n");
     
     // Test 5: Change priority
@@ -214,26 +203,12 @@ void test_blocking_and_scheduler() {
     print("  Ready queue: "); printDec(get_ready_process_count()); print("\n");
     print("  Blocked queue: "); printDec(get_blocked_process_count()); print("\n");
     
-    // // Test 4: Unblock the process
-    // print("\n[TEST 4] Unblocking process 1...\n");
-    // if (p1 != NULL) {
-    //     unblock_process(p1);
-    //     print("  After unblock: State = ");
-    //     if (p1->state == READY) print("READY");
-    //     else if (p1->state == RUNNING) print("RUNNING");
-    //     else if (p1->state == BLOCKED) print("BLOCKED");
-    //     print("\n");
-    // }
-    
-    // Test 5: Check final queue sizes
-    print("\n[TEST 5] Final queue sizes:\n");
-    print("  Ready queue: "); printDec(get_ready_process_count()); print("\n");
-    print("  Blocked queue: "); printDec(get_blocked_process_count()); print("\n");
-    
-    // Test 6: List all processes to see states
-    print("\n[TEST 6] All processes after blocking test:\n");
+    unblock_process(p1);
+    // Test 4: List all processes to see states
+    print("\n[TEST 4] All processes after blocking test:\n");
     foreach_process(print_process_info, NULL);
     
+
     print("\n=== BLOCKING & SCHEDULER TESTS COMPLETE ===\n\n");
 }
 
@@ -259,15 +234,11 @@ int main() {
   init_scheduler();
 
   // Crear procesos con diferentes prioridades usando la interfaz correcta
-  Process* procA = create_process("proc_A", test_proc_A, 0);  // Prioridad muy baja
-  Process* procB = create_process("proc_B", test_proc_B, 1);  // Prioridad baja
-  Process* procC = create_process("proc_C", test_proc_C, 2);  // Prioridad media
-  Process* procD = create_process("proc_D", test_proc_D, 3);  // Prioridad alta
-  
-  print("Process A priority: "); printDec(procA->priority); print("\n");
-  print("Process B priority: "); printDec(procB->priority); print("\n");
-  print("Process C priority: "); printDec(procC->priority); print("\n");
-  print("Process D priority: "); printDec(procD->priority); print("\n");
+  char* arga[] ={"procA", "A"};
+  char* argb[]={"procB", "B"};
+
+  create_process(2, arga, test_proc_A, 2);
+  create_process(2, argb, test_proc_A, 1);
 
   // Run process table tests before starting scheduler
   test_process_table();

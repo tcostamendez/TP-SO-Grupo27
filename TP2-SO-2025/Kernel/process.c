@@ -55,7 +55,7 @@ static void remove_from_process_table(int pid) {
     }
 }
 
-Process* create_process(char *name, ProcessEntryPoint entry_point, int priority) {
+Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, int priority) {
     Process* p = (Process*) mm_alloc(sizeof(Process));
     if (p == NULL) {
         print("PCB_ALLOC_FAIL\n"); // DEBUG
@@ -82,8 +82,7 @@ Process* create_process(char *name, ProcessEntryPoint entry_point, int priority)
     }
     p->priority = priority;
     p->quantum_remaining = p->priority + 1;  // Quantum basado en prioridad
-    my_strcpy(p->name, name);
-    
+
     uint64_t stack_top = (uint64_t)p->stackBase + PROCESS_STACK_SIZE;
 
     p->argc = argc;
@@ -110,10 +109,10 @@ Process* create_process(char *name, ProcessEntryPoint entry_point, int priority)
 		my_strcpy(p->argv[i], argv[i]);
 	}
 
-	if (p->argc) {
-		p->name = p->argv[0];
+	if (p->argc >= 0 && p->argv != NULL) {
+		p->argv[0] = p->argv[0];
 	} else {
-		p->name = "unnamed_process";
+		p->argv[0] = "unnamed_process";
 	}
 
 

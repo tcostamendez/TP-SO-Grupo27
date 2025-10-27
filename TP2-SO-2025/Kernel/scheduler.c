@@ -24,7 +24,8 @@ void idleProcess(){
 
 void init_scheduler() {
     ready_queue = createQueue(compareProcesses, sizeof(Process*));
-    Process* idle=create_process(0,NULL, idleProcess); //! AGREGAR PRIORITY
+    char* idleArgs[] = {"idle"};
+    Process* idle = create_process(1, idleArgs, idleProcess, MIN_PRIORITY);
     blocked_queue = createQueue(compareProcesses, sizeof(Process*));
     if(ready_queue == NULL || blocked_queue == NULL){
         print("AYUDAAAAA");
@@ -55,6 +56,8 @@ void add_to_scheduler(Process *p) {
  * @brief Quita el proceso en ejecución del scheduler y lo bloquea.
  * Mueve el proceso actual a la cola de bloqueados.
  */
+//! FUNCION QUE NUNCA SE USA, MAL NOMBRE Y NO TIENE PROPOSITO...
+//! ------------------------------- REVISAR -------------------------------
 void remove_from_scheduler() { //saca al proceso que esta corriendo
     if(running_process == NULL){
         return;
@@ -127,12 +130,12 @@ uint64_t schedule(uint64_t current_rsp) {
     }
     
     Process* next = NULL;
-    if(queueIsEmpty(ready_queue)) {
-        //si no hay procesos ready sigo con idle
+    if (queueIsEmpty(ready_queue)) {
+        // si no hay procesos ready sigo con idle
         if (running_process != NULL && running_process->state == RUNNING) {
             return current_rsp;
         }
-        //si ni siquiera hay un proceso corriendo estamos en problemas
+        // si ni siquiera hay un proceso corriendo estamos en problemas
         print("CRITICAL: No processes available to run\n");
         return current_rsp;
     }

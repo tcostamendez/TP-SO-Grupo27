@@ -41,7 +41,7 @@ typedef struct Process {
     int pid;                // Process ID
     int ppid;               // Parent Process ID
     ProcessState state;     // Estado actual (READY, RUNNING, etc.)
-    char *name;
+
     int argc;
     char ** argv;
 
@@ -87,10 +87,10 @@ void init_pcb();
  *
  * @param name Nombre del proceso.
  * @param entry_point Puntero a la función que debe ejecutar.
- * @param priority Prioridad del proceso (0-10, usa DEFAULT_PRIORITY si no especificas).
+ * @param priority Prioridad del proceso (0-3).
  * @return El PID del nuevo proceso, o -1 si hay error.
  */
-Process* create_process(int argc, char ** argv, ProcessEntryPoint entry_point);
+Process* create_process(int argc, char ** argv, ProcessEntryPoint entry_point, int priority);
 
 /**
  * @brief Obtiene el PID del proceso que se está ejecutando.
@@ -115,7 +115,7 @@ Process* get_process(int pid);
 /**
  * @brief Cambia la prioridad de un proceso.
  * @param pid PID del proceso.
- * @param new_priority Nueva prioridad (0-10).
+ * @param new_priority Nueva prioridad (0-3).
  * @return 0 en éxito, -1 en error.
  */
 int set_priority(int pid, int new_priority);
