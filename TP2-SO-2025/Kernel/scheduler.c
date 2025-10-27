@@ -9,6 +9,7 @@ QueueADT ready_queue = NULL;
 QueueADT blocked_queue = NULL;
 Process* running_process = NULL;
 Process* idle_proc = NULL;
+static volatile int scheduler_online = 0;   
 
 static int compareProcesses(void *a, void *b) {
 	Process *procA = *(Process **)a;
@@ -18,19 +19,11 @@ static int compareProcesses(void *a, void *b) {
 }
 
 static void panic(const char *msg) {
+    _cli();
+    print("=== KERNEL PANIC ===\n");
     print(msg);
-    for (;;) { _hlt(); }
-}
-
-static Process *last_switched = NULL;
-static inline void trace_switch(Process *next) {
-    if (next != last_switched) {
-        if (next == idle_proc) {
-            print("[sched] -> idle\n");
-        } else if (last_switched == idle_proc) {
-            print("[sched] idle -> running\n");
-        }
-        last_switched = next;
+    for (;;) { 
+        _hlt(); 
     }
 }
 
@@ -57,6 +50,7 @@ void init_scheduler() {
     running_process = idle_proc;
     idle_proc->state = RUNNING;
     print("init scheduler");
+    scheduler_online = 1;
 }
 
 /**
@@ -111,79 +105,54 @@ void remove_process_from_scheduler(Process* p) {
  * Chequeamos si hay procesos TERMINATED y los saltamos, puede haber alguno por race conditions
  */
 uint64_t schedule(uint64_t current_rsp) {
+    if (!scheduler_online) {
+        return current_rsp;
+    }
+
     // 1. Guardar el RSP del proceso que acaba de ser interrumpido.
     if (running_process) {
         running_process->rsp = current_rsp;
         
         // Decrementar el quantum restante
-        if (running_process->state == RUNNING) {
+        if (running_process != idle_proc && running_process->state == RUNNING) {
             running_process->quantum_remaining--;
             
-            // Si aún tiene quantum restante y no es el idle, no cambiar de proceso
-            // Si es el idle, siempre verificar si hay procesos listos
-            if (running_process->quantum_remaining > 0 && running_process != idle_proc) {
+            // Si aún tiene quantum restante, no cambiar de proceso
+            if (running_process->quantum_remaining > 0) {
                 return current_rsp; // Continuar con el mismo proceso
             }
             
-            // Si es el idle y hay procesos listos, o quantum agotado
-            if (running_process == idle_proc && !queueIsEmpty(ready_queue)) {
-                // Hay procesos listos, el idle debe ceder la CPU
-                running_process->state = READY; // El idle vuelve a estar listo
-                // No agregamos idle a la cola, solo cambiamos su estado
-            } else if (running_process != idle_proc) {
-                // Quantum agotado para proceso normal, resetear y volver a la cola
-                running_process->quantum_remaining = running_process->priority + 1;
-                running_process->state = READY;
-                add_to_scheduler(running_process);
-            }
+            running_process->quantum_remaining = running_process->priority + 1;
+            running_process->state = READY;
+            add_to_scheduler(running_process);
         }
     }
     
     Process* next = NULL;
-    if (queueIsEmpty(ready_queue)) {
-        // No hay procesos ready, usar el proceso idle
-        if (idle_proc != NULL) {
-            idle_proc->state = RUNNING;
-            idle_proc->quantum_remaining = idle_proc->priority + 1;
-            running_process = idle_proc;
-            return idle_proc->rsp;
+
+    if (!queueIsEmpty(ready_queue)) {
+        // Mientras haya procesos, busca el primero que este ready
+        while (!queueIsEmpty(ready_queue)) {
+            if (dequeue(ready_queue, &next) == NULL || next->state == TERMINATED) {
+                next = NULL;
+                break;
+            }
+            if (next != NULL && next->state == READY && next != idle_proc) { 
+                break;
+            }
+            next = NULL;
         }
-        // si ni siquiera hay un proceso idle estamos en problemas
-        print("CRITICAL: No idle process available\n");
-        return current_rsp;
     }
-    
-    // Obtener siguiente proceso (skip TERMINATED processes)
-    while (!queueIsEmpty(ready_queue)) {
-        if (dequeue(ready_queue, &next) == NULL) {
-            break; // Error dequeuing
-        }
-        
-        // Si el proceso está listo, usarlo
-        if (next->state != TERMINATED) {
-            break; // Found a valid process!
-        }
-        
-        // Si está terminado, continuar buscando
-        next = NULL;
-    }
-    
-    // Si no encontramos ningún proceso válido, usar el idle
-    if (next == NULL || next->state == TERMINATED) {
-        if (idle_proc != NULL) {
-            idle_proc->state = RUNNING;
-            idle_proc->quantum_remaining = idle_proc->priority + 1;
-            running_process = idle_proc;
-            return idle_proc->rsp;
-        }
-        print("WARNING: No valid process found and no idle process\n");
-        return current_rsp;
-    }
+
+    if (next == NULL) {
+        next = idle_proc;
+        idle_proc->state = RUNNING;
+        return idle_proc->rsp;
+    } 
     
     next->state = RUNNING;
-    next->quantum_remaining = next->priority + 1; // Resetear quantum al iniciar
-    running_process = next;
-    trace_switch(next);
+    next->quantum_remaining = next->priority + 1;
+    running_process = next;  
     return next->rsp;
 }
 

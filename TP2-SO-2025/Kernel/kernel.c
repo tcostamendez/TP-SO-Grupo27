@@ -114,8 +114,8 @@ int main() {
   char* argb[]={"procB", "B"};
 
   Process* procA = create_process(2, arga, test_proc, 0);
-  Process* procB = create_process(2, argb, test_proc, 0);
-  
+  // Process* procB = create_process(2, argb, test_proc, 0);
+
   _sti();
   print("Kernel IDLE. Waiting for interrupt...\n");
   while (1) {
