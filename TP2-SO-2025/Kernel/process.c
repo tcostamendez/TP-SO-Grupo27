@@ -4,6 +4,7 @@
 #include <lib.h>            // (Tu header) Para memset()
 #include <strings.h>        // (Tu header) Para my_strcpy() y strlen()
 #include <interrupts.h>
+#include "strings.h"
 
 /**
  * @brief Prepara un stack falso para un nuevo proceso.
@@ -259,4 +260,26 @@ int get_ground(int pid) {
         return -1;
     }
     return p->ground;
+}
+
+char ** get_process_data(int process_id){
+    if(process_id == NULL){
+        return NULL;
+    }
+    if(process_id < 0 || process_id >= MAX_PROCESSES || process_id > pid){
+        return NULL;
+    }
+    char ** ans = mm_alloc(sizeof(char*) * 7); //7 porque son 6 campos y un null en el final
+    char * name = mm_alloc(16); //magic number, pero se tienen que crear demasiados procesos para pasarlo
+    char * id = num_to_str((uint64_t)process_table[process_id]->pid);
+    my_strcpy(name, "Process ");
+    catenate(name, id);
+    ans[0] = name;
+    ans[1] = id;
+    ans[2] = num_to_str((uint64_t)process_table[process_id]->priority);
+    ans[3] = num_to_str(process_table[process_id]->rsp);
+    ans[4] = num_to_str(process_table[process_id]->rbp);
+    ans[5] = num_to_str((uint64_t)process_table[process_id]->ground); //0 si esta en background, 1 si esta en foregorund
+    ans[6] = NULL;
+    return ans;
 }

@@ -223,3 +223,10 @@ void block_process(Process* p) {
     
     _sti();
 }
+
+int get_running_pid(){
+    if(running_process != NULL){
+        return running_process->pid;
+    }
+    return -1;
+}

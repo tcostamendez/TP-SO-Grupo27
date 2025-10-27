@@ -263,7 +263,7 @@ int32_t sys_get_character_without_display(void) {
   return getKeyboardCharacter(0);
 }
 // ==================================================================
-// Memory managment systemcall
+// Memory managment system calls
 // ==================================================================
 
 void * sys_malloc(size_t size){
@@ -272,4 +272,89 @@ void * sys_malloc(size_t size){
 
 void sys_free(void * ap){
   mm_free(ap);
+}
+
+// ==================================================================
+// Process system calls
+// ==================================================================
+
+int sys_create_process(int argc, char ** argv, ProcessEntryPoint entryPoint, int priority){
+  Process* p = create_process(argc, argv, entryPoint, priority);
+  if(p == NULL){
+    return -1;
+  }
+  return get_pid(p);
+}
+
+int sys_get_pid(){
+  return get_running_pid();
+}
+
+void sys_kill(int pid){
+  kill_process(pid);
+}
+
+void sys_modify_priority(int pid, int new_priority){
+  set_priority(pid, new_priority);
+}
+
+//nombre, id, prioridad, stack y base pointer, foreground (si queremos agregar mas podemos)
+char *** sys_list_processes(){
+  int count = get_process_count();
+  char *** ans = mm_alloc(sizeof(char**) * (count + 2)); //+2 para la primera fila de headers y el null del final
+  if(ans == NULL){
+    return NULL;
+  }
+  char ** header = mm_alloc(sizeof(char*)*7); //7 porque son 6 headers y un null en el final
+  if(header == NULL){
+    return NULL;
+  }
+  header[0] = mm_alloc(strlen("NAME") + 1);
+  my_strcpy(header[0], "NAME");
+  header[1] = mm_alloc(strlen("PID") + 1);
+  my_strcpy(header[1], "PID" + 1);
+  header[2] = mm_alloc(strlen("PRIORITY (0 TO 3)") + 1);
+  my_strcpy(header[2], "PRIORITY (0 TO 3)");
+  header[3] = mm_alloc(strlen("STACK POINTER (DEC)") + 1);
+  my_strcpy(header[3], "STACK POINTER (DEC)");
+  header[4] = mm_alloc(strlen("BASE POINTER (DEC)") + 1);
+  my_strcpy(header[4], "BASE POINTER (DEC)");
+  header[5] = mm_alloc(strlen("fg(1)/bg(0)") + 1);
+  my_strcpy(header[5], "fg(1)/bg(0)");
+  header[6] = NULL;
+  ans[0] = header;
+  int i = 0, j = 0;
+  while(j < MAX_PROCESSES){
+    if(get_process(j) != NULL){
+      ans[i+1] = get_process_data(j);
+      i++;
+      if(ans[i+1] == NULL){
+        //free de todo
+        return NULL;
+      }
+    }
+    j++;
+  }
+  ans[i] = NULL;
+  return ans;
+}
+
+void sys_block_process(int pid){
+  block_process(pid);
+}
+
+void sys_unblock_process(int pid){
+  unblock_process(pid);
+}
+
+void sys_yield(){
+  yield_cpu();
+}
+
+void sys_wait_pid(int pid){
+  //?????
+}
+
+void sys_wait_for_children(){
+  //????
 }

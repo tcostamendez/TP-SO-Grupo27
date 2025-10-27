@@ -41,30 +41,23 @@ typedef struct Process {
     int pid;                // Process ID
     int ppid;               // Parent Process ID
     ProcessState state;     // Estado actual (READY, RUNNING, etc.)
-
     int argc;
     char ** argv;
-
     // --- Contexto de la CPU ---
     // El RSP es lo único que necesitamos guardar para el context switch.
     // El 'schedule' en C recibirá el RSP del proceso saliente
     // y lo guardará aquí.
     uint64_t rsp;
-
     // --- Gestión de Memoria ---
     void *stackBase;        // Puntero al inicio del stack (para mm_free())
-    
     // --- Info de Ejecución ---
     ProcessEntryPoint rip;    // Puntero a la función a ejecutar
-    
     // --- Scheduling ---
     int priority;           // Prioridad del proceso (0-3, mayor = más prioridad)
     int quantum_remaining;  // Ticks restantes en el quantum actual
-    
     // --- Estado de Ejecución ---
     int ground;      // 1 si está en foreground, 0 si en background
     uint64_t rbp;           // Base pointer (para debugging/listing)
-    
     // (Más adelante podemos añadir FDs, semáforos, etc.)
 
 } Process;

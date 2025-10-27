@@ -75,4 +75,6 @@ void unblock_process(Process* p);
  */
 void block_process(Process* p);
 
+int get_running_pid();
+
 #endif // SCHEDULER_H
