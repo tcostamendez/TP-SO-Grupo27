@@ -17,13 +17,6 @@ void init_scheduler();
 void add_to_scheduler(Process *p);
 
 /**
- * @brief Elimina un proceso de la cola del scheduler.
- * (Generalmente porque ha terminado o se ha bloqueado).
- * @param p Puntero al PCB del proceso.
- */
-void remove_from_scheduler();
-
-/**
  * @brief Remueve un proceso específico del scheduler (de cualquier cola).
  * Busca el proceso en ready_queue y blocked_queue y lo elimina.
  * @param p Puntero al PCB del proceso a remover.
@@ -50,6 +43,12 @@ uint64_t schedule(uint64_t current_rsp);
  * @return Puntero al proceso RUNNING.
  */
 Process* get_running_process();
+
+/**
+ * @brief Obtiene el proceso idle.
+ * @return Puntero al proceso idle.
+ */
+Process* get_idle_process();
 
 /**
  * @brief Cuenta cuántos procesos hay en la cola de listos.
