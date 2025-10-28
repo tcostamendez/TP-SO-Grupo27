@@ -43,17 +43,23 @@ static sem * find_sem_by_name(const char *name) {
 }
 
 static int valid_sem(Sem sem_to_valid) {
-    if (sem_to_valid == NULL || s_queue == NULL) return 0;
+    if (sem_to_valid == NULL || s_queue == NULL) {
+        return 0;
+    }
+
     Sem aux = sem_to_valid;
+    
     sem_lock(&s_queue->lock);
     int exists = queueElementExists(s_queue->sems, &aux);
     sem_unlock(&s_queue->lock);
+
     return exists;
 }
 
 int init_sem_queue(void) {
     if (s_queue != NULL) {
         panic("Semaphore queue already initialized");
+        return -1;
     }
     s_queue = mm_alloc(sizeof(sem_queue));
     if (s_queue == NULL) {
@@ -62,11 +68,14 @@ int init_sem_queue(void) {
     }
     s_queue->lock = 0;
     s_queue->sems = createQueue(cmp_sem, sizeof(struct sem *));
-    return s_queue->sems == NULL ? -1 : 1;
+    return s_queue->sems == NULL ? -1 : 0;
 }
 
 Sem sem_open(const char *name, uint16_t value) {
-    if (name == NULL || strlen(name) >= MAX_SEM_LENGTH) return NULL;
+    if (name == NULL || strlen(name) >= MAX_SEM_LENGTH) {
+        return NULL;
+    }
+
     sem_lock(&s_queue->lock);
 
     sem *found = find_sem_by_name(name);
@@ -102,11 +111,17 @@ Sem sem_open(const char *name, uint16_t value) {
 }
 
 int sem_close(Sem sem_to_close) {
-    if (!valid_sem(sem_to_close)) return -1;
+    if (!valid_sem(sem_to_close)) {
+        return -1;
+    }
+
     sem_lock(&sem_to_close->lock);
     sem_to_close->users--;
+
     sem *aux = sem_to_close;
+    
     sem_lock(&s_queue->lock);
+
     if (sem_to_close->users != 0) {
         sem_unlock(&sem_to_close->lock);
         sem_unlock(&s_queue->lock);
@@ -125,26 +140,27 @@ int sem_close(Sem sem_to_close) {
 }
 
 void free_sem_queue(void) {
-    if (s_queue == NULL) return;
-    if (s_queue->sems) queueFree(s_queue->sems);
+    if (s_queue == NULL) {
+        return;
+    }
+
+    if (s_queue->sems) {
+        queueFree(s_queue->sems);
+    }
+
     mm_free(s_queue);
     s_queue = NULL;
 }
 
 int sem_post(Sem sem_to_post) {
-    if (!valid_sem(sem_to_post)) return -1;
-    
-    print("[sem] sem_post on '");
-    print(sem_to_post->name);
-    print("'\n");
+    if (!valid_sem(sem_to_post)) {
+        return -1;
+    }
     
     sem_lock(&sem_to_post->lock);
     if (queueSize(sem_to_post->blocked_processes) != 0) {
         int pid;
         if (dequeue(sem_to_post->blocked_processes, &pid) != NULL) {
-            print("[sem] waking up pid=");
-            printDec(pid);
-            print("\n");
             Process *p = get_process(pid);
             if (p != NULL) {
                 unblock_process(p);
@@ -154,25 +170,18 @@ int sem_post(Sem sem_to_post) {
         }
     } else {
         sem_to_post->value++;
-        // Comentado para reducir spam
-        /*
-        print("[sem] incremented value to ");
-        printDec(sem_to_post->value);
-        print("\n");
-        */
     }
     sem_unlock(&sem_to_post->lock);
     return 0;
 }
 
 int sem_wait(Sem sem_to_wait) {
-    if (!valid_sem(sem_to_wait)) return -1;
-    
-    print("[sem] sem_wait on '");
-    print(sem_to_wait->name);
-    print("'\n");
-    
+    if (!valid_sem(sem_to_wait)) {
+        return -1;
+    }
+
     int blocked = 0;
+
     sem_lock(&sem_to_wait->lock);
     if (sem_to_wait->value == 0) {
         Process *cur = get_current_process();
@@ -194,49 +203,63 @@ int sem_wait(Sem sem_to_wait) {
         blocked = 1;
     } else {
         sem_to_wait->value--;
-        // Comentado para reducir spam
-        /*
-        print("[sem] decremented value to ");
-        printDec(sem_to_wait->value);
-        print("\n");
-        */
     }
     sem_unlock(&sem_to_wait->lock);
+
     if (blocked) {
         print("[sem] forcing scheduler interrupt\n");
         _force_scheduler_interrupt();
     }
+
     return 0;
 }
 
 int sem_get_value(Sem sem_to_get) {
-    if (!valid_sem(sem_to_get)) return -1;
+    if (!valid_sem(sem_to_get)) {
+        return -1;
+    }
+
     int val;
+
     sem_lock(&sem_to_get->lock);
     val = sem_to_get->value;
     sem_unlock(&sem_to_get->lock);
+
     return val;
 }
 
 int sem_get_users_count(Sem sem_to_get) {
-    if (!valid_sem(sem_to_get)) return -1;
+    if (!valid_sem(sem_to_get)) {
+        return -1;
+    }
+
     int u;
+
     sem_lock(&sem_to_get->lock);
     u = sem_to_get->users;
     sem_unlock(&sem_to_get->lock);
+
     return u;
 }
 
 int sem_get_blocked_processes_count(Sem sem_to_get) {
-    if (!valid_sem(sem_to_get)) return -1;
+    if (!valid_sem(sem_to_get)) {
+        return -1;
+    }
+
     int s;
+
     sem_lock(&sem_to_get->lock);
     s = queueSize(sem_to_get->blocked_processes);
     sem_unlock(&sem_to_get->lock);
+
     return s;
 }
 
 int remove_from_semaphore(Sem s, int pid) {
-    if (s == NULL) return -1;
+    if (s == NULL) {
+        return -1;
+    }
+
     return queueRemove(s->blocked_processes, &pid) == NULL ? -1 : 1;
 }

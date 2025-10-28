@@ -1,11 +1,13 @@
-#include "process.h"
-#include "scheduler.h"      
-#include "memory_manager.h" 
 #include <lib.h>            
 #include <strings.h>       
 #include <interrupts.h>
+
+#include "process.h"
+#include "scheduler.h"      
+#include "memory_manager.h" 
 #include "strings.h"
 #include "sem.h"
+#include "panic.h"
 
 #define LEN_WAIT_SEM strlen("wait_")
 #define WAIT_SEM_PREFIX "wait_"
@@ -15,6 +17,12 @@ static Process* process_table[MAX_PROCESSES] = {NULL};
 
 extern uint64_t stack_init(uint64_t stack_top, process_entry_point rip, void (*terminator)(), int argc, char*argv[]);
 extern void _force_scheduler_interrupt();
+extern int remove_from_scheduler(Process* p);
+
+// Variables globales del scheduler (definidas en scheduler.c)
+extern QueueADT ready_queue;
+extern QueueADT blocked_queue;
+extern Process* running_process;
 
 /**
  * @brief Encuentra y aloca un PID libre.
@@ -109,7 +117,6 @@ static void free_process_resources(Process* p, int remove_from_table) {
         remove_from_process_table(p->pid);
     }
     
-    // Liberar la estructura del proceso
     mm_free(p);
 }
 
@@ -132,15 +139,14 @@ Process* create_process(int argc, char** argv, process_entry_point entry_point, 
 
     p->stack_base = mm_alloc(PROCESS_STACK_SIZE);
     if (p->stack_base == NULL) {
-        mm_free(p);
+        free_process_resources(p, 0);
         _sti();
         return NULL;
     }
 
     int new_pid = allocate_pid();
     if (new_pid == -1) {
-        mm_free(p->stack_base);
-        mm_free(p);
+        free_process_resources(p, 0);
         _sti();
         return NULL;
     }
@@ -181,8 +187,7 @@ Process* create_process(int argc, char** argv, process_entry_point entry_point, 
 
 	p->argv = (char **)mm_alloc(sizeof(char *) * p->argc);
 	if (p->argv == NULL) {
-		mm_free(p->stack_base);
-		mm_free(p);
+        free_process_resources(p, 0);
 		_sti();
 		return NULL;
 	}
@@ -217,7 +222,7 @@ Process* create_process(int argc, char** argv, process_entry_point entry_point, 
         return NULL;
     }
 
-    // Create wait semaphore for this process ("wait_<pid>")
+    // Create wait semaphore para el proceso ("wait_<pid>")
     // No crear para idle (PID 0)
     if (p->pid != 0) {
         char *name = create_wait_semaphore_name(p->pid);
@@ -338,8 +343,7 @@ int kill_process(int pid) {
     
     // Mark as terminated and remove from scheduler
     p->state = TERMINATED;
-    extern void remove_process_from_scheduler(Process* p);
-    remove_process_from_scheduler(p);
+    remove_from_scheduler(p);
     
     _sti();
     

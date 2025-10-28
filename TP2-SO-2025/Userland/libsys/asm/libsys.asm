@@ -29,14 +29,14 @@ GLOBAL sys_get_register_snapshot
 
 GLOBAL sys_get_character_without_display
 
-/* --------------- Memory --------------- */
+; --------------- Memory --------------- ;
 GLOBAL sys_malloc
 GLOBAL sys_free
 GLOBAL sys_get_free_bytes
 GLOBAL sys_get_used_bytes
 GLOBAL sys_get_total_bytes
 
-/* --------------- Process --------------- */
+; --------------- Process --------------- ;
 GLOBAL sys_create_process
 GLOBAL sys_get_pid
 GLOBAL sys_kill_process
@@ -94,7 +94,7 @@ sys_get_register_snapshot: sys_int80 0x800000E0
 
 sys_get_character_without_display: sys_int80 0x800000F0
 
-/* --------------- Memory --------------- */
+; --------------- Memory --------------- ;
 sys_malloc: sys_int80 0x80000100
 sys_free: sys_int80 0x80000101
 sys_get_free_bytes: sys_int80 0x8000010A

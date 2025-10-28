@@ -16,6 +16,7 @@
 #include "process.h"
 #include "sem.h"
 #include "memory_manager.h"
+#include "panic.h"
 
 extern void _sti(); // (De interrupts.asm) Habilita interrupciones
 extern void _hlt(); // (De interrupts.asm) Detiene la CPU hasta la próxima interrupción
@@ -187,45 +188,34 @@ int main() {
   
 
   /* Inicializar subsistema de semáforos antes de crear procesos que usen sem_open */
-  if (init_sem_queue() < 0) {
-    print("Failed to init sem queue\n");
+  if (init_sem_queue() != 0) {
+    panic("Failed to init sem queue\n");
   } else {
     print("Sem queue initialized\n");
   }
 
-  print("Llamando a init_scheduler()...\n");
-  init_scheduler();
-  print("init_scheduler() completo.\n"); 
-
-  print("Iniciando prueba de 'wait' y semaforos...\n");
+  if (init_scheduler() != 0) {
+    panic("Failed to initialize scheduler");
+  } else {
+    print("Scheduler initialized\n");
+  }
+  mm_init(heapStart, heapSize)
+  /*
+  if (mm_init(heapStart, heapSize) != 0) {
+    panic("Failed to initialize memory manager");
+  } else {
+    print("Memory manager initialized\n");
+  }
+  */
 
   // --- Iniciar el proceso de prueba ---
   char* arg_parent[] = {"TestPadre"};
   Process* parent_test = create_process(1, arg_parent, parent_process_test, 0);
 
-  // Crear procesos con diferentes prioridades usando la interfaz correcta
-  //char* arga[] ={"procA", "A"};
-  // char* argb[]={"procB", "B"};
-
-  //Process* procA = create_process(2, arga, test_proc, 0);
-  // Process* procB = create_process(2, argb, test_proc, 0);
-  mm_init(heapStart, heapSize);
-
-  if (init_scheduler() != 0) {
-    panic("Failed to initialize scheduler");
-    return 1;
-  }
-
-
-  print("[main] after create_process(procA)\n");
-
-
   _sti();
-  print("Kernel IDLE. Waiting for interrupt...\n");
 
-  /* Force one scheduler interrupt to test scheduling without relying on PIT */
-  print("[main] forcing scheduler interrupt to test...\n");
   _force_scheduler_interrupt();
+
   while (1) {
      _hlt(); // Espera la próxima interrupción
   }

@@ -78,9 +78,5 @@ void block_process(Process* p);
 
 int get_running_pid();
 
-// Variables globales del scheduler (definidas en scheduler.c)
-extern QueueADT ready_queue;
-extern QueueADT blocked_queue;
-extern Process* running_process;
 
 #endif // SCHEDULER_H
