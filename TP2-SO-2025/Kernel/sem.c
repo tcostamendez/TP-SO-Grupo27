@@ -127,11 +127,15 @@ int sem_close(Sem sem_to_close) {
         sem_unlock(&s_queue->lock);
         return 0;
     } else {
+        // Remover de la cola global (ya no es visible para sem_open)
         if (queueRemove(s_queue->sems, &aux) == NULL) {
-            sem_unlock(&s_queue->lock);
             sem_unlock(&sem_to_close->lock);
+            sem_unlock(&s_queue->lock);
             return -1;
         }
+        
+        // Libero lock del semáforo antes de destruirlo
+        sem_unlock(&sem_to_close->lock);
         queueFree(sem_to_close->blocked_processes);
         mm_free(sem_to_close);
         sem_unlock(&s_queue->lock);
@@ -260,6 +264,9 @@ int remove_from_semaphore(Sem s, int pid) {
     if (s == NULL) {
         return -1;
     }
+    sem_lock(&s->lock);
+    int result = queueRemove(s->blocked_processes, &pid) == NULL ? -1 : 0;
+    sem_unlock(&s->lock);
 
-    return queueRemove(s->blocked_processes, &pid) == NULL ? -1 : 1;
+    return result;
 }
