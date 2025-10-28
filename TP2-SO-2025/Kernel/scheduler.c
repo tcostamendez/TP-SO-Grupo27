@@ -1,9 +1,11 @@
 #include "scheduler.h"
-#include "process.h" // Necesitamos las definiciones de Process, ProcessState, etc.
 #include <stddef.h>  // Para NULL
 #include <video.h>
+
 #include "queue.h"
 #include "interrupts.h"
+#include "panic.h"
+#include "process.h"
 
 QueueADT ready_queue = NULL;
 QueueADT blocked_queue = NULL;
@@ -19,15 +21,6 @@ static int compareProcesses(void *a, void *b) {
 	return procA->pid - procB->pid;
 }
 
-static void panic(const char *msg) {
-    _cli();
-    print("=== KERNEL PANIC ===\n");
-    print(msg);
-    for (;;) { 
-        _hlt(); 
-    }
-}
-
 void idleProcess(){
     while(1){
         _sti();
@@ -35,23 +28,25 @@ void idleProcess(){
     }
 }
 
-void init_scheduler() {
+int init_scheduler() {
     ready_queue = createQueue(compareProcesses, sizeof(Process*));
     blocked_queue = createQueue(compareProcesses, sizeof(Process*));
     if(ready_queue == NULL || blocked_queue == NULL){
-        panic("Failed to create scheduler queues");
+        return -1;
     } 
     
     char* idleArgs[] = {"idle"};
     idle_proc = create_process(1, idleArgs, idleProcess, MIN_PRIORITY);
     if (idle_proc == NULL) {
-        panic("Idle create failed\n");
+        return -1;
     }
       
     running_process = idle_proc;
     idle_proc->state = RUNNING;
+
     print("init scheduler");
     scheduler_online = 1;
+    return 0;
 }
 
 /**
@@ -62,11 +57,10 @@ void init_scheduler() {
  * Esta función es llamada por create_process() y unblock_process().
  */
 void add_to_scheduler(Process *p) {
-    if (p == NULL || p == idle_proc) {
+    if (p == NULL || p == idle_proc || ready_queue == NULL) {
         return;
     }
-    // (Asumimos que la función que llama a esta, ej: set_process_state,
-    // ya se encarga de la atomicidad (cli/sti))
+    
     p->state=READY;
     ready_queue = enqueue(ready_queue,&p);
 }
@@ -75,8 +69,8 @@ void add_to_scheduler(Process *p) {
  * @brief Remueve un proceso específico de todas las colas del scheduler.
  * @param p Proceso a remover.
  */
-void remove_process_from_scheduler(Process* p) {
-    if (p == NULL || p == idle_proc) {
+void remove_from_scheduler(Process* p) {
+    if (p == NULL || p == idle_proc || ready_queue == NULL || blocked_queue == NULL) {
         return;
     }
     
@@ -303,7 +297,7 @@ int get_blocked_process_count() {
 }
 
 void unblock_process(Process* p) {
-    if (p == NULL || p == idle_proc || p->state != BLOCKED) {
+    if (p == NULL || p == idle_proc || p->state != BLOCKED || blocked_queue == NULL) {
         return;
     }
     _cli();
@@ -325,7 +319,8 @@ void unblock_process(Process* p) {
 }
 
 void block_process(Process* p) {
-    if (p == NULL || p == idle_proc || p->state == BLOCKED || p->state == TERMINATED) {
+    if (p == NULL || p == idle_proc || p->state == BLOCKED || 
+        p->state == TERMINATED || ready_queue == NULL || blocked_queue == NULL) {
         return;
     }
     
@@ -352,7 +347,7 @@ void block_process(Process* p) {
     _sti();
 }
 
-int get_running_pid(){
+int get_running_pid() {
     if (running_process != NULL) {
         return running_process->pid;
     }

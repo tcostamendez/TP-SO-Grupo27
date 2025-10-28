@@ -3,6 +3,7 @@
 // C's stdlib pseudo random number generator
 // https://wiki.osdev.org/Random_Number_Generator
 
+/* --------------- Random --------------- */
 static unsigned long int next =
     1; // NB: "unsigned long int" is assumed to be 32 bits wide
 
@@ -14,6 +15,7 @@ int rand(void) { // RAND_MAX assumed to be 32767
 
 void srand(unsigned int seed) { next = seed; }
 
+/* --------------- String --------------- */
 int atoi(const char *str) {
   int result = 0;
   int sign = 1;

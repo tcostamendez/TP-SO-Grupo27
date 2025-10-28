@@ -56,18 +56,36 @@ int32_t sys_get_register_snapshot(int64_t * registers);
 
 int32_t sys_get_character_without_display(void);
 
-void * sys_malloc(uint64_t size);
-
+/* --------------- Memory --------------- */
+/*0x80000100*/
+void * sys_malloc(uint64_t size); 
+/*0x80000101*/
 void sys_free(void * ap);
+/*0x8000010A*/
+int sys_get_free_bytes(void);
+/*0x8000010B*/
+int sys_get_used_bytes(void);
+/*0x8000010C*/
+int sys_get_total_bytes(void);
 
-// Process management syscalls (0x80000102-0x80000109)
+/* --------------- Process --------------- */
+/*0x80000102*/
 int sys_create_process(int argc, char** argv, void (*entry_point)(int, char**), int priority);
+/*0x80000103*/
 int sys_get_pid(void);
+/*0x80000104*/
 int sys_kill_process(int pid);
+/*0x80000105*/
 void sys_modify_priority(int pid, int new_priority);
-void sys_list_processes(void);
+/*0x80000106*/
+void sys_list_processes(void); // ps
+/*0x80000107*/
 void sys_block_process(int pid);
+/*0x80000108*/
 void sys_unblock_process(int pid);
+/*0x80000109*/
 void sys_yield(void);
+/*0x8000010A*/
+
 
 #endif

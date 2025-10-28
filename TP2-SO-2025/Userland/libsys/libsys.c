@@ -62,42 +62,32 @@ int32_t getCharacterWithoutDisplay(void) {
   return sys_get_character_without_display();
 }
 
-void* allocMemory(size_t size) {
-  return sys_malloc(size);
-}
+/* --------------- Memory --------------- */
+void* allocMemory(size_t size) { return sys_malloc(size); }
 
-void freeMemory(void* ptr) {
-  sys_free(ptr);
-}
+void freeMemory(void* ptr) { sys_free(ptr); }
 
+int getFreeBytes(void) { return sys_get_free_bytes(); }
+
+int getUsedBytes(void) { return sys_get_used_bytes(); }
+
+int getTotalBytes(void) { return sys_get_total_bytes(); }
+
+/* --------------- Process --------------- */
 int createProcess(int argc, char** argv, void (*entry_point)(int, char**), int priority) {
   return sys_create_process(argc, argv, entry_point, priority);
 }
 
-int getMyPid(void) {
-  return sys_get_pid();
-}
+int getMyPid(void) { return sys_get_pid(); }
 
-int killProcess(int pid) {
-  return sys_kill_process(pid);
-}
+int killProcess(int pid) { return sys_kill_process(pid); }
 
-void setProcessPriority(int pid, int priority) {
-  sys_modify_priority(pid, priority);
-}
+void setProcessPriority(int pid, int priority) { sys_modify_priority(pid, priority); }
 
-void listProcesses(void) {
-  sys_list_processes();
-}
+void listProcesses(void) { sys_list_processes(); }
 
-void blockProcess(int pid) {
-  sys_block_process(pid);
-}
+void blockProcess(int pid) { sys_block_process(pid); }
 
-void unblockProcess(int pid) {
-  sys_unblock_process(pid);
-}
+void unblockProcess(int pid) { sys_unblock_process(pid); }
 
-void yieldCPU(void) {
-  sys_yield();
-}
+void yieldCPU(void) { sys_yield(); }
