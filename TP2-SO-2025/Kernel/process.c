@@ -29,10 +29,6 @@ extern Process* running_process;
  * @return PID libre (0 a MAX_PROCESSES-1), o -1 si no hay slots disponibles.
  */
 static int allocate_pid(void) {
-    if (process_table == NULL) {
-        return -1;
-    }
-    
     for (int i = 0; i < MAX_PROCESSES; i++) {
         if (process_table[i] == NULL) {
             return i;

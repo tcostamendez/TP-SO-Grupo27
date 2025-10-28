@@ -25,6 +25,8 @@ extern uint8_t bss;
 extern uint8_t endOfKernelBinary;
 extern uint8_t endOfKernel;
 
+extern void _force_scheduler_interrupt();
+
 static const uint64_t PageSize = 0x1000;
 //static void *const HEAP_END_ADDRESS = (void *)0x10600000; //256mb
 static void *const HEAP_END_ADDRESS = (void *)0x20000000;  //512mb
@@ -199,7 +201,7 @@ int main() {
   } else {
     print("Scheduler initialized\n");
   }
-  mm_init(heapStart, heapSize)
+  mm_init(heapStart, heapSize);
   /*
   if (mm_init(heapStart, heapSize) != 0) {
     panic("Failed to initialize memory manager");
@@ -207,10 +209,6 @@ int main() {
     print("Memory manager initialized\n");
   }
   */
-
-  // --- Iniciar el proceso de prueba ---
-  char* arg_parent[] = {"TestPadre"};
-  Process* parent_test = create_process(1, arg_parent, parent_process_test, 0);
 
   _sti();
 

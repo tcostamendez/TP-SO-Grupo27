@@ -27,6 +27,8 @@ static sem_queue *s_queue = NULL;
 extern void sem_lock(uint8_t *lock);
 extern void sem_unlock(uint8_t *lock);
 
+extern void _force_scheduler_interrupt();
+
 static int cmp_pid(void *pid1, void *pid2) { return *((int *)pid1) - *((int *)pid2); }
 int cmp_sem(void *psem1, void *psem2) { return *((Sem *)psem1) - *((Sem *)psem2); }
 

@@ -4,7 +4,6 @@
 #include <string.h>
 #include <exceptions.h>
 #include <sys.h>
-#include "test_util.h"
 
 #ifdef ANSI_4_BIT_COLOR_SUPPORT
 #include <ansiColors.h>

@@ -85,7 +85,7 @@ int32_t syscallDispatcher(Registers *registers) {
   
   /* ----------------------------------------------------------------------------------------------------------- */
   case 0x80000100:
-      return (uint32_t) sys_malloc(registers->rdi);
+      return (uint64_t) sys_malloc(registers->rdi);
   case 0x80000101:
       sys_free((void*)registers->rdi);
       return 0;
