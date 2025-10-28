@@ -10,6 +10,7 @@
 
 // Límite de procesos que podemos tener.
 #define MAX_PROCESSES 64
+#define MAX_CHILDREN 32
 
 // Nombre máximo para un proceso (debugging)
 #define MAX_PROCESS_NAME 32
@@ -59,7 +60,8 @@ typedef struct Process {
     int ground;      // 1 si está en foreground, 0 si en background
     uint64_t rbp;           // Base pointer (para debugging/listing)
     // (Más adelante podemos añadir FDs, semáforos, etc.)
-
+    int children[MAX_CHILDREN]; // IDs de los procesos hijos
+    int child_count;            // Número de hijos actuales
 } Process;
 
 
