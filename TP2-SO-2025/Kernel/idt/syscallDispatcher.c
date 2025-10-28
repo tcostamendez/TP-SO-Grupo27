@@ -82,27 +82,34 @@ int32_t syscallDispatcher(Registers *registers) {
 
   case 0x800000F0:
     return sys_get_character_without_display();
-
+  
+  /* ----------------------------------------------------------------------------------------------------------- */
   case 0x80000100:
-      return sys_malloc(registers->rdi);
+      return (uint32_t) sys_malloc(registers->rdi);
   case 0x80000101:
-      sys_free(registers->rdi);
+      sys_free((void*)registers->rdi);
+      return 0;
   case 0x80000102:
-      sys_create_process((int)registers->rdi, (char**)registers->rsi, (ProcessEntryPoint)registers->rdx, (int)registers->rcx);
+      return sys_create_process((int)registers->rdi, (char**)registers->rsi, (ProcessEntryPoint)registers->rdx, (int)registers->rcx);
   case 0x80000103:
       return sys_get_pid();
   case 0x80000104:
-      sys_kill((int)registers->rdi);
+      return sys_kill((int)registers->rdi);
   case 0x80000105:
       sys_modify_priority((int)registers->rdi, registers->rsi);
+      return 0;
   case 0x80000106:
       sys_print_processes();
+      return 0;
   case 0x80000107:
       sys_block_process((int)registers->rdi);
+      return 0;
   case 0x80000108:
       sys_unblock_process((int)registers->rdi);
+      return 0;
   case 0x80000109:
       sys_yield();
+      return 0;
   default:
     return 0;
   }
@@ -282,11 +289,12 @@ int32_t sys_get_character_without_display(void) {
 // Memory managment system calls
 // ==================================================================
 
-void * sys_malloc(size_t size){
-  return mm_alloc(size);
+void * sys_malloc(size_t size) {
+  //! REVISAR CASTEO
+  return (void *) mm_alloc(size);
 }
 
-void sys_free(void * ap){
+void sys_free(void* ap){
   mm_free(ap);
 }
 
@@ -302,12 +310,12 @@ int sys_create_process(int argc, char ** argv, ProcessEntryPoint entryPoint, int
   return get_pid(p);
 }
 
-int sys_get_pid(){
+int sys_get_pid() {
   return get_running_pid();
 }
 
-void sys_kill(int pid){
-  kill_process(pid);
+int sys_kill(int pid) {
+  return kill_process(pid);
 }
 
 void sys_modify_priority(int pid, int new_priority){
@@ -354,11 +362,17 @@ void sys_print_processes() {
 }
 
 void sys_block_process(int pid){
-  block_process(pid);
+  Process* p = get_process(pid);
+  if (p != NULL) {
+    block_process(p);
+  }
 }
 
 void sys_unblock_process(int pid){
-  unblock_process(pid);
+  Process* p = get_process(pid);
+  if (p != NULL) {
+    unblock_process(p);
+  }
 }
 
 void sys_yield(){

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <keyboard.h>
 #include "scheduler.h"
+#include "strings.h"
 
 typedef struct {
     int64_t r15;
@@ -72,5 +73,15 @@ int32_t sys_get_character_without_display(void);
 // Memory manager syscalls prototypes
 void * sys_malloc(uint64_t size);
 void sys_free(void * ap);
+
+// Process management syscalls prototypes
+int sys_create_process(int argc, char** argv, ProcessEntryPoint entryPoint, int priority);
+int sys_get_pid(void);
+int sys_kill(int pid);
+void sys_modify_priority(int pid, int new_priority);
+void sys_print_processes(void);
+void sys_block_process(int pid);
+void sys_unblock_process(int pid);
+void sys_yield(void);
 
 #endif

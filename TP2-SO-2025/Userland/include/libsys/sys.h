@@ -2,7 +2,7 @@
 #define _SYS_H_
 
 #include <stdint.h>
-#include <stdint.h>
+#include <stddef.h>
 
 // Enum of registerable keys.
 // Note: Does not include TAB or RETURN
@@ -117,5 +117,19 @@ int getWindowHeight(void);
 void sleep(uint32_t milliseconds);
 int32_t getRegisterSnapshot(int64_t * registers);
 int32_t getCharacterWithoutDisplay(void);
+
+// Memory management functions
+void* allocMemory(size_t size);
+void freeMemory(void* ptr);
+
+// Process management functions
+int createProcess(int argc, char** argv, void (*entry_point)(int, char**), int priority);
+int getMyPid(void);
+int killProcess(int pid);
+void setProcessPriority(int pid, int priority);
+void listProcesses(void);
+void blockProcess(int pid);
+void unblockProcess(int pid);
+void yieldCPU(void);
 
 #endif

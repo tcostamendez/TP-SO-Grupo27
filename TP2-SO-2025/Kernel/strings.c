@@ -3,10 +3,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
-int strlen(const char *str) {
-    int i = 0;
+size_t strlen(const char *str) {
+    size_t i = 0;
     while (str[i] != 0) {
-		i++;
+	i++;
     }
     return i;
 }

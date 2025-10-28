@@ -72,6 +72,7 @@ void load_idt() {
   picMasterMask(KEYBOARD_PIC_MASTER & TIMER_PIC_MASTER);
   picSlaveMask(NO_INTERRUPTS);
 
+  extern void _load_idt_asm(IDTR* idtr);
   _load_idt_asm(&idtr);
 
   _sti();

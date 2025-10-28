@@ -7,4 +7,6 @@ int rand(void);
 
 void srand(unsigned int seed);
 
+int atoi(const char *str);
+
 #endif

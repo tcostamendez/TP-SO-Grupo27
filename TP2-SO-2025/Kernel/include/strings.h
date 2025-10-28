@@ -1,8 +1,10 @@
 #ifndef STRINGS_H
 #define STRINGS_H
 #include <stdint.h>
+#include <stddef.h>
+#include "memory_manager.h"
 
-int strlen(const char *str);
+size_t strlen(const char *str);
 
 void my_strcpy(char *dest, const char *src);
 

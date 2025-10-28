@@ -2,6 +2,7 @@
 #define FIRST_FIT_MM_H
 
 #include "memory_manager.h" // Incluimos la interfaz común
+#include <string.h> 
 
 // Definición de la unidad de asignación.
 // Usaremos un long para asegurar un alineamiento adecuado en 64-bit.

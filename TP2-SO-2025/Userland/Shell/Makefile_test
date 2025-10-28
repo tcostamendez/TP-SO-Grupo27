@@ -1,0 +1,32 @@
+# Makefile for test_processes
+
+CC = gcc
+CFLAGS = -m64 -ffreestanding -fno-stack-protector -fno-pie -fno-pic -mno-red-zone -mcmodel=kernel -Wall -Wextra -Werror
+LDFLAGS = -T test_processes.ld -nostdlib -static
+
+# Source files
+SOURCES = test_processes.c
+OBJECTS = $(SOURCES:.c=.o)
+
+# Include directories
+INCLUDES = -I../include -I../include/libc -I../include/libsys
+
+# Library paths
+LIBPATHS = -L../libc -L../libsys
+LIBS = -lsys -lc
+
+# Target
+TARGET = test_processes.bin
+
+all: $(TARGET)
+
+$(TARGET): $(OBJECTS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBPATHS) $(LIBS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
+clean:
+	rm -f $(OBJECTS) $(TARGET)
+
+.PHONY: all clean

@@ -211,7 +211,7 @@ void block_process(Process* p) {
 }
 
 int get_running_pid(){
-    if(running_process != NULL){
+    if (running_process != NULL) {
         return running_process->pid;
     }
     return -1;

@@ -59,4 +59,15 @@ int32_t sys_get_character_without_display(void);
 void * sys_malloc(uint64_t size);
 
 void sys_free(void * ap);
+
+// Process management syscalls (0x80000102-0x80000109)
+int sys_create_process(int argc, char** argv, void (*entry_point)(int, char**), int priority);
+int sys_get_pid(void);
+int sys_kill_process(int pid);
+void sys_modify_priority(int pid, int new_priority);
+void sys_list_processes(void);
+void sys_block_process(int pid);
+void sys_unblock_process(int pid);
+void sys_yield(void);
+
 #endif

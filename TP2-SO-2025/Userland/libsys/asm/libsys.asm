@@ -32,6 +32,15 @@ GLOBAL sys_get_character_without_display
 GLOBAL sys_malloc
 GLOBAL sys_free
 
+GLOBAL sys_create_process
+GLOBAL sys_get_pid
+GLOBAL sys_kill_process
+GLOBAL sys_modify_priority
+GLOBAL sys_list_processes
+GLOBAL sys_block_process
+GLOBAL sys_unblock_process
+GLOBAL sys_yield
+
 section .text
 
 %macro sys_int80 1
@@ -81,4 +90,13 @@ sys_get_register_snapshot: sys_int80 0x800000E0
 sys_get_character_without_display: sys_int80 0x800000F0
 
 sys_malloc: sys_int80 0x80000100
-sys_free: sys_int80 0x80000200
+sys_free: sys_int80 0x80000101
+
+sys_create_process: sys_int80 0x80000102
+sys_get_pid: sys_int80 0x80000103
+sys_kill_process: sys_int80 0x80000104
+sys_modify_priority: sys_int80 0x80000105
+sys_list_processes: sys_int80 0x80000106
+sys_block_process: sys_int80 0x80000107
+sys_unblock_process: sys_int80 0x80000108
+sys_yield: sys_int80 0x80000109

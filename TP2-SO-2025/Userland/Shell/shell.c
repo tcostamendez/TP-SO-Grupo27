@@ -34,6 +34,14 @@ int snake(void);
 int regs(void);
 int time(void);
 
+// Process management commands
+int ps(void);
+int loop(void);
+int kill(void);
+int nice(void);
+int block(void);
+int mem(void);
+
 static void printPreviousCommand(enum REGISTERABLE_KEYS scancode);
 static void printNextCommand(enum REGISTERABLE_KEYS scancode);
 
@@ -116,6 +124,24 @@ Command commands[] = {
     {.name = "time",
      .function = (int (*)(void))(unsigned long long)time,
      .description = "Prints the current time"},
+    {.name = "ps",
+     .function = (int (*)(void))(unsigned long long)ps,
+     .description = "Lists all processes"},
+    {.name = "loop",
+     .function = (int (*)(void))(unsigned long long)loop,
+     .description = "Prints hello message every N seconds\n\t\t\t\tUso: loop <delay_seconds>"},
+    {.name = "kill",
+     .function = (int (*)(void))(unsigned long long)kill,
+     .description = "Kills a process by PID\n\t\t\t\tUso: kill <pid>"},
+    {.name = "nice",
+     .function = (int (*)(void))(unsigned long long)nice,
+     .description = "Changes process priority\n\t\t\t\tUso: nice <pid> <priority>"},
+    {.name = "block",
+     .function = (int (*)(void))(unsigned long long)block,
+     .description = "Blocks a process\n\t\t\t\tUso: block <pid>"},
+    {.name = "mem",
+     .function = (int (*)(void))(unsigned long long)mem,
+     .description = "Shows memory status"},
 };
 
 char command_history[HISTORY_SIZE][MAX_BUFFER_SIZE] = {0};
@@ -342,3 +368,94 @@ int regs(void) {
 }
 
 int snake(void) { return exec(snakeModuleAddress); }
+
+// Process management command implementations
+int ps(void) {
+    printf("Process List:\n");
+    listProcesses();
+    return 0;
+}
+
+int loop(void) {
+    char *delay_str = strtok(NULL, " ");
+    int delay = 1; // default 1 second
+    
+    if (delay_str != NULL) {
+        sscanf(delay_str, "%d", &delay);
+    }
+    
+    int pid = getMyPid();
+    printf("Process %d: Hello! (delay: %d seconds)\n", pid, delay);
+    
+    while (1) {
+        sleep(delay * 1000); // convert to milliseconds
+        printf("Process %d: Hello again!\n", pid);
+    }
+    
+    return 0;
+}
+
+int kill(void) {
+    char *pid_str = strtok(NULL, " ");
+    if (pid_str == NULL) {
+        printf("Usage: kill <pid>\n");
+        return 1;
+    }
+    
+    int pid;
+    sscanf(pid_str, "%d", &pid);
+    
+    int result = killProcess(pid);
+    if (result == 0) {
+        printf("Process %d killed successfully\n", pid);
+    } else {
+        printf("Failed to kill process %d\n", pid);
+    }
+    
+    return result;
+}
+
+int nice(void) {
+    char *pid_str = strtok(NULL, " ");
+    char *priority_str = strtok(NULL, " ");
+    
+    if (pid_str == NULL || priority_str == NULL) {
+        printf("Usage: nice <pid> <priority>\n");
+        return 1;
+    }
+    
+    int pid, priority;
+    sscanf(pid_str, "%d", &pid);
+    sscanf(priority_str, "%d", &priority);
+    
+    if (priority < 0 || priority > 3) {
+        printf("Priority must be between 0 and 3\n");
+        return 1;
+    }
+    
+    setProcessPriority(pid, priority);
+    printf("Process %d priority set to %d\n", pid, priority);
+    return 0;
+}
+
+int block(void) {
+    char *pid_str = strtok(NULL, " ");
+    if (pid_str == NULL) {
+        printf("Usage: block <pid>\n");
+        return 1;
+    }
+    
+    int pid;
+    sscanf(pid_str, "%d", &pid);
+    
+    blockProcess(pid);
+    printf("Process %d blocked\n", pid);
+    return 0;
+}
+
+int mem(void) {
+    // This would need memory status syscalls - for now just a placeholder
+    printf("Memory status: (not implemented yet)\n");
+    printf("Use 'testmm <bytes>' to test memory allocation\n");
+    return 0;
+}

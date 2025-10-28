@@ -1,4 +1,5 @@
-#include "syscalls.h"
+#include <syscalls.h>
+#include <sys.h>
 #include "test_util.h"
 #include <stdio.h>
 #include <stdlib.h>
