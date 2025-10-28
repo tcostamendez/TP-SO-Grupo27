@@ -14,134 +14,134 @@ typedef struct sem {
     uint16_t value;
     uint8_t lock;
     uint16_t users;
-    QueueADT blockedProcesses; // queue of int (pid)
+    QueueADT blocked_processes; // queue of int (pid)
 } sem;
 
-typedef struct semQueue {
+typedef struct sem_queue {
     uint8_t lock;
     QueueADT sems;
-} semQueue;
+} sem_queue;
 
-static semQueue *sQueue = NULL;
+static sem_queue *s_queue = NULL;
 
-extern void semLock(uint8_t *lock);
-extern void semUnlock(uint8_t *lock);
+extern void sem_lock(uint8_t *lock);
+extern void sem_unlock(uint8_t *lock);
 
-static int cmpPid(void *pid1, void *pid2) { return *((int *)pid1) - *((int *)pid2); }
-int cmpSem(void *psem1, void *psem2) { return *((Sem *)psem1) - *((Sem *)psem2); }
+static int cmp_pid(void *pid1, void *pid2) { return *((int *)pid1) - *((int *)pid2); }
+int cmp_sem(void *psem1, void *psem2) { return *((Sem *)psem1) - *((Sem *)psem2); }
 
-static sem * findSemByName(const char *name) {
-    if (!sQueue || queueIsEmpty(sQueue->sems)) return NULL;
+static sem * find_sem_by_name(const char *name) {
+    if (!s_queue || queueIsEmpty(s_queue->sems)) return NULL;
     sem *current = NULL;
-    int size = queueSize(sQueue->sems);
-    queueBeginCyclicIter(sQueue->sems);
+    int size = queueSize(s_queue->sems);
+    queueBeginCyclicIter(s_queue->sems);
     for (int i = 0; i < size; i++) {
-        queueNextCyclicIter(sQueue->sems, &current);
+        queueNextCyclicIter(s_queue->sems, &current);
         if (current && my_strcmp(current->name, name) == 0) return current;
     }
     return NULL;
 }
 
-static int validSem(Sem semToValid) {
-    if (semToValid == NULL || sQueue == NULL) return 0;
-    Sem aux = semToValid;
-    semLock(&sQueue->lock);
-    int exists = queueElementExists(sQueue->sems, &aux);
-    semUnlock(&sQueue->lock);
+static int valid_sem(Sem sem_to_valid) {
+    if (sem_to_valid == NULL || s_queue == NULL) return 0;
+    Sem aux = sem_to_valid;
+    sem_lock(&s_queue->lock);
+    int exists = queueElementExists(s_queue->sems, &aux);
+    sem_unlock(&s_queue->lock);
     return exists;
 }
 
-int initSemQueue(void) {
-    if (sQueue != NULL) {
+int init_sem_queue(void) {
+    if (s_queue != NULL) {
         panic("Semaphore queue already initialized");
     }
-    sQueue = mm_alloc(sizeof(semQueue));
-    if (sQueue == NULL) {
+    s_queue = mm_alloc(sizeof(sem_queue));
+    if (s_queue == NULL) {
         panic("Failed to allocate memory for semaphore queue");
         return -1;
     }
-    sQueue->lock = 0;
-    sQueue->sems = createQueue(cmpSem, sizeof(struct sem *));
-    return sQueue->sems == NULL ? -1 : 1;
+    s_queue->lock = 0;
+    s_queue->sems = createQueue(cmp_sem, sizeof(struct sem *));
+    return s_queue->sems == NULL ? -1 : 1;
 }
 
-Sem semOpen(const char *name, uint16_t value) {
+Sem sem_open(const char *name, uint16_t value) {
     if (name == NULL || strlen(name) >= MAX_SEM_LENGTH) return NULL;
-    semLock(&sQueue->lock);
+    sem_lock(&s_queue->lock);
 
-    sem *found = findSemByName(name);
+    sem *found = find_sem_by_name(name);
     if (found) {
-        semLock(&found->lock);
+        sem_lock(&found->lock);
         found->users++;
-        semUnlock(&found->lock);
-        semUnlock(&sQueue->lock);
+        sem_unlock(&found->lock);
+        sem_unlock(&s_queue->lock);
         return found;
     }
 
-    sem *newSem = mm_alloc(sizeof(sem));
-    if (newSem == NULL) {
-        semUnlock(&sQueue->lock);
+    sem *new_sem = mm_alloc(sizeof(sem));
+    if (new_sem == NULL) {
+        sem_unlock(&s_queue->lock);
         return NULL;
     }
 
     // copiar nombre
-    my_strcpy(newSem->name, name);
-    newSem->value = value;
-    newSem->lock = 0;
-    newSem->users = 1;
-    newSem->blockedProcesses = createQueue(cmpPid, sizeof(int));
-    if (newSem->blockedProcesses == NULL) {
-        mm_free(newSem);
-        semUnlock(&sQueue->lock);
+    my_strcpy(new_sem->name, name);
+    new_sem->value = value;
+    new_sem->lock = 0;
+    new_sem->users = 1;
+    new_sem->blocked_processes = createQueue(cmp_pid, sizeof(int));
+    if (new_sem->blocked_processes == NULL) {
+        mm_free(new_sem);
+        sem_unlock(&s_queue->lock);
         return NULL;
     }
 
-    enqueue(sQueue->sems, &newSem);
-    semUnlock(&sQueue->lock);
-    return newSem;
+    enqueue(s_queue->sems, &new_sem);
+    sem_unlock(&s_queue->lock);
+    return new_sem;
 }
 
-int semClose(Sem semToClose) {
-    if (!validSem(semToClose)) return -1;
-    semLock(&semToClose->lock);
-    semToClose->users--;
-    sem *aux = semToClose;
-    semLock(&sQueue->lock);
-    if (semToClose->users != 0) {
-        semUnlock(&semToClose->lock);
-        semUnlock(&sQueue->lock);
+int sem_close(Sem sem_to_close) {
+    if (!valid_sem(sem_to_close)) return -1;
+    sem_lock(&sem_to_close->lock);
+    sem_to_close->users--;
+    sem *aux = sem_to_close;
+    sem_lock(&s_queue->lock);
+    if (sem_to_close->users != 0) {
+        sem_unlock(&sem_to_close->lock);
+        sem_unlock(&s_queue->lock);
         return 0;
     } else {
-        if (queueRemove(sQueue->sems, &aux) == NULL) {
-            semUnlock(&sQueue->lock);
-            semUnlock(&semToClose->lock);
+        if (queueRemove(s_queue->sems, &aux) == NULL) {
+            sem_unlock(&s_queue->lock);
+            sem_unlock(&sem_to_close->lock);
             return -1;
         }
-        queueFree(semToClose->blockedProcesses);
-        mm_free(semToClose);
-        semUnlock(&sQueue->lock);
+        queueFree(sem_to_close->blocked_processes);
+        mm_free(sem_to_close);
+        sem_unlock(&s_queue->lock);
         return 0;
     }
 }
 
-void freeSemQueue(void) {
-    if (sQueue == NULL) return;
-    if (sQueue->sems) queueFree(sQueue->sems);
-    mm_free(sQueue);
-    sQueue = NULL;
+void free_sem_queue(void) {
+    if (s_queue == NULL) return;
+    if (s_queue->sems) queueFree(s_queue->sems);
+    mm_free(s_queue);
+    s_queue = NULL;
 }
 
-int semPost(Sem semToPost) {
-    if (!validSem(semToPost)) return -1;
+int sem_post(Sem sem_to_post) {
+    if (!valid_sem(sem_to_post)) return -1;
     
-    print("[sem] semPost on '");
-    print(semToPost->name);
+    print("[sem] sem_post on '");
+    print(sem_to_post->name);
     print("'\n");
     
-    semLock(&semToPost->lock);
-    if (queueSize(semToPost->blockedProcesses) != 0) {
+    sem_lock(&sem_to_post->lock);
+    if (queueSize(sem_to_post->blocked_processes) != 0) {
         int pid;
-        if (dequeue(semToPost->blockedProcesses, &pid) != NULL) {
+        if (dequeue(sem_to_post->blocked_processes, &pid) != NULL) {
             print("[sem] waking up pid=");
             printDec(pid);
             print("\n");
@@ -153,31 +153,31 @@ int semPost(Sem semToPost) {
             }
         }
     } else {
-        semToPost->value++;
+        sem_to_post->value++;
         // Comentado para reducir spam
         /*
         print("[sem] incremented value to ");
-        printDec(semToPost->value);
+        printDec(sem_to_post->value);
         print("\n");
         */
     }
-    semUnlock(&semToPost->lock);
+    sem_unlock(&sem_to_post->lock);
     return 0;
 }
 
-int semWait(Sem semToWait) {
-    if (!validSem(semToWait)) return -1;
+int sem_wait(Sem sem_to_wait) {
+    if (!valid_sem(sem_to_wait)) return -1;
     
-    print("[sem] semWait on '");
-    print(semToWait->name);
+    print("[sem] sem_wait on '");
+    print(sem_to_wait->name);
     print("'\n");
     
     int blocked = 0;
-    semLock(&semToWait->lock);
-    if (semToWait->value == 0) {
+    sem_lock(&sem_to_wait->lock);
+    if (sem_to_wait->value == 0) {
         Process *cur = get_current_process();
         if (!cur) {
-            semUnlock(&semToWait->lock);
+            sem_unlock(&sem_to_wait->lock);
             return -1;
         }
         int pid = cur->pid;
@@ -185,23 +185,23 @@ int semWait(Sem semToWait) {
         printDec(pid);
         print("\n");
         
-        if (enqueue(semToWait->blockedProcesses, &pid) == NULL) {
-            semUnlock(&semToWait->lock);
+        if (enqueue(sem_to_wait->blocked_processes, &pid) == NULL) {
+            sem_unlock(&sem_to_wait->lock);
             return -1;
         }
         // block current process
         block_process(cur);
         blocked = 1;
     } else {
-        semToWait->value--;
+        sem_to_wait->value--;
         // Comentado para reducir spam
         /*
         print("[sem] decremented value to ");
-        printDec(semToWait->value);
+        printDec(sem_to_wait->value);
         print("\n");
         */
     }
-    semUnlock(&semToWait->lock);
+    sem_unlock(&sem_to_wait->lock);
     if (blocked) {
         print("[sem] forcing scheduler interrupt\n");
         _force_scheduler_interrupt();
@@ -209,34 +209,34 @@ int semWait(Sem semToWait) {
     return 0;
 }
 
-int semGetValue(Sem semToGet) {
-    if (!validSem(semToGet)) return -1;
+int sem_get_value(Sem sem_to_get) {
+    if (!valid_sem(sem_to_get)) return -1;
     int val;
-    semLock(&semToGet->lock);
-    val = semToGet->value;
-    semUnlock(&semToGet->lock);
+    sem_lock(&sem_to_get->lock);
+    val = sem_to_get->value;
+    sem_unlock(&sem_to_get->lock);
     return val;
 }
 
-int semGetUsersCount(Sem semToGet) {
-    if (!validSem(semToGet)) return -1;
+int sem_get_users_count(Sem sem_to_get) {
+    if (!valid_sem(sem_to_get)) return -1;
     int u;
-    semLock(&semToGet->lock);
-    u = semToGet->users;
-    semUnlock(&semToGet->lock);
+    sem_lock(&sem_to_get->lock);
+    u = sem_to_get->users;
+    sem_unlock(&sem_to_get->lock);
     return u;
 }
 
-int semGetBlockedProcessesCount(Sem semToGet) {
-    if (!validSem(semToGet)) return -1;
+int sem_get_blocked_processes_count(Sem sem_to_get) {
+    if (!valid_sem(sem_to_get)) return -1;
     int s;
-    semLock(&semToGet->lock);
-    s = queueSize(semToGet->blockedProcesses);
-    semUnlock(&semToGet->lock);
+    sem_lock(&sem_to_get->lock);
+    s = queueSize(sem_to_get->blocked_processes);
+    sem_unlock(&sem_to_get->lock);
     return s;
 }
 
-int removeFromSemaphore(Sem s, int pid) {
+int remove_from_semaphore(Sem s, int pid) {
     if (s == NULL) return -1;
-    return queueRemove(s->blockedProcesses, &pid) == NULL ? -1 : 1;
+    return queueRemove(s->blocked_processes, &pid) == NULL ? -1 : 1;
 }
