@@ -133,17 +133,33 @@ void freeSemQueue(void) {
 
 int semPost(Sem semToPost) {
     if (!validSem(semToPost)) return -1;
+    
+    print("[sem] semPost on '");
+    print(semToPost->name);
+    print("'\n");
+    
     semLock(&semToPost->lock);
     if (queueSize(semToPost->blockedProcesses) != 0) {
         int pid;
         if (dequeue(semToPost->blockedProcesses, &pid) != NULL) {
+            print("[sem] waking up pid=");
+            printDec(pid);
+            print("\n");
             Process *p = get_process(pid);
             if (p != NULL) {
                 unblock_process(p);
+            } else {
+                print("[sem] WARNING: process not found!\n");
             }
         }
     } else {
         semToPost->value++;
+        // Comentado para reducir spam
+        /*
+        print("[sem] incremented value to ");
+        printDec(semToPost->value);
+        print("\n");
+        */
     }
     semUnlock(&semToPost->lock);
     return 0;
@@ -151,6 +167,11 @@ int semPost(Sem semToPost) {
 
 int semWait(Sem semToWait) {
     if (!validSem(semToWait)) return -1;
+    
+    print("[sem] semWait on '");
+    print(semToWait->name);
+    print("'\n");
+    
     int blocked = 0;
     semLock(&semToWait->lock);
     if (semToWait->value == 0) {
@@ -160,6 +181,10 @@ int semWait(Sem semToWait) {
             return -1;
         }
         int pid = cur->pid;
+        print("[sem] blocking pid=");
+        printDec(pid);
+        print("\n");
+        
         if (enqueue(semToWait->blockedProcesses, &pid) == NULL) {
             semUnlock(&semToWait->lock);
             return -1;
@@ -169,9 +194,18 @@ int semWait(Sem semToWait) {
         blocked = 1;
     } else {
         semToWait->value--;
+        // Comentado para reducir spam
+        /*
+        print("[sem] decremented value to ");
+        printDec(semToWait->value);
+        print("\n");
+        */
     }
     semUnlock(&semToWait->lock);
-    if (blocked) _force_scheduler_interrupt();
+    if (blocked) {
+        print("[sem] forcing scheduler interrupt\n");
+        _force_scheduler_interrupt();
+    }
     return 0;
 }
 

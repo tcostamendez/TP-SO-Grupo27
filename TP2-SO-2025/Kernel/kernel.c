@@ -61,9 +61,13 @@ void *initializeKernelBinary() {
 
 void test_proc(int argc, char** argv) {
   const char *msg = (argc > 0) ? argv[1] : "Tambien estoy Hardoceado";
-  while(1){
+  // while(1){
+  //   print(msg);
+  //     for(volatile int i=0; i<1000000; i++);
+  // }
+  for(int j=0; j < 25; j++){
     print(msg);
-      for(volatile int i=0; i<1000000; i++);
+    for(volatile int i=0; i<1000000; i++);
   }
 }
 
@@ -109,7 +113,9 @@ void child_process_test(int argc, char** argv) {
     }
     
     print("  [Hijo "); print(name); print(" - PID "); printDec(pid); print("]: Trabajo completo. Terminando.\n");
-    
+    //print("[hijo] antes de intentar llamar a process_terminator directamente\n");
+    //process_terminator(pid);
+    //print("[hijo] volvimos tras llamar process_terminator (esto NO debería verse)\n");
     // Al retornar, el wrapper 'process_terminator' llamará a kill_process(),
     // lo que debe disparar el semPost() en "wait_<pid>" y despertar al padre.
 }
