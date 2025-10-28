@@ -9,7 +9,7 @@
 /**
  * @brief Prepara un stack falso para un nuevo proceso.
  * (Esta función la crearemos en 'libasm.asm' más adelante).
- * * @param stack_top Puntero al tope del stack (ej: stackBase + STACK_SIZE)
+ * @param stack_top Puntero al tope del stack (ej: stackBase + STACK_SIZE)
  * @param rip       Puntero a la función a ejecutar (el entry point)
  * @param argc      Argument count
  * @param argv      Argument vector
@@ -33,6 +33,10 @@ static Process* process_table[MAX_PROCESSES] = {NULL};
  * @return PID libre (0 a MAX_PROCESSES-1), o -1 si no hay slots disponibles.
  */
 static int allocate_pid(void) {
+    if (process_table == NULL) {
+        return -1;
+    }
+    
     for (int i = 0; i < MAX_PROCESSES; i++) {
         if (process_table[i] == NULL) {
             return i;
@@ -65,22 +69,23 @@ static void remove_from_process_table(int pid) {
 }
 
 Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, int priority) {
+    if (argc <= 0 || (argc > 0 && argv == NULL) || entry_point == NULL) {
+        return NULL; 
+    }
+    
     // Allocate a free PID first
     int new_pid = allocate_pid();
     if (new_pid == -1) {
-        print("Cannot create new process: no free PIDs available\n"); // DEBUG: No hay PIDs disponibles
         return NULL;
     }
 
     Process* p = (Process*) mm_alloc(sizeof(Process));
     if (p == NULL) {
-        print("PCB_ALLOC_FAIL\n"); // DEBUG
         return NULL;
     }
 
     p->stackBase = mm_alloc(PROCESS_STACK_SIZE);
     if (p->stackBase == NULL) {
-        print("STACK_ALLOC_FAIL\n"); // DEBUG
         mm_free(p);
         return NULL;
     }
@@ -103,13 +108,11 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
 
     p->argc = argc;
 
-	if (argc > 0) {
-		p->argv = (char **)mm_alloc(sizeof(char *) * p->argc);
-
-		if (p->argv == NULL) {
-			mm_free(p);
-			return NULL;
-		}
+	p->argv = (char **)mm_alloc(sizeof(char *) * p->argc);
+	if (p->argv == NULL) {
+		mm_free(p->stackBase);
+		mm_free(p);
+		return NULL;
 	}
 
 	for (int i = 0; i < p->argc; i++) {
@@ -119,20 +122,13 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
 				mm_free(p->argv[j]);
 			}
 			mm_free(p->argv);
+			mm_free(p->stackBase);
 			mm_free(p);
 			return NULL;
 		}
-		my_strcpy(p->argv[i], argv[i]);
+		my_strcpy(p->argv[i], argv[i]); 
 	}
 
-	if (p->argc >= 0 && p->argv != NULL) {
-		p->argv[0] = p->argv[0];
-	} else {
-		p->argv[0] = "unnamed_process";
-	}
-
-
-    // --- CAMBIO ---
     // Llamada a stackInit simplificada
     p->rsp = stackInit(stack_top, p->rip, entry_point, p->argc, p->argv);
     
@@ -140,11 +136,15 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
     if (add_to_process_table(p) != 0) {
         print("Error adding process to process table\n");
         mm_free(p->stackBase);
+        for (int i = 0; i < p->argc; i++) {
+            mm_free(p->argv[i]); 
+        }
+        mm_free(p->argv);
         mm_free(p);
         return NULL;
     }
     
-    //para asegurar que se cargue
+    // Para asegurar que se cargue
     _cli();
     add_to_scheduler(p);
     _sti();

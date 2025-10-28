@@ -70,10 +70,13 @@ int main() {
   void *heapStart = (void*) base;
   uint64_t heapSize = (uint64_t)HEAP_END_ADDRESS - (uint64_t)heapStart;
   
-  
+
   mm_init(heapStart, heapSize);
 
-  init_scheduler();
+  if (init_scheduler() != 0) {
+    panic("Failed to initialize scheduler");
+    return 1;
+  }
 
 
   _sti();

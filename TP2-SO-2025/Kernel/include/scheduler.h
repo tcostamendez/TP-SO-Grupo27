@@ -8,7 +8,7 @@
  * @brief Inicializa el scheduler.
  * (Para Round Robin, esto inicializa la lista/array de procesos).
  */
-void init_scheduler();
+int init_scheduler();
 
 /**
  * @brief Añade un proceso a la cola de 'READY' del scheduler.
@@ -21,7 +21,7 @@ void add_to_scheduler(Process *p);
  * Busca el proceso en ready_queue y blocked_queue y lo elimina.
  * @param p Puntero al PCB del proceso a remover.
  */
-void remove_process_from_scheduler(Process* p);
+void remove_from_scheduler(Process* p);
 
 /**
  * @brief El corazón del scheduler.
