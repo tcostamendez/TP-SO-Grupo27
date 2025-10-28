@@ -27,7 +27,7 @@
 #define BACKGROUND 0
 
 // El entry point de un proceso.
-typedef void (*ProcessEntryPoint)(int argc, char**argv);
+typedef void (*process_entry_point)(int argc, char**argv);
 
 // Enumeración de los estados de un proceso
 typedef enum {
@@ -51,9 +51,9 @@ typedef struct Process {
 
     uint64_t rsp;
 
-    void *stackBase;        // Puntero al inicio del stack (para mm_free())
+    void *stack_base;        // Puntero al inicio del stack (para mm_free())
 
-    ProcessEntryPoint rip;    // Puntero a la función a ejecutar
+    process_entry_point rip;    // Puntero a la función a ejecutar
 
     int priority;           // Prioridad del proceso (0-3, mayor = más prioridad)
     int quantum_remaining;  // Ticks restantes en el quantum actual
@@ -75,7 +75,7 @@ void init_pcb();
  * @brief Crea un nuevo proceso.
  * 1. Pide memoria para el stack (usando tu mm_alloc).
  * 2. Pide memoria para la estructura Process.
- * 3. Prepara el "stack falso" inicial (llamando a stackInit en ASM).
+ * 3. Prepara el "stack falso" inicial (llamando a stack_init en ASM).
  * 4. Lo añade al scheduler.
  *
  * @param name Nombre del proceso.
@@ -83,7 +83,7 @@ void init_pcb();
  * @param priority Prioridad del proceso (0-3).
  * @return El PID del nuevo proceso, o -1 si hay error.
  */
-Process* create_process(int argc, char ** argv, ProcessEntryPoint entry_point, int priority);
+Process* create_process(int argc, char ** argv, process_entry_point entry_point, int priority);
 
 /**
  * @brief Obtiene el PID del proceso que se está ejecutando.

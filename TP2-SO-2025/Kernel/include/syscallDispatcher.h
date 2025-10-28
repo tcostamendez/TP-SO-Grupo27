@@ -75,7 +75,7 @@ void * sys_malloc(uint64_t size);
 void sys_free(void * ap);
 
 // Process management syscalls prototypes
-int sys_create_process(int argc, char** argv, ProcessEntryPoint entryPoint, int priority);
+int sys_create_process(int argc, char** argv, process_entry_point entryPoint, int priority);
 int sys_get_pid(void);
 int sys_kill(int pid);
 void sys_modify_priority(int pid, int new_priority);

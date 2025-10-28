@@ -11,7 +11,7 @@ GLOBAL setSpeaker
 
 GLOBAL getRegisterSnapshot
 
-GLOBAL stackInit
+GLOBAL stack_init
 GLOBAL _process_wrapper
 
 EXTERN register_snapshot
@@ -49,11 +49,11 @@ _process_wrapper:
 ; --- FIN: FUNCION WRAPPER DEL PROCESO ---
 
 
-; --- INICIO: FUNCION stackInit (VERSIÓN ALINEADA) ---
+; --- INICIO: FUNCION stack_init (VERSIÓN ALINEADA) ---
 ; rdi: stack_top
 ; rsi: entry_point
 ; rdx: process_terminator
-; stackInit:
+; stack_init:
 ;     mov rax, rdi    ; rax = stack_top
 
 ;     ; 1. Forzar alineamiento de 16-bytes
@@ -96,9 +96,9 @@ _process_wrapper:
 ;     add rax, 8 * 14
 
 ;     ret
-; ; --- FIN: FUNCION stackInit ---
+; ; --- FIN: FUNCION stack_init ---
 
-stackInit:
+stack_init:
     push rbp
     mov rbp, rsp
     

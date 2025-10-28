@@ -90,7 +90,7 @@ int32_t syscallDispatcher(Registers *registers) {
       sys_free((void*)registers->rdi);
       return 0;
   case 0x80000102:
-      return sys_create_process((int)registers->rdi, (char**)registers->rsi, (ProcessEntryPoint)registers->rdx, (int)registers->rcx);
+      return sys_create_process((int)registers->rdi, (char**)registers->rsi, (process_entry_point)registers->rdx, (int)registers->rcx);
   case 0x80000103:
       return sys_get_pid();
   case 0x80000104:
@@ -302,7 +302,7 @@ void sys_free(void* ap){
 // Process system calls
 // ==================================================================
 
-int sys_create_process(int argc, char ** argv, ProcessEntryPoint entryPoint, int priority){
+int sys_create_process(int argc, char ** argv, process_entry_point entryPoint, int priority){
   Process* p = create_process(argc, argv, entryPoint, priority);
   if(p == NULL){
     return -1;

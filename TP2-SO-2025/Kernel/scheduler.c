@@ -15,14 +15,14 @@ Process* idle_proc = NULL;
 
 static volatile int scheduler_online = 0;   
 
-static int compareProcesses(void *a, void *b) {
-	Process *procA = *(Process **)a;
-	Process *procB = *(Process **)b;
+static int compare_processes(void *a, void *b) {
+	Process *proc_a = *(Process **)a;
+	Process *proc_b = *(Process **)b;
 
-	return procA->pid - procB->pid;
+	return proc_a->pid - proc_b->pid;
 }
 
-void idleProcess(){
+void idle_process(){
     while(1){
         _sti();
         _hlt();
@@ -30,14 +30,14 @@ void idleProcess(){
 }
 
 int init_scheduler() {
-    ready_queue = createQueue(compareProcesses, sizeof(Process*));
-    blocked_queue = createQueue(compareProcesses, sizeof(Process*));
+    ready_queue = createQueue(compare_processes, sizeof(Process*));
+    blocked_queue = createQueue(compare_processes, sizeof(Process*));
     if(ready_queue == NULL || blocked_queue == NULL){
         return -1;
     } 
     
-    char* idleArgs[] = {"idle"};
-    idle_proc = create_process(1, idleArgs, idleProcess, MIN_PRIORITY);
+    char* idle_args[] = {"idle"};
+    idle_proc = create_process(1, idle_args, idle_process, MIN_PRIORITY);
     if (idle_proc == NULL) {
         return -1;
     }
@@ -249,7 +249,7 @@ uint64_t schedule(uint64_t current_rsp) {
     
     // VALIDACIÓN: verificar que el RSP sea válido
     if (next != idle_proc) {
-        uint64_t stack_bottom = (uint64_t)next->stackBase;
+        uint64_t stack_bottom = (uint64_t)next->stack_base;
         uint64_t stack_top = stack_bottom + PROCESS_STACK_SIZE;
         
         if (next->rsp < stack_bottom || next->rsp >= stack_top) {

@@ -13,7 +13,7 @@
 // Tabla global de procesos - almacena punteros a todos los procesos
 static Process* process_table[MAX_PROCESSES] = {NULL};
 
-extern uint64_t stackInit(uint64_t stack_top, ProcessEntryPoint rip, void (*terminator)(), int argc, char*argv[]);
+extern uint64_t stack_init(uint64_t stack_top, process_entry_point rip, void (*terminator)(), int argc, char*argv[]);
 extern void _force_scheduler_interrupt();
 
 /**
@@ -75,7 +75,7 @@ static char* create_wait_semaphore_name(int pid) {
     return name;
 }
 
-Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, int priority) {
+Process* create_process(int argc, char** argv, process_entry_point entry_point, int priority) {
     // Validate arguments
     if (argc <= 0 || argv == NULL || entry_point == NULL) {
         return NULL;
@@ -91,8 +91,8 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
     
     memset(p, 0, sizeof(Process));
 
-    p->stackBase = mm_alloc(PROCESS_STACK_SIZE);
-    if (p->stackBase == NULL) {
+    p->stack_base = mm_alloc(PROCESS_STACK_SIZE);
+    if (p->stack_base == NULL) {
         mm_free(p);
         _sti();
         return NULL;
@@ -100,14 +100,12 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
 
     int new_pid = allocate_pid();
     if (new_pid == -1) {
-        mm_free(p->stackBase);
+        mm_free(p->stack_base);
         mm_free(p);
         _sti();
         return NULL;
     }
     p->pid = new_pid;
-    print("[create_process] assigned PID = ");
-    printDec(p->pid);
     print("\n");
     
     _sti(); // Permitir interrupciones de nuevo
@@ -138,13 +136,13 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
     p->priority = priority;
     p->quantum_remaining = p->priority + 1;  // Quantum basado en prioridad
 
-    uint64_t stack_top = (uint64_t)p->stackBase + PROCESS_STACK_SIZE;
+    uint64_t stack_top = (uint64_t)p->stack_base + PROCESS_STACK_SIZE;
 
     p->argc = argc;
 
 	p->argv = (char **)mm_alloc(sizeof(char *) * p->argc);
 	if (p->argv == NULL) {
-		mm_free(p->stackBase);
+		mm_free(p->stack_base);
 		mm_free(p);
 		_sti();
 		return NULL;
@@ -157,7 +155,7 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
 				mm_free(p->argv[j]);
 			}
 			mm_free(p->argv);
-			mm_free(p->stackBase);
+			mm_free(p->stack_base);
 			mm_free(p);
 			_sti();
 			return NULL;
@@ -165,12 +163,12 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
 		my_strcpy(p->argv[i], argv[i]); 
 	}
 
-    p->rsp = stackInit(stack_top, p->rip, process_terminator, p->argc, p->argv);
+    p->rsp = stack_init(stack_top, p->rip, process_terminator, p->argc, p->argv);
     
-    // VALIDACIÓN: verificar que RSP esté dentro del stack
-    uint64_t stack_bottom = (uint64_t)p->stackBase;
+    // Verificar que RSP esté dentro del stack
+    uint64_t stack_bottom = (uint64_t)p->stack_base;
     if (p->rsp < stack_bottom || p->rsp >= stack_top) {
-        mm_free(p->stackBase);
+        mm_free(p->stack_base);
         for (int i = 0; i < p->argc; i++) {
             mm_free(p->argv[i]);
         }
@@ -180,9 +178,9 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
         return NULL;
     }
     
-    // Agregar a la tabla de procesos
-    if (add_to_process_table(p) != 0) {
-        mm_free(p->stackBase);
+    // Agregar a la tabla de procesos si no es el idle
+    if (p->pid != 0 && add_to_process_table(p) != 0) {
+        mm_free(p->stack_base);
         for (int i = 0; i < p->argc; i++) {
             mm_free(p->argv[i]); 
         }
@@ -325,9 +323,9 @@ int kill_process(int pid) {
     }
     
     // Free all resources
-    if (p->stackBase != NULL) {
-        mm_free(p->stackBase);
-        p->stackBase = NULL;
+    if (p->stack_base != NULL) {
+        mm_free(p->stack_base);
+        p->stack_base = NULL;
     }
     
     if (p->argv != NULL) {
@@ -463,7 +461,7 @@ void reap_terminated_processes(void) {
             // Si no es el running_process (o si running_process != p)
             // liberá recursos y borrá de tabla
             if (p != get_running_process()) {
-                if (p->stackBase) { mm_free(p->stackBase); p->stackBase = NULL; }
+                if (p->stack_base) { mm_free(p->stack_base); p->stack_base = NULL; }
                 
                 // Free argv
                 if (p->argv != NULL) {
