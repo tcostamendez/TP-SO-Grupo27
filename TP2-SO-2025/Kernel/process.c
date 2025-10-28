@@ -75,6 +75,44 @@ static char* create_wait_semaphore_name(int pid) {
     return name;
 }
 
+/**
+ * @brief Libera todos los recursos de un proceso de manera segura.
+ * Verifica NULL antes de liberar cada recurso.
+ * @param p Proceso a liberar
+ * @param remove_from_table Si es true, también remueve el proceso de la tabla
+ */
+static void free_process_resources(Process* p, int remove_from_table) {
+    if (p == NULL || p->pid == 0) {
+        return;
+    }
+    
+    // Liberar stack
+    if (p->stack_base != NULL) {
+        mm_free(p->stack_base);
+        p->stack_base = NULL;
+    }
+    
+    // Liberar argv
+    if (p->argv != NULL) {
+        for (int i = 0; i < p->argc; i++) {
+            if (p->argv[i] != NULL) {
+                mm_free(p->argv[i]);
+                p->argv[i] = NULL;
+            }
+        }
+        mm_free(p->argv);
+        p->argv = NULL;
+    }
+    
+    // Remover de la tabla si se solicita
+    if (remove_from_table) {
+        remove_from_process_table(p->pid);
+    }
+    
+    // Liberar la estructura del proceso
+    mm_free(p);
+}
+
 Process* create_process(int argc, char** argv, process_entry_point entry_point, int priority) {
     // Validate arguments
     if (argc <= 0 || argv == NULL || entry_point == NULL) {
@@ -89,6 +127,7 @@ Process* create_process(int argc, char** argv, process_entry_point entry_point, 
         return NULL;
     }
     
+    // Inicializar todos los punteros a NULL para poder liberar de forma segura 
     memset(p, 0, sizeof(Process));
 
     p->stack_base = mm_alloc(PROCESS_STACK_SIZE);
@@ -147,16 +186,14 @@ Process* create_process(int argc, char** argv, process_entry_point entry_point, 
 		_sti();
 		return NULL;
 	}
+	
+	// Inicializar todos los punteros a NULL para poder liberar de forma segura
+	memset(p->argv, 0, sizeof(char *) * p->argc);
 
 	for (int i = 0; i < p->argc; i++) {
 		p->argv[i] = (char *)mm_alloc(sizeof(char) * (strlen(argv[i]) + 1));
 		if (p->argv[i] == NULL) {
-			for (int j = 0; j < i; j++) {
-				mm_free(p->argv[j]);
-			}
-			mm_free(p->argv);
-			mm_free(p->stack_base);
-			mm_free(p);
+			free_process_resources(p, 0);
 			_sti();
 			return NULL;
 		}
@@ -168,24 +205,14 @@ Process* create_process(int argc, char** argv, process_entry_point entry_point, 
     // Verificar que RSP esté dentro del stack
     uint64_t stack_bottom = (uint64_t)p->stack_base;
     if (p->rsp < stack_bottom || p->rsp >= stack_top) {
-        mm_free(p->stack_base);
-        for (int i = 0; i < p->argc; i++) {
-            mm_free(p->argv[i]);
-        }
-        mm_free(p->argv);
-        mm_free(p);
+        free_process_resources(p, 0); // No está en la tabla todavía
         _sti();
         return NULL;
     }
     
-    // Agregar a la tabla de procesos si no es el idle
-    if (p->pid != 0 && add_to_process_table(p) != 0) {
-        mm_free(p->stack_base);
-        for (int i = 0; i < p->argc; i++) {
-            mm_free(p->argv[i]); 
-        }
-        mm_free(p->argv);
-        mm_free(p);
+    // Agregar a la tabla de procesos 
+    if (add_to_process_table(p) != 0) {
+        free_process_resources(p, 0); // No pudo agregarse a la tabla
         _sti();
         return NULL;
     }
@@ -203,7 +230,11 @@ Process* create_process(int argc, char** argv, process_entry_point entry_point, 
     // Agregar al scheduler solo si NO es idle (PID 0)
     if (p->pid != 0) {
         _cli();
-        add_to_scheduler(p);
+        if (add_to_scheduler(p) != 0) {
+            _sti();
+            free_process_resources(p, 1); // Ya está en la tabla, hay que removerlo
+            return NULL;
+        }
         _sti();
     }
     reap_terminated_processes();
@@ -323,23 +354,7 @@ int kill_process(int pid) {
     }
     
     // Free all resources
-    if (p->stack_base != NULL) {
-        mm_free(p->stack_base);
-        p->stack_base = NULL;
-    }
-    
-    if (p->argv != NULL) {
-        for (int i = 0; i < p->argc; i++) {
-            if (p->argv[i] != NULL) {
-                mm_free(p->argv[i]);
-            }
-        }
-        mm_free(p->argv);
-        p->argv = NULL;
-    }
-    
-    remove_from_process_table(pid);
-    mm_free(p);
+    free_process_resources(p, 1); // Remover de la tabla también
     
     return 0;
 }
@@ -461,21 +476,7 @@ void reap_terminated_processes(void) {
             // Si no es el running_process (o si running_process != p)
             // liberá recursos y borrá de tabla
             if (p != get_running_process()) {
-                if (p->stack_base) { mm_free(p->stack_base); p->stack_base = NULL; }
-                
-                // Free argv
-                if (p->argv != NULL) {
-                    for (int j = 0; j < p->argc; j++) {
-                        if (p->argv[j] != NULL) {
-                            mm_free(p->argv[j]);
-                        }
-                    }
-                    mm_free(p->argv);
-                    p->argv = NULL;
-                }
-                
-                remove_from_process_table(p->pid);
-                mm_free(p);
+                free_process_resources(p, 1); // Remover de la tabla también
             }
         }
     }

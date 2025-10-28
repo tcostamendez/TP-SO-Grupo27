@@ -57,22 +57,23 @@ int init_scheduler() {
  * Simplemente nos aseguramos de que su estado sea READY.
  * Esta función es llamada por create_process() y unblock_process().
  */
-void add_to_scheduler(Process *p) {
+int add_to_scheduler(Process *p) {
     if (p == NULL || p == idle_proc || ready_queue == NULL) {
-        return;
+        return -1;
     }
     
     p->state=READY;
     ready_queue = enqueue(ready_queue,&p);
+    return 0;
 }
 
 /**
  * @brief Remueve un proceso específico de todas las colas del scheduler.
  * @param p Proceso a remover.
  */
-void remove_from_scheduler(Process* p) {
+int remove_from_scheduler(Process* p) {
     if (p == NULL || p == idle_proc || ready_queue == NULL || blocked_queue == NULL) {
-        return;
+        return -1;
     }
     
     _cli();
@@ -87,6 +88,7 @@ void remove_from_scheduler(Process* p) {
     }
     
     _sti();
+    return 0;
 }
 
 /**

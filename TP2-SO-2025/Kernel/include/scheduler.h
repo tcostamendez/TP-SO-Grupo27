@@ -13,15 +13,17 @@ int init_scheduler();
 /**
  * @brief Añade un proceso a la cola de 'READY' del scheduler.
  * @param p Puntero al PCB del proceso.
+ * @return 0 en éxito, -1 en error.
  */
-void add_to_scheduler(Process *p);
+int add_to_scheduler(Process *p);
 
 /**
  * @brief Remueve un proceso específico del scheduler (de cualquier cola).
  * Busca el proceso en ready_queue y blocked_queue y lo elimina.
  * @param p Puntero al PCB del proceso a remover.
+ * @return 0 en éxito, -1 en error.
  */
-void remove_from_scheduler(Process* p);
+int remove_from_scheduler(Process* p);
 
 /**
  * @brief El corazón del scheduler.
