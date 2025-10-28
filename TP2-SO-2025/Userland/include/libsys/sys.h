@@ -131,5 +131,7 @@ void listProcesses(void);
 void blockProcess(int pid);
 void unblockProcess(int pid);
 void yieldCPU(void);
+int waitPid(int pid);
+int waitForChildren(void);
 
 #endif

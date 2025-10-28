@@ -40,6 +40,8 @@ GLOBAL sys_list_processes
 GLOBAL sys_block_process
 GLOBAL sys_unblock_process
 GLOBAL sys_yield
+GLOBAL sys_wait_pid
+GLOBAL sys_wait_for_children
 
 section .text
 
@@ -100,3 +102,5 @@ sys_list_processes: sys_int80 0x80000106
 sys_block_process: sys_int80 0x80000107
 sys_unblock_process: sys_int80 0x80000108
 sys_yield: sys_int80 0x80000109
+sys_wait_pid: sys_int80 0x8000010A
+sys_wait_for_children: sys_int80 0x8000010B

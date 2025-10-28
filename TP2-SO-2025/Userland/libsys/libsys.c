@@ -101,3 +101,11 @@ void unblockProcess(int pid) {
 void yieldCPU(void) {
   sys_yield();
 }
+
+int waitPid(int pid) {
+  return sys_wait_pid(pid);
+}
+
+int waitForChildren(void) {
+  return sys_wait_for_children();
+}

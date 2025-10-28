@@ -110,6 +110,10 @@ int32_t syscallDispatcher(Registers *registers) {
   case 0x80000109:
       sys_yield();
       return 0;
+  case 0x8000010A:
+      return sys_wait_pid((int)registers->rdi);
+  case 0x8000010B:
+      return sys_wait_for_children();
   default:
     return 0;
   }
@@ -379,10 +383,10 @@ void sys_yield(){
   yield_cpu();
 }
 
-void sys_wait_pid(int pid){
-  //?????
+int sys_wait_pid(int pid){
+  return wait_child(pid);
 }
 
-void sys_wait_for_children(){
-  //????
+int sys_wait_for_children(){
+  return wait_all_children();
 }

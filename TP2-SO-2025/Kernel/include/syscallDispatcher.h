@@ -83,5 +83,7 @@ void sys_print_processes(void);
 void sys_block_process(int pid);
 void sys_unblock_process(int pid);
 void sys_yield(void);
+int sys_wait_pid(int pid);
+int sys_wait_for_children(void);
 
 #endif
