@@ -50,6 +50,9 @@ char * num_to_str(uint64_t num){
 }
 
 void catenate(char * dest, const char * src){
+	if(dest == NULL || src == NULL){
+		return;
+	}
 	int i, j;
 	i = j = 0;
 	while(dest[i] != '\0'){

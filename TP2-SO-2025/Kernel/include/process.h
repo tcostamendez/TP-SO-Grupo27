@@ -164,4 +164,8 @@ int set_ground(int pid, int ground);
  */
 int get_ground(int pid);
 
+int wait_child(int child_pid);
+
+int wait_all_children(void);
+
 #endif // PROCESS_H

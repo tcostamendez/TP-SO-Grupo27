@@ -5,6 +5,7 @@
 #include <strings.h>        // (Tu header) Para my_strcpy() y strlen()
 #include <interrupts.h>
 #include "strings.h"
+#include "sem.h"
 
 /**
  * @brief Prepara un stack falso para un nuevo proceso.
@@ -25,21 +26,13 @@ extern uint64_t stackInit(uint64_t stack_top, ProcessEntryPoint rip, void (*term
  */
 extern void _force_scheduler_interrupt();
 
+static int pid = 0;
+
+// Contador para el próximo PID a asignar.
+static int next_pid = 1;
+
 // Tabla global de procesos - almacena punteros a todos los procesos
 static Process* process_table[MAX_PROCESSES] = {NULL};
-
-/**
- * @brief Encuentra y aloca un PID libre.
- * @return PID libre (0 a MAX_PROCESSES-1), o -1 si no hay slots disponibles.
- */
-static int allocate_pid(void) {
-    for (int i = 0; i < MAX_PROCESSES; i++) {
-        if (process_table[i] == NULL) {
-            return i;
-        }
-    }
-    return -1; // No hay PIDs disponibles
-}
 
 /**
  * @brief Agrega un proceso a la tabla global de procesos.
@@ -65,13 +58,6 @@ static void remove_from_process_table(int pid) {
 }
 
 Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, int priority) {
-    // Allocate a free PID first
-    int new_pid = allocate_pid();
-    if (new_pid == -1) {
-        print("Cannot create new process: no free PIDs available\n"); // DEBUG: No hay PIDs disponibles
-        return NULL;
-    }
-
     Process* p = (Process*) mm_alloc(sizeof(Process));
     if (p == NULL) {
         print("PCB_ALLOC_FAIL\n"); // DEBUG
@@ -85,8 +71,20 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
         return NULL;
     }
 
-    p->pid = new_pid;
-    p->ppid = 0;
+    p->pid = pid++;
+    if(pid != 1){
+        Process *parent = get_current_process();
+        if (parent != NULL) {
+            p->ppid = parent->pid;
+            if (parent->child_count < MAX_CHILDREN) {
+                parent->children[parent->child_count++] = p->pid;
+            }
+        } else {
+            p->ppid = 0;
+        }
+    }else{
+        p->ppid = 0; //el primer proceso es su propio padre
+    }
     p->state = READY;
     p->rip = entry_point;
     p->ground = BACKGROUND;  // Por defecto en background
@@ -131,7 +129,6 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
 		p->argv[0] = "unnamed_process";
 	}
 
-
     // --- CAMBIO ---
     // Llamada a stackInit simplificada
     p->rsp = stackInit(stack_top, p->rip, entry_point, p->argc, p->argv);
@@ -143,11 +140,29 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
         mm_free(p);
         return NULL;
     }
+
+    // crear semaforo de wait para este pid: "wait_<pid>"
+    if(p->pid != 0){ //no lo quiero hacer para el primer proceso
+        char *pid_str = num_to_str((uint64_t)p->pid);
+        if (pid_str) {
+            int name_len = strlen("wait_") + strlen(pid_str) + 1;
+            char *name = mm_alloc(name_len);
+            if (name) {
+                my_strcpy(name, "wait_");
+                catenate(name, pid_str);
+                semOpen(name, 0); // crea sem con value 0
+                // no cerramos acá; dejar que quien espere cierre
+                // (liberaciones menores no cubiertas)
+            }
+        }
+    }
     
     //para asegurar que se cargue
-    _cli();
-    add_to_scheduler(p);
-    _sti();
+    if(p->pid != 0){ //el proceso idle no lo agrego
+        _cli();
+        add_to_scheduler(p);
+        _sti();
+    }
     return p;
 }
 
@@ -229,12 +244,25 @@ int kill_process(int pid) {
     if (p == NULL) {
         return -1; // Proceso no existe
     }
-    
     _cli();
-    
     // Marcar como terminado
     p->state = TERMINATED;
-    
+    // avisar al padre mediante semPost en "wait_<pid>"
+    char *pid_str = num_to_str((uint64_t)pid);
+    if (pid_str) {
+        int name_len = strlen("wait_") + strlen(pid_str) + 1;
+        char *name = mm_alloc(name_len);
+        if (name) {
+            my_strcpy(name, "wait_");
+            catenate(name, pid_str);
+            Sem s = semOpen(name, 0);
+            if (s) {
+                semPost(s);
+                semClose(s);
+            }
+            // mm_free(name) y mm_free(pid_str) omitidos por simplicidad
+        }
+    }
     // Remover del scheduler (de todas las colas)
     extern void remove_process_from_scheduler(Process* p);
     remove_process_from_scheduler(p);
@@ -277,3 +305,53 @@ int get_ground(int pid) {
     return p->ground;
 }
 
+// Nuevas funciones para esperar por hijos
+int wait_child(int child_pid) {
+    // abre el sem "wait_<child_pid>" y espera
+    char *pid_str = num_to_str((uint64_t)child_pid);
+    if (!pid_str) return -1;
+    int name_len = strlen("wait_") + strlen(pid_str) + 1;
+    char *name = mm_alloc(name_len);
+    if (!name) return -1;
+    my_strcpy(name, "wait_");
+    catenate(name, pid_str);
+
+    Sem s = semOpen(name, 0);
+    if (!s) return -1;
+    int r = semWait(s);
+    semClose(s);
+    return r;
+}
+
+int wait_all_children(void) {
+    Process *cur = get_current_process();
+    if (!cur) return -1;
+    for (int i = 0; i < cur->child_count; ++i) {
+        int child_pid = cur->children[i];
+        if (child_pid <= 0) continue;
+        wait_child(child_pid);
+    }
+    return 0;
+}
+
+char ** get_process_data(int process_id){
+    if(process_id == NULL){
+        return NULL;
+    }
+    if(process_id < 0 || process_id >= MAX_PROCESSES || process_id > pid){
+        return NULL;
+    }
+    char ** ans = mm_alloc(sizeof(char*) * 7); //7 porque son 6 campos y un null en el final
+    char * name = mm_alloc(16); //magic number, pero se tienen que crear demasiados procesos para pasarlo
+    char * id = num_to_str((uint64_t)process_table[process_id]->pid);
+    my_strcpy(name, "Process ");
+    catenate(name, id);
+    ans[0] = name;
+    ans[1] = id;
+    ans[2] = num_to_str((uint64_t)process_table[process_id]->priority);
+    ans[3] = num_to_str(process_table[process_id]->rsp);
+    ans[4] = num_to_str(process_table[process_id]->rbp);
+    ans[5] = num_to_str((uint64_t)process_table[process_id]->ground); //0 si esta en background, 1 si esta en foregorund
+    ans[6] = NULL;
+    return ans;
+}
