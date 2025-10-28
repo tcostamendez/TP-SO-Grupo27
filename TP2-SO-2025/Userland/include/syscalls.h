@@ -78,12 +78,14 @@ int sys_kill_process(int pid);
 /*0x80000105*/
 void sys_modify_priority(int pid, int new_priority);
 /*0x80000106*/
-void sys_list_processes(void);
+void sys_list_processes(void); // ps
 /*0x80000107*/
 void sys_block_process(int pid);
 /*0x80000108*/
 void sys_unblock_process(int pid);
 /*0x80000109*/
 void sys_yield(void);
+/*0x8000010A*/
+
 
 #endif
