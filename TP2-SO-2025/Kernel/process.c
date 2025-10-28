@@ -6,6 +6,7 @@
 #include <interrupts.h>
 #include "strings.h"
 #include "sem.h"
+#include "fd.h" // for STDIN/STDOUT constants
 
 /**
  * @brief Prepara un stack falso para un nuevo proceso.
@@ -109,7 +110,6 @@ void process_terminator(void) {
         }
         mm_free(sem_name);
     }
-    
     // print("[process_terminator] antes _force_scheduler_interrupt()\n");
     // Forzar cambio de contexto - NUNCA debería retornar
     _force_scheduler_interrupt();
@@ -258,6 +258,10 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
         }
     }
     
+    // Inicializar destinos de FDs por defecto
+    p->targetByFd[READ_FD] = STDIN;
+    p->targetByFd[WRITE_FD] = STDOUT;
+
     //para asegurar que se cargue
     if(p->pid != 0){ //el proceso idle no lo agrego
         _cli();

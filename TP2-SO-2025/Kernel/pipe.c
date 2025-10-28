@@ -1,0 +1,312 @@
+#include "pipe.h"
+
+#include "array.h"
+#include "panic.h"
+#include "process.h"
+#include "sem.h"
+#include "strings.h"
+#include "memory_manager.h"
+
+#define SEM_NAME_LONG 12 // "semPipe" (7) + 2 digits + 1 suffix + 1 null
+
+#define NEXT_IDX(i) (((i) + 1) % (PIPE_BUFFER_SIZE))
+#define PREVIOUS_IDX(i) ((i) == 0 ? ((PIPE_BUFFER_SIZE) - 1) : ((i) - 1))
+
+struct pipe {
+    uint8_t id;
+    uint8_t buffer[PIPE_BUFFER_SIZE];
+    uint64_t idxToRead;
+    uint64_t idxToWrite;
+    uint8_t waitingToRead;
+    uint8_t waitingToWrite;
+    Sem canRead;
+    Sem canWrite;
+    uint8_t attached;
+};
+
+static Pipe createPipe(void);
+static void buildSemName(uint8_t id, char suffix, char out[SEM_NAME_LONG]);
+static int getValidPipe(uint8_t id, Pipe *buffer);
+static int deletePipe(Pipe pipeToDelete);
+static void freePipe(Pipe pipeToFree);
+
+static int nextId = 0;
+
+static ArrayADT pipeStorage;
+
+int initPipeStorage(void) {
+    pipeStorage = createArray(sizeof(struct pipe *));
+    if (pipeStorage == NULL) {
+        panic("Not enough memory to create pipes.");
+        return -1;
+    }
+
+    return 0;
+}
+
+int openPipe(void) {
+    if (nextId == MAX_PIPES) {
+        return -1;
+    }
+
+    Pipe pipe = createPipe();
+
+    if (pipe == NULL) {
+        return -1;
+    }
+
+    if (NULL == arrayAdd(pipeStorage, &pipe)) {
+        return -1;
+    }
+
+    return pipe->id;
+}
+
+int attach(uint8_t id) {
+    Pipe pipe;
+
+    if (-1 == getValidPipe(id, &pipe)) {
+        return -1;
+    }
+
+    pipe->attached++;
+
+    return 0;
+}
+
+int readPipe(uint8_t id, uint8_t *buffer, uint64_t bytes) {
+    Pipe pipeToRead;
+
+    if (-1 == getValidPipe(id, &pipeToRead) || buffer == NULL) {
+        return -1;
+    }
+
+    if (pipeToRead->idxToRead == pipeToRead->idxToWrite) {
+        // nobody will ever write
+        if (pipeToRead->attached < 2) {
+            // delete pipe
+            if (-1 == deletePipe(pipeToRead)) {
+                panic("Couldn't delete pipe.");
+                return -1;
+            }
+            return 0;  // EOF
+        } else {
+            pipeToRead->waitingToRead = 1;
+            if (-1 == semWait(pipeToRead->canRead)) {
+                panic("Pipe's sem didn't work.");
+                return -1;
+            }
+        }
+    }
+
+    int readBytes = 0;
+
+    while (readBytes < bytes && pipeToRead->idxToRead != pipeToRead->idxToWrite) {
+        *(buffer + readBytes) = pipeToRead->buffer[pipeToRead->idxToRead];
+        pipeToRead->idxToRead = NEXT_IDX(pipeToRead->idxToRead);
+        readBytes++;
+    }
+
+    if (readBytes > 0 && pipeToRead->waitingToWrite) {
+        pipeToRead->waitingToWrite = 0;
+        if (-1 == semPost(pipeToRead->canWrite)) {
+            panic("Pipe's sem didn't work.");
+            return -1;
+        }
+    }
+
+    return readBytes;
+}
+
+int writePipe(uint8_t id, const uint8_t *buffer, uint64_t bytes) {
+    Pipe pipeToWrite;
+
+    if (-1 == getValidPipe(id, &pipeToWrite) || buffer == NULL) {
+        return -1;
+    }
+
+    int writtenBytes = 0;
+
+    while (writtenBytes < (int)bytes) {
+        // full buffer
+        if (pipeToWrite->idxToWrite == PREVIOUS_IDX(pipeToWrite->idxToRead)) {
+            pipeToWrite->waitingToWrite = 1;
+            if (-1 == semWait(pipeToWrite->canWrite)) {
+                panic("Pipe's sem didn't work.");
+                return -1;
+            }
+        }
+
+        pipeToWrite->buffer[pipeToWrite->idxToWrite] = *(buffer + writtenBytes);
+        pipeToWrite->idxToWrite = NEXT_IDX(pipeToWrite->idxToWrite);
+        writtenBytes++;
+    }
+
+    if (writtenBytes > 0 && pipeToWrite->waitingToRead) {
+        pipeToWrite->waitingToRead = 0;
+        if (-1 == semPost(pipeToWrite->canRead)) {
+            panic("Pipe's sem didn't work.");
+            return -1;
+        }
+    }
+
+    return writtenBytes;
+}
+
+void unblockPipeReader(uint8_t id) {
+    Pipe pipeToUnblock;
+
+    if (-1 == getValidPipe(id, &pipeToUnblock)) {
+        return;
+    }
+
+    if (pipeToUnblock->waitingToRead > 0) {
+        pipeToUnblock->waitingToRead = 0;
+        if (-1 == semPost(pipeToUnblock->canRead)) {
+            panic("Pipe's sem didn't work.");
+        }
+    }
+}
+
+void removeAttached(uint8_t id, int pid) {
+    Pipe pipeToClose;
+
+    if (-1 == getValidPipe(id, &pipeToClose)) {
+        return;
+    }
+
+    removeFromSemaphore(pipeToClose->canRead, pid);
+    removeFromSemaphore(pipeToClose->canWrite, pid);
+
+    if (pipeToClose->attached > 0) {
+        pipeToClose->attached--;
+    }
+}
+
+int closePipe(uint8_t id) {
+    Pipe pipeToClose;
+
+    if (-1 == getValidPipe(id, &pipeToClose)) {
+        return -1;
+    }
+
+    if ((id != STDIN && id != STDOUT) && pipeToClose->attached <= 1) {
+        int users = semGetUsersCount(pipeToClose->canRead);
+        while (users--) {
+            semPost(pipeToClose->canRead);
+        }
+        users = semGetUsersCount(pipeToClose->canWrite);
+        while (users--) {
+            semPost(pipeToClose->canWrite);
+        }
+    }
+
+    if (pipeToClose->attached == 0 || ((id == STDIN || id == STDOUT) && pipeToClose->attached == 1)) {
+        if (-1 == deletePipe(pipeToClose)) {
+            panic("Couldn't delete pipe.");
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+void freePipeStorage(void) {
+    resetPipeStorage();
+    arrayFree(pipeStorage);
+}
+
+void resetPipeStorage(void) {
+    nextId = 0;
+    arrayResetSize(pipeStorage);
+}
+
+void setNextId(uint8_t id) { nextId = id; }
+
+static Pipe createPipe(void) {
+    Pipe newPipe = mm_alloc(sizeof(struct pipe));
+    if (newPipe == NULL) {
+        return NULL;
+    }
+
+    newPipe->id = nextId;
+
+    newPipe->idxToRead = 0;
+    newPipe->idxToWrite = 0;
+
+    newPipe->waitingToRead = 0;
+    newPipe->waitingToWrite = 0;
+
+    char name[SEM_NAME_LONG];
+    // "semPipeXXR"
+    buildSemName(newPipe->id, 'R', name);
+    newPipe->canRead = semOpen(name, 0);
+    if (newPipe->canRead == NULL) {
+        freePipe(newPipe);
+        return NULL;
+    }
+
+    // "semPipeXXW"
+    buildSemName(newPipe->id, 'W', name);
+    newPipe->canWrite = semOpen(name, 0);
+    if (newPipe->canWrite == NULL) {
+        semClose(newPipe->canRead);
+        freePipe(newPipe);
+        return NULL;
+    }
+
+    newPipe->attached = 0;
+
+    nextId++;
+
+    return newPipe;
+}
+
+static void buildSemName(uint8_t id, char suffix, char out[SEM_NAME_LONG]) {
+    // Build: "semPipe" + two digits + suffix
+    out[0]='s'; out[1]='e'; out[2]='m'; out[3]='P'; out[4]='i'; out[5]='p'; out[6]='e';
+    out[7] = '0' + (id / 10);
+    out[8] = '0' + (id % 10);
+    out[9] = suffix;
+    out[10] = '\0';
+}
+
+static int getValidPipe(uint8_t id, Pipe *buffer) {
+    if (id >= arraySize(pipeStorage) || buffer == NULL) {
+        return -1;
+    }
+
+    if (NULL == getElemByIndex(pipeStorage, id, buffer)) {
+        panic("Invalid pipe array.");
+        return -1;
+    }
+
+    if (*buffer == NULL) {
+        return -1;
+    }
+
+    return 0;
+}
+
+static int deletePipe(Pipe pipeToDelete) {
+    if (pipeToDelete == NULL) {
+        return -1;
+    }
+
+    Pipe nullValue = NULL;
+    if (NULL == setElemByIndex(pipeStorage, pipeToDelete->id, &nullValue)) {
+        return -1;
+    }
+
+    freePipe(pipeToDelete);
+
+    return 0;
+}
+
+static void freePipe(Pipe pipeToFree) {
+    if (pipeToFree != NULL) {
+        semClose(pipeToFree->canRead);
+        semClose(pipeToFree->canWrite);
+        mm_free(pipeToFree);
+    }
+}

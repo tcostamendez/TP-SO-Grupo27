@@ -16,6 +16,8 @@
 #include "queue.h"
 #include "process.h"
 #include "sem.h"
+#include "pipe.h"
+#include "fd.h"
 
 extern void _sti(); // (De interrupts.asm) Habilita interrupciones
 extern void _hlt(); // (De interrupts.asm) Detiene la CPU hasta la próxima interrupción
@@ -173,6 +175,83 @@ void parent_process_test(int argc, char** argv) {
 }
 
 
+// ===== PIPE DEMO =====
+static int atoi_simple(const char *s) {
+  int v = 0; if (!s) return 0; while (*s >= '0' && *s <= '9') { v = v*10 + (*s - '0'); s++; } return v;
+}
+
+static int contains_END(const uint8_t *buf, int n) {
+  if (!buf || n < 3) return 0;
+  for (int i = 0; i <= n-3; i++) {
+    if (buf[i]=='E' && buf[i+1]=='N' && buf[i+2]=='D') return 1;
+  }
+  return 0;
+}
+
+void pipe_writer(int argc, char **argv) {
+  // argv[0] contains pipe id as string
+  int pipeId = (argc > 0 && argv && argv[0]) ? atoi_simple(argv[0]) : -1;
+  Process *self = get_current_process();
+  if (pipeId >= 0 && self) {
+    setWriteTarget(self->targetByFd, (uint8_t)pipeId);
+  }
+  const char *msgs[] = {"[pipe-writer] Hola 1\n", "[pipe-writer] Hola 2\n", "[pipe-writer] END\n"};
+  for (int i=0;i<3;i++) {
+    const char *m = msgs[i];
+    // Enviar por el WRITE_FD a través del pipe mapeado
+    fd_write(WRITE_FD, (const uint8_t*)m, (int)strlen(m));
+    for (volatile int j=0;j<30000000;j++); // pequeña espera
+  }
+}
+
+void pipe_reader(int argc, char **argv) {
+  int pipeId = (argc > 0 && argv && argv[0]) ? atoi_simple(argv[0]) : -1;
+  Process *self = get_current_process();
+  if (pipeId >= 0 && self) {
+    attach((uint8_t)pipeId);
+    setReadTarget(self->targetByFd, (uint8_t)pipeId);
+  }
+  uint8_t buf[128];
+  for (;;) {
+    int n = fd_read(READ_FD, buf, (int)sizeof(buf));
+    if (n <= 0) {
+      // EOF o error
+      break;
+    }
+    // Mostrar lo leído a STDOUT
+    fd_write(WRITE_FD, buf, n);
+    if (contains_END(buf, n)) {
+      break;
+    }
+  }
+}
+
+static void run_pipe_demo(void) {
+  print("\n[PipeDemo] Creando pipe y lanzando productor/consumidor...\n");
+  int id = openPipe();
+  if (id < 0) {
+    print("[PipeDemo] ERROR: no se pudo crear pipe\n");
+    return;
+  }
+  // Asegurar attached>=2 para evitar EOF inmediato cuando el buffer está vacío
+  attach((uint8_t)id);
+  attach((uint8_t)id);
+
+  char *id_str = num_to_str((uint64_t)id);
+  char *wargv[] = { id_str };
+  char *rargv[] = { id_str };
+
+  Process *reader = create_process(1, rargv, pipe_reader, 0);
+  Process *writer = create_process(1, wargv, pipe_writer, 0);
+
+  if (!reader || !writer) {
+    print("[PipeDemo] ERROR: creando procesos de pipe\n");
+    return;
+  }
+  print("[PipeDemo] Pipe id="); printDec(id); print(" | reader PID="); printDec(reader->pid); print(" writer PID="); printDec(writer->pid); print("\n");
+}
+
+
 int main() {
   load_idt();
 
@@ -199,6 +278,11 @@ int main() {
     print("Sem queue initialized\n");
   }
 
+  // Inicializar almacenamiento de pipes
+  if (initPipeStorage() < 0) {
+    print("Failed to init pipe storage\n");
+  }
+
   print("Llamando a init_scheduler()...\n");
   init_scheduler();
   print("init_scheduler() completo.\n"); 
@@ -218,6 +302,8 @@ int main() {
 
   print("[main] after create_process(procA)\n");
 
+  // Lanzar demo de pipes
+  run_pipe_demo();
 
   _sti();
   print("Kernel IDLE. Waiting for interrupt...\n");

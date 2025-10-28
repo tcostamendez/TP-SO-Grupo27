@@ -59,7 +59,10 @@ typedef struct Process {
     // --- Estado de Ejecución ---
     int ground;      // 1 si está en foreground, 0 si en background
     uint64_t rbp;           // Base pointer (para debugging/listing)
-    // (Más adelante podemos añadir FDs, semáforos, etc.)
+    // File descriptor targets: simple mapping for READ/WRITE (0/1)
+    // Used with pipe subsystem to route reads/writes.
+    uint8_t targetByFd[2];
+    // (Más adelante podemos añadir FDs avanzados, semáforos, etc.)
     int children[MAX_CHILDREN]; // IDs de los procesos hijos
     int child_count;            // Número de hijos actuales
 } Process;
