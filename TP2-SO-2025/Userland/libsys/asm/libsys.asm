@@ -29,9 +29,14 @@ GLOBAL sys_get_register_snapshot
 
 GLOBAL sys_get_character_without_display
 
+/* --------------- Memory --------------- */
 GLOBAL sys_malloc
 GLOBAL sys_free
+GLOBAL sys_get_free_bytes
+GLOBAL sys_get_used_bytes
+GLOBAL sys_get_total_bytes
 
+/* --------------- Process --------------- */
 GLOBAL sys_create_process
 GLOBAL sys_get_pid
 GLOBAL sys_kill_process
@@ -89,8 +94,12 @@ sys_get_register_snapshot: sys_int80 0x800000E0
 
 sys_get_character_without_display: sys_int80 0x800000F0
 
+/* --------------- Memory --------------- */
 sys_malloc: sys_int80 0x80000100
 sys_free: sys_int80 0x80000101
+sys_get_free_bytes: sys_int80 0x8000010A
+sys_get_used_bytes: sys_int80 0x8000010B
+sys_get_total_bytes: sys_int80 0x8000010C
 
 sys_create_process: sys_int80 0x80000102
 sys_get_pid: sys_int80 0x80000103
@@ -100,3 +109,4 @@ sys_list_processes: sys_int80 0x80000106
 sys_block_process: sys_int80 0x80000107
 sys_unblock_process: sys_int80 0x80000108
 sys_yield: sys_int80 0x80000109
+
