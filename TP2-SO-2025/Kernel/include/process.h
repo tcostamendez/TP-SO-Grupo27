@@ -4,15 +4,18 @@
 #include <stdint.h>
 #include <stddef.h> // Para size_t
 
-// Definimos un tamaño de stack por defecto para cada proceso (ej: 8KB)
-// Lo tomamos de tu memory_manager.h (FIRST_FIT_MM_H)
+/**
+ * PROCESOS ESPECIALES:
+ * - PID 0 (IDLE): ppid = -1, NUNCA se agrega al scheduler, siempre está running cuando no hay otros procesos
+ * - PID 1 (INIT): ppid = -1, se agrega al scheduler pero debe bloquearse inmediatamente (TODO: implementar)
+ */
+
 #define PROCESS_STACK_SIZE (1024 * 8) 
 
 // Límite de procesos que podemos tener.
 #define MAX_PROCESSES 64
 #define MAX_CHILDREN 32
 
-// Nombre máximo para un proceso (debugging)
 #define MAX_PROCESS_NAME 32
 
 // Prioridades del proceso
@@ -40,32 +43,27 @@ typedef enum {
  */
 typedef struct Process {
     int pid;                // Process ID
-    int ppid;               // Parent Process ID
-    ProcessState state;     // Estado actual (READY, RUNNING, etc.)
+    int ppid;               // Parent Process ID (-1 para procesos especiales: idle e init)
+    ProcessState state;     // Estado actual 
+
     int argc;
     char ** argv;
-    // --- Contexto de la CPU ---
-    // El RSP es lo único que necesitamos guardar para el context switch.
-    // El 'schedule' en C recibirá el RSP del proceso saliente
-    // y lo guardará aquí.
+
     uint64_t rsp;
-    // --- Gestión de Memoria ---
+
     void *stackBase;        // Puntero al inicio del stack (para mm_free())
-    // --- Info de Ejecución ---
+
     ProcessEntryPoint rip;    // Puntero a la función a ejecutar
-    // --- Scheduling ---
+
     int priority;           // Prioridad del proceso (0-3, mayor = más prioridad)
     int quantum_remaining;  // Ticks restantes en el quantum actual
-    // --- Estado de Ejecución ---
+
     int ground;      // 1 si está en foreground, 0 si en background
     uint64_t rbp;           // Base pointer (para debugging/listing)
-    // (Más adelante podemos añadir FDs, semáforos, etc.)
+
     int children[MAX_CHILDREN]; // IDs de los procesos hijos
     int child_count;            // Número de hijos actuales
 } Process;
-
-
-// --- Interfaz Pública de Gestión de Procesos ---
 
 /**
  * @brief Inicializa el Process Control Block (PCB) global.
@@ -75,7 +73,7 @@ void init_pcb();
 
 /**
  * @brief Crea un nuevo proceso.
- * * 1. Pide memoria para el stack (usando tu mm_alloc).
+ * 1. Pide memoria para el stack (usando tu mm_alloc).
  * 2. Pide memoria para la estructura Process.
  * 3. Prepara el "stack falso" inicial (llamando a stackInit en ASM).
  * 4. Lo añade al scheduler.
@@ -150,7 +148,14 @@ void foreach_process(void (*callback)(Process* p, void* arg), void* arg);
 int kill_process(int pid);
 
 /**
- * @brief Establece si un proceso está en foreground o background.
+ * @brief Función terminadora llamada cuando un proceso retorna desde su punto de entrada.
+ * Esta función se ejecuta en el contexto del proceso que está terminando, por lo que NO puede liberar su propia memoria.
+ * La limpieza de memoria ocurre más tarde via reap_terminated_processes().
+ */
+void process_terminator(void);
+
+/**
+ * @brief Setea el ground de un proceso.
  * @param pid PID del proceso.
  * @param ground FOREGROUND o BACKGROUND.
  * @return 0 en éxito, -1 si el proceso no existe.
@@ -167,5 +172,7 @@ int get_ground(int pid);
 int wait_child(int child_pid);
 
 int wait_all_children(void);
+
+void reap_terminated_processes(void);
 
 #endif // PROCESS_H

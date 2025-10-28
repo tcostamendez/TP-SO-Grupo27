@@ -115,7 +115,7 @@ void child_process_test(int argc, char** argv) {
     //process_terminator(pid);
     //print("[hijo] volvimos tras llamar process_terminator (esto NO debería verse)\n");
     // Al retornar, el wrapper 'process_terminator' llamará a kill_process(),
-    // lo que debe disparar el semPost() en "wait_<pid>" y despertar al padre.
+    // lo que debe disparar el sem_post() en "wait_<pid>" y despertar al padre.
 }
 
 /**
@@ -186,8 +186,8 @@ int main() {
   uint64_t heapSize = (uint64_t)HEAP_END_ADDRESS - (uint64_t)heapStart;
   
 
-  /* Inicializar subsistema de semáforos antes de crear procesos que usen semOpen */
-  if (initSemQueue() < 0) {
+  /* Inicializar subsistema de semáforos antes de crear procesos que usen sem_open */
+  if (init_sem_queue() < 0) {
     print("Failed to init sem queue\n");
   } else {
     print("Sem queue initialized\n");

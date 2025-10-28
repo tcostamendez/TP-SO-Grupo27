@@ -7,6 +7,7 @@
 #include "panic.h"
 #include "process.h"
 
+// Variables globales del scheduler
 QueueADT ready_queue = NULL;
 QueueADT blocked_queue = NULL;
 Process* running_process = NULL;
