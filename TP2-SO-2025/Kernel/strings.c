@@ -50,6 +50,9 @@ char * num_to_str(uint64_t num){
 }
 
 void catenate(char * dest, const char * src){
+	if(dest == NULL || src == NULL){
+		return;
+	}
 	int i, j;
 	i = j = 0;
 	while(dest[i] != '\0'){
@@ -59,4 +62,15 @@ void catenate(char * dest, const char * src){
 		dest[i++] = src[j++]; 
 	}
 	dest[i] = '\0';
+}
+
+int my_strcmp(const char * str1, const char * str2){
+	if (str1 == NULL || str2 == NULL) {
+		return (str1 == str2) ? 0 : (str1 == NULL ? -1 : 1);
+	}
+	while (*str1 && (*str1 == *str2)) {
+		str1++;
+		str2++;
+	}
+	return (unsigned char)*str1 - (unsigned char)*str2;
 }

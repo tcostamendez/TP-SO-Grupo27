@@ -21,15 +21,23 @@ section .text
 
 ; --- INICIO: FUNCION WRAPPER DEL PROCESO ---
 ; Este wrapper es el "entry point" real al que saltará 'iretq'.
-; La pila (RSP) está 16-byte alineada al entrar aquí.
+; Cuando llegamos aquí, popState ya restauró los registros:
+;   - rdx contiene entry_point
+;   - rbp contiene process_terminator
 _process_wrapper:
-    sub rsp, 8
-    ; (RDX y RCX fueron cargados por popState)
+    ; Alinear el stack (después de iretq el stack ya está alineado en teoría)
+    ; pero para estar seguros, hacemos sub rsp, 8 si es necesario
+    
+    ; Los registros ya fueron restaurados por popState
+    ; rdx = entry_point
+    ; rbp = process_terminator
+    
+    ; Guardar en registros no volátiles para preservar a través de la llamada
     mov r12, rdx    ; r12 = entry_point
     mov r13, rbp    ; r13 = process_terminator
     
-    ; Llamamos a la función principal del proceso (ej: test_proc_A)
-    ; La pila está alineada, por lo que esta llamada es segura.
+    ; Llamamos a la función principal del proceso
+    ; La pila debe estar 16-byte alineada antes de call
     call r12        ; call entry_point()
     
     ; Cuando la función principal retorna, llamamos al terminador
@@ -97,12 +105,14 @@ stackInit:
     ; rdi = stack_top
     ; rsi = entry_point
     ; rdx = process_terminator
+    ; rcx = argc
+    ; r8  = argv
 
     ; Alineamos el stack a 16 bytes
     and rdi, -16
     mov rax, rdi    ; Guardamos stack_top alineado
 
-    ; Preparamos frame para iretq
+    ; Preparamos frame para iretq (5 valores que iretq espera)
     sub rax, 8
     mov QWORD [rax], 0x0      ; SS
     sub rax, 8
@@ -112,25 +122,26 @@ stackInit:
     sub rax, 8
     mov QWORD [rax], 0x8      ; CS
     sub rax, 8
-    mov QWORD [rax], rsi      ; RIP (entry_point)
+    mov QWORD [rax], _process_wrapper      ; RIP (CAMBIO: usar wrapper, no entry_point)
 
-    ; Guardamos estado inicial de registros
+    ; Guardamos estado inicial de registros para popState
+    ; El orden es: r15, r14, r13, r12, r11, r10, r9, r8, rsi, rdi, rbp, rdx, rcx, rbx, rax
     sub rax, 8
     mov QWORD [rax], 0        ; rax
     sub rax, 8
     mov QWORD [rax], 0        ; rbx
     sub rax, 8
-    mov QWORD [rax], rsi      ; rcx (entry_point)
+    mov QWORD [rax], rcx      ; rcx (argc)
     sub rax, 8
-    mov QWORD [rax], rdx      ; rdx (process_terminator)
+    mov QWORD [rax], rsi      ; rdx (entry_point) - _process_wrapper lo toma en r12
     sub rax, 8
-    mov QWORD [rax], 0        ; rbp
+    mov QWORD [rax], rdx      ; rbp (process_terminator) - _process_wrapper lo toma en r13
     sub rax, 8
-    mov QWORD [rax], rcx        ; rdi
+    mov QWORD [rax], 0        ; rdi
     sub rax, 8
-    mov QWORD [rax], r8        ; rsi
+    mov QWORD [rax], 0        ; rsi
     sub rax, 8
-    mov QWORD [rax], 0        ; r8
+    mov QWORD [rax], r8       ; r8 (argv)
     sub rax, 8
     mov QWORD [rax], 0        ; r9
     sub rax, 8
@@ -138,18 +149,19 @@ stackInit:
     sub rax, 8
     mov QWORD [rax], 0        ; r11
     sub rax, 8
-    mov QWORD [rax], rdx      ; r12 (process_terminator)
+    mov QWORD [rax], 0        ; r12
     sub rax, 8
-    mov QWORD [rax], rsi      ; r13
+    mov QWORD [rax], 0        ; r13
     sub rax, 8
     mov QWORD [rax], 0        ; r14
     sub rax, 8
     mov QWORD [rax], 0        ; r15
 
-    ; Retornamos el nuevo RSP
+    ; Retornamos el nuevo RSP (que está en rax)
+    ; NO tocar rax después de esto!
     mov rsp, rbp
     pop rbp
-    ret
+    ret   ; rax contiene el nuevo RSP
 getKeyboardBuffer:
 	push rbp
 	mov rbp, rsp

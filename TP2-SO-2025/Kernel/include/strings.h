@@ -12,4 +12,5 @@ char * num_to_str(uint64_t num);
 
 void catenate(char * dest, const char * src);
 
+int my_strcmp(const char * str1, const char * str2);
 #endif
