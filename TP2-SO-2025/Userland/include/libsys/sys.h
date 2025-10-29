@@ -110,26 +110,39 @@ void drawRectangle(uint32_t color, long long int width_pixels, long long int hei
 void fillVideoMemory(uint32_t hexColor);
 int32_t exec(int32_t (*fnPtr)(void));
 int32_t execProgram(int32_t (*fnPtr)(void));
-void registerKey(enum REGISTERABLE_KEYS scancode, void (*fn)(enum REGISTERABLE_KEYS scancode));
+void registerKey(enum REGISTERABLE_KEYS scancode, int (*fn)(enum REGISTERABLE_KEYS scancode));
 void clearInputBuffer(void);
 int getWindowWidth(void);
 int getWindowHeight(void);
-void sleep(uint32_t milliseconds);
+void sleep_milliseconds(uint32_t milliseconds);
 int32_t getRegisterSnapshot(int64_t * registers);
 int32_t getCharacterWithoutDisplay(void);
 
 // Memory management functions
-void* allocMemory(size_t size);
-void freeMemory(void* ptr);
+void* malloc(size_t size);
+void free(void* ptr);
+int get_free_bytes(void);
+int get_used_bytes(void);
+int get_total_bytes(void);
 
 // Process management functions
-int createProcess(int argc, char** argv, void (*entry_point)(int, char**), int priority);
-int getMyPid(void);
-int killProcess(int pid);
-void setProcessPriority(int pid, int priority);
-void listProcesses(void);
-void blockProcess(int pid);
-void unblockProcess(int pid);
-void yieldCPU(void);
+int create_process(int argc, char** argv, void (*entry_point)(int, char**), int priority);
+int get_pid(void);
+int kill_process(int pid);
+void set_process_priority(int pid, int priority);
+void list_processes(void);
+void block_process(int pid);
+void unblock_process(int pid);
+void yield_cpu(void);
+
+// Wait (process join) API
+int wait_child(int pid);
+int wait_all_children(void);
+
+// Simple name-based semaphore API (kernel-managed)
+int sem_open(const char* name, int value);
+int sem_close(const char* name);
+int sem_post(const char* name);
+int sem_wait(const char* name);
 
 #endif

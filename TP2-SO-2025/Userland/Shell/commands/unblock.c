@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
+#include "sys.h"
 
 int _unblock(int argc, char * argv[]) {
     if (argc != 2) {
@@ -13,7 +14,7 @@ int _unblock(int argc, char * argv[]) {
 		perror("Invalid PID\n");
 		return 1;
 	}
-    unblockProcess(pid);
+    unblock_process(pid);
     printf("Process (PID %d) blocked\n", pid);
 
     return 0;

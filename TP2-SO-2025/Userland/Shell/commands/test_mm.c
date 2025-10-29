@@ -1,8 +1,6 @@
-#include <stdio.h>
+/*#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-
-#include "tests/alejoaquili-ITBA-72.11-SO-tests.h"
 
 int _test_mm(int argc, char *argv[]) {
 	if (argc != 2) {
@@ -24,7 +22,10 @@ int _test_mm(int argc, char *argv[]) {
 		perror("Failed to run test_mm\n");
 		return 1;
 	}
-	waitpid(pid);
+	
+	// waitpid(pid);
+
 	printf("Test completed\n");
 	return 0;
 }
+*/

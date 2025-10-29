@@ -4,22 +4,25 @@
 #include <string.h>
 #include <exceptions.h>
 #include <sys.h>
-
+#include "shell.h"
+#include "./commands/commands.h"
 #ifdef ANSI_4_BIT_COLOR_SUPPORT
 #include <ansiColors.h>
 #endif
 
-static void *const snakeModuleAddress = (void *)0x500000;
-
 static char buffer[MAX_BUFFER_SIZE];
 static int buffer_dim = 0;
+static uint8_t last_command_arrowed = 0;
 
-static void printPreviousCommand(enum REGISTERABLE_KEYS scancode);
-static void printNextCommand(enum REGISTERABLE_KEYS scancode);
-static int deleteCharacter(enum REGISTERABLE_KEYS scancode, int Ctrl, int Alt, int Shift);
+static int printPreviousCommand(enum REGISTERABLE_KEYS scancode);
+static int printNextCommand(enum REGISTERABLE_KEYS scancode);
+static int deleteCharacter(enum REGISTERABLE_KEYS scancode);
 static void emptyScreenBuffer(void);
 
-static uint8_t last_command_arrowed = 0;
+int exit(int argc, char **argv);
+int history(int argc, char **argv);
+int getPid(int argc, char **argv);
+int main(void);
 
 /* All available commands. Sorted alphabetically by their name */
 Command commands[] = {{.name = "block",
@@ -87,17 +90,13 @@ Command commands[] = {{.name = "block",
   .function = (int (*)(int, char **))(uint64_t)_mem,
   .description = "Prints the memory status of the system",
   .isBuiltIn = 0},
- {.name = "mvar",
+ /*{.name = "mvar",
   .function = (int (*)(int, char **))(uint64_t)_mvar,
   .description = "Simulates the classic readers-writers problem",
-  .isBuiltIn = 0},
+  .isBuiltIn = 0}, */
  {.name = "nice",
   .function = (int (*)(int, char **))(uint64_t)_nice,
   .description = "Changes the priority of <pid> by <amount>",
-  .isBuiltIn = 0},
- {.name = "orphan",
-  .function = (int (*)(int, char **))(uint64_t)_orphan,
-  .description = "Spawns a child and does not wait for it",
   .isBuiltIn = 0},
  {.name = "ps",
   .function = (int (*)(int, char **))(uint64_t)_ps,
@@ -111,14 +110,7 @@ Command commands[] = {{.name = "block",
   .function = (int (*)(int, char **))(uint64_t)main,
   .description = "Creates a new shell process",
   .isBuiltIn = 0},
- {.name = "snake",
-  .function = (int (*)(int, char **))(uint64_t)_snake,
-  .description = "Launches the snake game",
-  .isBuiltIn = 0},
- {.name = "spawn",
-  .function = (int (*)(int, char **))(uint64_t)_spawn,
-  .description = "Spawns a new process and waits for the return",
-  .isBuiltIn = 0},
+  /*
  {.name = "test_mm",
   .function = (int (*)(int, char **))(uint64_t)_test_mm,
   .description = "Allocates and frees <amount> blocks of memory",
@@ -134,13 +126,13 @@ Command commands[] = {{.name = "block",
  {.name = "test_sync",
   .function = (int (*)(int, char **))(uint64_t)_test_sync,
   .description = "Increments/decrements <n> times <using_sem>",
-  .isBuiltIn = 0},
+  .isBuiltIn = 0}, */
  {.name = "time",
   .function = (int (*)(int, char **))(uint64_t)_time,
   .description = "Prints the current time",
   .isBuiltIn = 0},
  {.name = "unblock",
-  .function = (int (*)(int, char **))(uint64_t)_ublock,
+  .function = (int (*)(int, char **))(uint64_t)_unblock,
   .description = "Unblocks the process with the provided PID",
   .isBuiltIn = 0},
  {.name = "wc",
@@ -209,8 +201,8 @@ static int parseCommand(char *buffer, char *command, ParsedCommand *parsedComman
 
 
 int main() {
-  clear();
-  registeryKey(BACKSPACE_KEY, deleteCharacter);
+  clearScreen();
+  registerKey(BACKSPACE_KEY, deleteCharacter);
   registerKey(KP_UP_KEY, printPreviousCommand);
   registerKey(KP_DOWN_KEY, printNextCommand);
 
@@ -284,51 +276,14 @@ int main() {
 			if (parsedCommands[p].isBuiltIn) {
 				parsedCommands[p].function(parsedCommands[p].argc, parsedCommands[p].argv);
 			} else {
-				if (parsed > 1 && p != parsed - 1) {
-					pipes[p] = openPipe();
-					if (pipes[p] <= 0) {
-						fprintf(FD_STDOUT, "\e[0;31mError opening pipe\e[0m\n");
-						break;
-					}
-				}
-
-				int targets[2];
-				targets[READ_TARGET] = p == 0 ? PIPE_STDIN : pipes[p - 1];
-				targets[WRITE_TARGET] = (p == parsed - 1) ? PIPE_STDOUT : pipes[p];
-
-				char *lastArg = ((char **)parsedCommands[p].argv)[parsedCommands[p].argc - 1];
-				int wantsBackground = !strcmp(lastArg, "&");
-
-				if (p == 0) {
-					requestsForeground = !wantsBackground;
-				} else {
-					requestsForeground = 0;
-				}
-
-				if (wantsBackground) {
-					parsedCommands[p].argc--;
-				}
-
-				if (requestsForeground) {
-					firstCommandRequestedForeground = 1;
-				}
-
-				int newPid = proc((void *)parsedCommands[p].function, parsedCommands[p].argc,
-								  (char **)parsedCommands[p].argv, 1, targets, requestsForeground);
-
-				if (p == 0) {
-					if (newPid > 0) {
-						firstPid = newPid;
-					}
-				}
+				// For now, simple execution without piping support
+				parsedCommands[p].function(parsedCommands[p].argc, parsedCommands[p].argv);
 			}
 		}
 
     // If the command is not found, ignore \n
 		if (firstPid <= 0 && parsed <= 0 && buffer_dim > 0) {
 			fprintf(FD_STDOUT, "\e[0;33mCommand not found:\e[0m %s\n", command);
-		} else if (firstCommandRequestedForeground) {
-			waitpid(firstPid);
 		}
 
     buffer[0] = buffer_dim = 0;
@@ -338,7 +293,7 @@ int main() {
   return 0;
 }
 
-static void printPreviousCommand(enum REGISTERABLE_KEYS scancode) {
+static int printPreviousCommand(enum REGISTERABLE_KEYS scancode) {
   last_command_arrowed = SUB_MOD(last_command_arrowed, 1, HISTORY_SIZE);
 	int currentCommandLenght = strlen(command_history[last_command_arrowed]);
 	emptyScreenBuffer();
@@ -350,7 +305,7 @@ static void printPreviousCommand(enum REGISTERABLE_KEYS scancode) {
 	return 1;
 }
 
-static void printNextCommand(enum REGISTERABLE_KEYS scancode) {
+static int printNextCommand(enum REGISTERABLE_KEYS scancode) {
   last_command_arrowed = (last_command_arrowed + 1) % HISTORY_SIZE;
 	int currentCommandLenght = strlen(command_history[last_command_arrowed]);
 	emptyScreenBuffer();
@@ -362,9 +317,9 @@ static void printNextCommand(enum REGISTERABLE_KEYS scancode) {
 	return 1;
 }
 
-static int deleteCharacter(enum REGISTERABLE_KEYS scancode, int Ctrl, int Alt, int Shift) {
+static int deleteCharacter(enum REGISTERABLE_KEYS scancode) {
 	if (buffer_dim > 0) {
-		clearScreenCharacter();
+		putchar('\b');
 		buffer_dim--;
 	}
 	return 1;
@@ -372,13 +327,13 @@ static int deleteCharacter(enum REGISTERABLE_KEYS scancode, int Ctrl, int Alt, i
 
 static void emptyScreenBuffer(void) {
 	while (buffer_dim > 0) {
-		clearScreenCharacter();
+		putchar('\b');
 		buffer_dim--;
 	}
 }
 
 
-int history(nt argc, char **argv) {
+int history(int argc, char **argv) {
   if (argc > 1) {
 		perror("Invalid amount of aruments\n");
 		return 1;
@@ -401,7 +356,7 @@ int exit(int argc, char **argv) {
 		return 1;
 	}
 
-	int ret = kill(getpid());
+	int ret = kill_process(get_pid());
 	if (ret == -1) {
 		perror("Error killing process\n");
 		return 1;
@@ -415,7 +370,7 @@ int getPid(int argc, char **argv) {
 		return 1;
 	}
 
-	int pid = getpid();
+	int pid = get_pid();
 	if (pid < 0) {
 		perror("Error getting pid\n");
 		return 1;

@@ -83,5 +83,11 @@ void sys_print_processes(void);
 void sys_block_process(int pid);
 void sys_unblock_process(int pid);
 void sys_yield(void);
+int sys_wait_pid(int pid);
+int sys_wait_for_children(void);
+int sys_sem_open_name(const char* name, uint16_t value);
+int sys_sem_close_name(const char* name);
+int sys_sem_post_name(const char* name);
+int sys_sem_wait_name(const char* name);
 
 #endif

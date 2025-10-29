@@ -31,7 +31,6 @@ static const uint64_t PageSize = 0x1000;
 //static void *const HEAP_END_ADDRESS = (void *)0x10600000; //256mb
 static void *const HEAP_END_ADDRESS = (void *)0x20000000;  //512mb
 static void *const shellModuleAddress = (void *)0x400000;
-static void *const snakeModuleAddress = (void *)0x500000;
 
 typedef int (*EntryPoint)();
 
@@ -49,8 +48,7 @@ void *getStackBase() {
 
 void *initializeKernelBinary() {
   void *moduleAddresses[] = {
-      shellModuleAddress,
-      snakeModuleAddress,
+      shellModuleAddress
   };
 
   loadModules(&endOfKernelBinary, moduleAddresses);
@@ -174,10 +172,104 @@ void parent_process_test(int argc, char** argv) {
 }
 
 
+// ================================
+// Kernel-side tests (process/semaphore/wait)
+// ================================
+
+static void worker_proc(int argc, char** argv) {
+  const char *name = (argc > 0) ? argv[0] : "worker";
+  int pid = get_current_process()->pid;
+  for (int i = 0; i < 10; i++) {
+    print("[" ); print(name); print("] pid="); printDec(pid); print(" iter="); printDec(i+1); print("\n");
+    for(volatile int d=0; d<20000000; d++);
+    yield_cpu();
+  }
+}
+
+static void kernel_sem_child(int argc, char** argv) {
+  const char* sem_parent = (argc > 1) ? argv[1] : "k_sem_parent";
+  const char* sem_child  = (argc > 2) ? argv[2] : "k_sem_child";
+  int pid = get_current_process()->pid;
+  int rounds = 5;
+  for (int i = 0; i < rounds; i++) {
+    Sem sp = sem_open((char*)sem_parent, 0);
+    Sem sc = sem_open((char*)sem_child, 0);
+    if (sp && sc) {
+      sem_wait(sp);
+      print("  [sem child pid="); printDec(pid); print("] pong "); printDec(i+1); print("\n");
+      sem_post(sc);
+      sem_close(sp);
+      sem_close(sc);
+    }
+    yield_cpu();
+  }
+}
+
+static void kernel_sem_parent(int argc, char** argv) {
+  const char* sem_parent_name = "k_sem_parent";
+  const char* sem_child_name  = "k_sem_child";
+  int rounds = 5;
+
+  // Create semaphores
+  Sem sp = sem_open((char*)sem_parent_name, 1);
+  Sem sc = sem_open((char*)sem_child_name, 0);
+  if (sp == NULL || sc == NULL) {
+    print("[sem parent] ERROR opening semaphores\n");
+    return;
+  }
+
+  // Launch child that will alternate with us
+  char* child_args[] = {"k_sem_child", (char*)sem_parent_name, (char*)sem_child_name};
+  Process* child = create_process(3, child_args, kernel_sem_child, 1);
+  if (child == NULL) {
+    print("[sem parent] ERROR creating child\n");
+    return;
+  }
+
+  int ppid = get_current_process()->pid;
+  for (int i = 0; i < rounds; i++) {
+    // Wait for child to print
+    sem_wait(sc);
+    print("[sem parent pid="); printDec(ppid); print("] ping "); printDec(i+1); print("\n");
+    sem_post(sp);
+    yield_cpu();
+  }
+
+  // Wait child termination then close sems
+  wait_child(child->pid);
+  sem_close(sp);
+  sem_close(sc);
+}
+
+static void launch_kernel_tests(void) {
+  print("\n=== Kernel tests: process creation ===\n");
+  char* w1[] = {"W1"};
+  char* w2[] = {"W2"};
+  char* w3[] = {"W3"};
+  create_process(1, w1, worker_proc, 0);
+  create_process(1, w2, worker_proc, 1);
+  create_process(1, w3, worker_proc, 2);
+
+  print("\n=== Kernel tests: semaphores ping-pong ===\n");
+  char* sp_args[] = {"sem_parent"};
+  create_process(1, sp_args, kernel_sem_parent, 1);
+
+  print("\n=== Kernel tests: waits (parent/children) ===\n");
+  char* p_args[] = {"parent_test"};
+  create_process(1, p_args, parent_process_test, 1);
+}
+
+void default_process(int argc, char** argv) {
+  print("Default process running\n");
+  while(1) {
+    _hlt();
+  }
+}
+
 int main() {
   load_idt();
 
-  setFontSize(4);
+  setFontSize(1);
   void *heapStartOriginal = (void *)((uint64_t)&endOfKernel + PageSize * 8);
 
   uint64_t base = ((uint64_t)heapStartOriginal + 0x1FFFFF) & ~((uint64_t)0x1FFFFF);
@@ -188,27 +280,40 @@ int main() {
   void *heapStart = (void*) base;
   uint64_t heapSize = (uint64_t)HEAP_END_ADDRESS - (uint64_t)heapStart;
   
+  print("Llego aca al menos?\n");
 
-  /* Inicializar subsistema de semáforos antes de crear procesos que usen sem_open */
+  /* IMPORTANTE: Inicializar el gestor de memoria ANTES de cualquier mm_alloc */
+  mm_init(heapStart, heapSize);
+  print("INICIALIZO EL MM\n");
+
+  /* Inicializar subsistema de semáforos (usa mm_alloc) */
   if (init_sem_queue() != 0) {
     panic("Failed to init sem queue\n");
   } else {
     print("Sem queue initialized\n");
   }
 
+  print("INICIALIZO EL SEM QUEUE\n");
+
+  /* Inicializar scheduler (crea procesos y usa mm_alloc) */
   if (init_scheduler() != 0) {
     panic("Failed to initialize scheduler");
   } else {
     print("Scheduler initialized\n");
   }
-  mm_init(heapStart, heapSize);
-  /*
-  if (mm_init(heapStart, heapSize) != 0) {
-    panic("Failed to initialize memory manager");
-  } else {
-    print("Memory manager initialized\n");
+
+  print("INICIALIZO EL SCHEDULER\n");
+  
+  // Crea proceso default para saber que terminaron los tests
+  char* default_args[] = {"default"};
+  Process* default_proc = create_process(1, default_args, default_process, 0);
+  if (default_proc == NULL) {
+    panic("Failed to create default process");
   }
-  */
+  // Lanzar pruebas desde kernel (todo en contexto de procesos del kernel)
+  launch_kernel_tests();
+  
+ 
 
   _sti();
 

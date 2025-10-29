@@ -8,6 +8,14 @@
 #define FD_STDOUT 1
 #define FD_STDERR 2
 
+#define PIPE_STDIN 0
+#define PIPE_STDOUT 1
+
+#define READ_TARGET 0
+#define WRITE_TARGET 1
+
+#define EOF -1
+
 void puts(const char * str);
 void vprintf(const char * str, va_list args);
 void printf(const char * str, ...);

@@ -46,6 +46,13 @@ GLOBAL sys_block_process
 GLOBAL sys_unblock_process
 GLOBAL sys_yield
 
+GLOBAL sys_wait_child
+GLOBAL sys_wait_all_children
+GLOBAL sys_sem_open_name
+GLOBAL sys_sem_close_name
+GLOBAL sys_sem_post_name
+GLOBAL sys_sem_wait_name
+
 section .text
 
 %macro sys_int80 1
@@ -109,4 +116,12 @@ sys_list_processes: sys_int80 0x80000106
 sys_block_process: sys_int80 0x80000107
 sys_unblock_process: sys_int80 0x80000108
 sys_yield: sys_int80 0x80000109
+
+; --------------- Wait & Semaphores --------------- ;
+sys_wait_child:        sys_int80 0x80000110
+sys_wait_all_children: sys_int80 0x80000111
+sys_sem_open_name:     sys_int80 0x80000112
+sys_sem_close_name:    sys_int80 0x80000113
+sys_sem_post_name:     sys_int80 0x80000114
+sys_sem_wait_name:     sys_int80 0x80000115
 

@@ -44,7 +44,7 @@ int32_t sys_fill_video_memory(uint32_t hexColor);
 
 int32_t sys_exec(int32_t (*fnPtr)(void));
 
-int32_t sys_register_key(uint8_t scancode, void (*fn)(enum REGISTERABLE_KEYS scancode));
+int32_t sys_register_key(uint8_t scancode, int (*fn)(enum REGISTERABLE_KEYS scancode));
 
 int32_t sys_window_width(void);
 
@@ -85,6 +85,19 @@ void sys_block_process(int pid);
 void sys_unblock_process(int pid);
 /*0x80000109*/
 void sys_yield(void);
+/*0x80000110*/
+int sys_wait_child(int pid);
+/*0x80000111*/
+int sys_wait_all_children(void);
+/*0x80000112*/
+int sys_sem_open_name(char* name, uint16_t value);
+/*0x80000113*/
+int sys_sem_close_name(char* name);
+/*0x80000114*/
+int sys_sem_post_name(char* name);
+/*0x80000115*/
+int sys_sem_wait_name(char* name);
+
 /*0x8000010A*/
 
 

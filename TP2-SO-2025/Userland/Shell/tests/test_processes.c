@@ -5,7 +5,7 @@
 
 // Simple test function that runs in a loop
 void test_worker(int argc, char** argv) {
-    int pid = getMyPid();
+    int pid = get_pid();
     int delay = 2; // default 2 seconds
     
     if (argc > 1) {
@@ -16,20 +16,20 @@ void test_worker(int argc, char** argv) {
     
     int count = 0;
     while (1) {
-        sleep(delay * 1000);
+        sleep_milliseconds(delay * 1000);
         printf("Worker %d: iteration %d\n", pid, ++count);
     }
 }
 
-int main(int argc, char** argv) {
+int _test_processes(int argc, char** argv) {
     printf("=== Process Management Test ===\n");
     
     // Show current process
-    printf("Current PID: %d\n", getMyPid());
+    printf("Current PID: %d\n", get_pid());
     
     // List all processes
     printf("\nInitial process list:\n");
-    listProcesses();
+    list_processes();
     
     // Create some test processes
     printf("\nCreating test processes...\n");
@@ -38,47 +38,47 @@ int main(int argc, char** argv) {
     char* args2[] = {"worker2", "3"};
     char* args3[] = {"worker3", "2"};
     
-    int pid1 = createProcess(2, args1, test_worker, 1); // priority 1
-    int pid2 = createProcess(2, args2, test_worker, 2); // priority 2  
-    int pid3 = createProcess(2, args3, test_worker, 0); // priority 0
+    int pid1 = create_process(2, args1, test_worker, 1); // priority 1
+    int pid2 = create_process(2, args2, test_worker, 2); // priority 2  
+    int pid3 = create_process(2, args3, test_worker, 0); // priority 0
     
     printf("Created processes: %d, %d, %d\n", pid1, pid2, pid3);
     
     // Wait a bit
     printf("\nWaiting 5 seconds...\n");
-    sleep(5000);
+    sleep_milliseconds(5000);
     
     // Show process list again
     printf("\nProcess list after creation:\n");
-    listProcesses();
+    list_processes();
     
     // Test priority change
     printf("\nChanging process %d priority to 3...\n", pid1);
-    setProcessPriority(pid1, 3);
+    set_process_priority(pid1, 3);
     
     // Test blocking
     printf("Blocking process %d...\n", pid2);
-    blockProcess(pid2);
+    block_process(pid2);
     
     // Wait a bit more
     printf("\nWaiting 3 seconds...\n");
-    sleep(3000);
+    sleep_milliseconds(3000);
     
     // Show final process list
     printf("\nFinal process list:\n");
-    listProcesses();
+    list_processes();
     
     // Unblock the process
     printf("\nUnblocking process %d...\n", pid2);
-    unblockProcess(pid2);
+    unblock_process(pid2);
     
     // Kill one process
     printf("Killing process %d...\n", pid3);
-    killProcess(pid3);
+    kill_process(pid3);
     
     // Final process list
     printf("\nProcess list after killing %d:\n", pid3);
-    listProcesses();
+    list_processes();
     
     printf("\nTest completed! Processes will continue running...\n");
     printf("Use 'ps' command in shell to see them, or 'kill <pid>' to stop them.\n");

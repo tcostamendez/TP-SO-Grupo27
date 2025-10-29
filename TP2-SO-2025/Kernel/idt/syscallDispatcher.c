@@ -9,6 +9,8 @@
 //#include "first_fit_mm.h"
 #include "buddy_system_mm.h"
 #include "alloc.h"
+#include "process.h"
+#include "sem.h"
 extern int64_t register_snapshot[18];
 extern int64_t register_snapshot_taken;
 
@@ -110,6 +112,18 @@ int32_t syscallDispatcher(Registers *registers) {
   case 0x80000109:
       sys_yield();
       return 0;
+  case 0x80000110:
+      return sys_wait_pid((int)registers->rdi);
+  case 0x80000111:
+      return sys_wait_for_children();
+  case 0x80000112:
+      return sys_sem_open_name((const char*)registers->rdi, (uint16_t)registers->rsi);
+  case 0x80000113:
+      return sys_sem_close_name((const char*)registers->rdi);
+  case 0x80000114:
+      return sys_sem_post_name((const char*)registers->rdi);
+  case 0x80000115:
+      return sys_sem_wait_name((const char*)registers->rdi);
   default:
     return 0;
   }
@@ -379,10 +393,38 @@ void sys_yield(){
   yield_cpu();
 }
 
-void sys_wait_pid(int pid){
-  //?????
+int sys_wait_pid(int pid){
+  return wait_child(pid);
 }
 
-void sys_wait_for_children(){
-  //????
+int sys_wait_for_children(){
+  return wait_all_children();
+}
+
+// Name-based semaphore syscalls to avoid exposing kernel pointers to userland
+int sys_sem_open_name(const char* name, uint16_t value){
+  if (name == NULL) return -1;
+  Sem s = sem_open(name, value);
+  return s == NULL ? -1 : 0;
+}
+
+int sys_sem_close_name(const char* name){
+  if (name == NULL) return -1;
+  Sem s = sem_open(name, 0);
+  if (s == NULL) return -1;
+  return sem_close(s);
+}
+
+int sys_sem_post_name(const char* name){
+  if (name == NULL) return -1;
+  Sem s = sem_open(name, 0);
+  if (s == NULL) return -1;
+  return sem_post(s);
+}
+
+int sys_sem_wait_name(const char* name){
+  if (name == NULL) return -1;
+  Sem s = sem_open(name, 0);
+  if (s == NULL) return -1;
+  return sem_wait(s);
 }

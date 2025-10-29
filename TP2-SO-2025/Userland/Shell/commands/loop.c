@@ -17,10 +17,10 @@ int _loop(int argc, char *argv[]) {
 		return 1;
 	}
     
-    int pid = getpid();
+    int pid = get_pid();
 	while (1) {
 		printf("Hello from PID: %d\n", pid);
-		sleep(milliseconds);
+		sleep_milliseconds(milliseconds);
 	}
 
 	return 0;

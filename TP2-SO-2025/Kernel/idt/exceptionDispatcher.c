@@ -35,18 +35,12 @@ void exceptionDispatcher(int exception, uint64_t *registers) {
   case PAGE_FAULT_ID:
     return _exceptionHandler0E();
   default:
-
-
-    // // --- AÑADE ESTO ---
-    //   setFontSize(2);
-    //   print("!! UNHANDLED EXCEPTION: 0x");
-    //   printHex(exception);
-    //   print(" !!\n");
-    //   // (Aquí puedes llamar a printExceptionData(registers, exception) si quieres)
-    //   while(1) _hlt(); // Congela el kernel aquí
-    //   // --- FIN DE AÑADIDO ---
-     return; // returns to the asm exceptionHandler which will return to the
-            // shell
+    setFontSize(2);
+    print("Unhandled Exception: 0x");
+    printHex(exception);
+    print("\n");
+    printExceptionData(registers, exception);
+    while (1) { _hlt(); }
   }
 }
 
