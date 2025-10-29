@@ -51,9 +51,11 @@ static int valid_sem(Sem sem_to_valid) {
 
     Sem aux = sem_to_valid;
     
+    _cli();  // Deshabilitar interrupciones para evitar deadlock en spinlock
     sem_lock(&s_queue->lock);
     int exists = queueElementExists(s_queue->sems, &aux);
     sem_unlock(&s_queue->lock);
+    _sti();  // Rehabilitar interrupciones
 
     return exists;
 }
@@ -78,6 +80,7 @@ Sem sem_open(const char *name, uint16_t value) {
         return NULL;
     }
 
+    _cli();  // Deshabilitar interrupciones para evitar deadlock en spinlock
     sem_lock(&s_queue->lock);
 
     sem *found = find_sem_by_name(name);
@@ -86,12 +89,14 @@ Sem sem_open(const char *name, uint16_t value) {
         found->users++;
         sem_unlock(&found->lock);
         sem_unlock(&s_queue->lock);
+        _sti();  // Rehabilitar interrupciones
         return found;
     }
 
     sem *new_sem = mm_alloc(sizeof(sem));
     if (new_sem == NULL) {
         sem_unlock(&s_queue->lock);
+        _sti();  // Rehabilitar interrupciones
         return NULL;
     }
 
@@ -104,11 +109,13 @@ Sem sem_open(const char *name, uint16_t value) {
     if (new_sem->blocked_processes == NULL) {
         mm_free(new_sem);
         sem_unlock(&s_queue->lock);
+        _sti();  // Rehabilitar interrupciones
         return NULL;
     }
 
     enqueue(s_queue->sems, &new_sem);
     sem_unlock(&s_queue->lock);
+    _sti();  // Rehabilitar interrupciones
     return new_sem;
 }
 
@@ -122,17 +129,20 @@ int sem_close(Sem sem_to_close) {
 
     sem *aux = sem_to_close;
     
+    _cli();  // Deshabilitar interrupciones para evitar deadlock en spinlock
     sem_lock(&s_queue->lock);
 
     if (sem_to_close->users != 0) {
         sem_unlock(&sem_to_close->lock);
         sem_unlock(&s_queue->lock);
+        _sti();  // Rehabilitar interrupciones
         return 0;
     } else {
         // Remover de la cola global (ya no es visible para sem_open)
         if (queueRemove(s_queue->sems, &aux) == NULL) {
             sem_unlock(&sem_to_close->lock);
             sem_unlock(&s_queue->lock);
+            _sti();  // Rehabilitar interrupciones
             return -1;
         }
         
@@ -141,6 +151,7 @@ int sem_close(Sem sem_to_close) {
         queueFree(sem_to_close->blocked_processes);
         mm_free(sem_to_close);
         sem_unlock(&s_queue->lock);
+        _sti();  // Rehabilitar interrupciones
         return 0;
     }
 }
@@ -159,11 +170,20 @@ void free_sem_queue(void) {
 }
 
 int sem_post(Sem sem_to_post) {
+    
     if (!valid_sem(sem_to_post)) {
+        print("[sem_post] ERROR: invalid semaphore\n");
         return -1;
     }
     
     sem_lock(&sem_to_post->lock);
+
+    print("[sem_post] name=");
+    print(sem_to_post->name);
+    print(" blocked_queue_size=");
+    printDec(queueSize(sem_to_post->blocked_processes));
+    print("\n");
+
     if (queueSize(sem_to_post->blocked_processes) != 0) {
         int pid;
         if (dequeue(sem_to_post->blocked_processes, &pid) != NULL) {

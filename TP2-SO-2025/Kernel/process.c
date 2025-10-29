@@ -366,10 +366,18 @@ void process_terminator(void) {
     }
 
     int pid = cur->pid;
-    
+
+    print("[TERMINATOR] pid=");
+    printDec(pid);
+    print(" starting termination\n");
+
     // Preparar el nombre del semáforo antes de deshabilitar interrupciones
     char *sem_name = create_wait_semaphore_name(pid);
     
+    print("[TERMINATOR] sem_name created: ");
+    print(sem_name ? sem_name : "NULL");
+    print("\n");
+
     _cli();
     
     cur->state = TERMINATED;
@@ -384,17 +392,27 @@ void process_terminator(void) {
     
     // Notificar al padre mediante sem_post (fuera de _cli para evitar deadlocks)
     if (sem_name) {
+        print("[TERMINATOR] opening semaphore\n");
         Sem s = sem_open(sem_name, 0);
         if (s) {
-            sem_post(s);
+            print("[TERMINATOR] doing sem_post\n");
+            int result = sem_post(s);
+            print("[TERMINATOR] sem_post returned: ");
+            printDec(result);
+            print("\n");
             sem_close(s);
+        } else {
+            print("[TERMINATOR] ERROR: sem_open returned NULL\n");
         }
         mm_free(sem_name);
+    } else {
+        print("[TERMINATOR] ERROR: sem_name is NULL\n");
     }
-    
+    print("[TERMINATOR] forcing context switch\n");
     // Forzar cambio de contexto - NUNCA debería retornar
     _force_scheduler_interrupt();
 
+    print("[TERMINATOR] ERROR: returned after interrupt AAAAAAAAAAAAAAAAAAAA\n");
 }
 
 int set_ground(int pid, int ground) {

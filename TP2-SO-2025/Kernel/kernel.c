@@ -257,6 +257,7 @@ static void launch_kernel_tests(void) {
   print("\n=== Kernel tests: waits (parent/children) ===\n");
   char* p_args[] = {"parent_test"};
   create_process(1, p_args, parent_process_test, 1);
+  print("\n=== TERMINADOS???????? ===\n");
 }
 
 void default_process(int argc, char** argv) {

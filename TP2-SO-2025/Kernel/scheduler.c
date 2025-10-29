@@ -7,6 +7,8 @@
 #include "panic.h"
 #include "process.h"
 
+extern void _force_scheduler_interrupt();
+
 // Variables globales del scheduler
 QueueADT ready_queue = NULL;
 QueueADT blocked_queue = NULL;
@@ -63,7 +65,13 @@ int add_to_scheduler(Process *p) {
     }
     
     p->state=READY;
-    ready_queue = enqueue(ready_queue,&p);
+    QueueADT temp = enqueue(ready_queue, &p);
+    if (temp == NULL) {
+        // enqueue falló (probablemente por falta de memoria)
+        print("ERROR: Enqueue failed (Scheduler)");
+        return -1;
+    }
+    ready_queue = temp;
     return 0;
 }
 
@@ -110,39 +118,16 @@ uint64_t schedule(uint64_t current_rsp) {
     // 1. Guardar el RSP del proceso que acaba de ser interrumpido.
     if (running_process) {
         running_process->rsp = current_rsp;
+    
         
-        // Solo debug para transiciones importantes
-        /*
-        print("[sched] saved RSP for pid=");
-        printDec(running_process->pid);
-        print(" state=");
-        printDec(running_process->state);
-        print(" rsp=");
-        printHex(current_rsp);
-        print("\n");
-        */
-        
-        // Manejar procesos TERMINATED
         if (running_process->state == TERMINATED) {
-            print("[sched] current process TERMINATED, pid=");
-            printDec(running_process->pid);
-            print("\n");
             // No agregar a ready_queue, solo buscar el siguiente
             running_process = NULL;
-        }
-        // Manejar procesos BLOCKED
-        else if (running_process->state == BLOCKED) {
-            print("[sched] current process BLOCKED, pid=");
-            printDec(running_process->pid);
-            print(" - RSP saved=");
-            printHex(current_rsp);
-            print("\n");
+        } else if (running_process->state == BLOCKED) {
             // El proceso ya está en blocked_queue (block_process lo puso ahí)
             // Solo limpiamos running_process
             running_process = NULL;
-        }
-        // Decrementar el quantum restante para procesos RUNNING
-        else if (running_process != idle_proc && running_process->state == RUNNING) {
+        } else if (running_process != idle_proc && running_process->state == RUNNING) {
             running_process->quantum_remaining--;
             
             // Si aún tiene quantum restante, no cambiar de proceso
@@ -150,22 +135,22 @@ uint64_t schedule(uint64_t current_rsp) {
                 return current_rsp; // Continuar con el mismo proceso
             }
             
-            running_process->quantum_remaining = running_process->priority + 1;
-            running_process->state = READY;
-            add_to_scheduler(running_process);
+            // IMPORTANTE: Verificar de nuevo el estado antes de agregar a ready_queue
+            // porque podría haberse bloqueado entre medio (race condition)
+            if (running_process->state == RUNNING) {
+                running_process->quantum_remaining = running_process->priority + 1;
+                running_process->state = READY;
+                add_to_scheduler(running_process);
+            } else {
+                // El estado cambió (probablemente a BLOCKED) - no agregarlo a ready_queue
+
+                running_process = NULL;
+            }
         }
     }
     
     Process* next = NULL;
 
-    // Solo debug ocasional
-    /*
-    print("[sched] looking for next process, ready_queue size=");
-    printDec(queueSize(ready_queue));
-    print(", blocked_queue size=");
-    printDec(queueSize(blocked_queue));
-    print("\n");
-    */
 
     if (!queueIsEmpty(ready_queue)) {
         // Mientras haya procesos, busca el primero que este ready
@@ -176,13 +161,6 @@ uint64_t schedule(uint64_t current_rsp) {
                 break;
             }
             
-            /*
-            print("[sched] dequeued pid=");
-            printDec(next->pid);
-            print(" state=");
-            printDec(next->state);
-            print("\n");
-            */
             
             // Saltar procesos TERMINATED
             if (next->state == TERMINATED) {
@@ -198,7 +176,12 @@ uint64_t schedule(uint64_t current_rsp) {
                 print("[sched] WARNING: BLOCKED process in ready_queue, pid=");
                 printDec(next->pid);
                 print(" - moving to blocked_queue\n");
-                blocked_queue = enqueue(blocked_queue, &next);
+                QueueADT temp_blocked = enqueue(blocked_queue, &next);
+                if (temp_blocked == NULL) {
+                    print("ERROR: Enqueue failed (Scheduler)");
+                } else {
+                    blocked_queue = temp_blocked;
+                }
                 next = NULL;
                 continue;
             }
@@ -233,17 +216,7 @@ uint64_t schedule(uint64_t current_rsp) {
         running_process = idle_proc;
         return idle_proc->rsp;
     }
-    
-    // Solo imprimir si NO es el proceso idle (para evitar spam)
-    // if (next != idle_proc) {
-    //     print("[sched] switching to pid=");
-    //     printDec(next->pid);
-    //     print(" (state=");
-    //     printDec(next->state);
-    //     print(", rsp=");
-    //     printHex(next->rsp);
-    //     print(")\n");
-    // }
+
     
     next->state = RUNNING;
     next->quantum_remaining = next->priority + 1;
@@ -255,16 +228,7 @@ uint64_t schedule(uint64_t current_rsp) {
         uint64_t stack_top = stack_bottom + PROCESS_STACK_SIZE;
         
         if (next->rsp < stack_bottom || next->rsp >= stack_top) {
-            print("[sched] CRITICAL ERROR: Invalid RSP for pid=");
-            printDec(next->pid);
-            print(" rsp=");
-            printHex(next->rsp);
-            print(" stack_bottom=");
-            printHex(stack_bottom);
-            print(" stack_top=");
-            printHex(stack_top);
-            print("\n");
-            
+
             // Fallback a idle
             next = idle_proc;
             next->state = RUNNING;
@@ -272,14 +236,7 @@ uint64_t schedule(uint64_t current_rsp) {
             return idle_proc->rsp;
         }
     }
-    
-    // Solo imprimir si NO es el proceso idle
-    // if (next != idle_proc) {
-    //     print("[sched] returning rsp=");
-    //     printHex(next->rsp);
-    //     print("\n");
-    // }
-    
+
     return next->rsp;
 }
 
@@ -328,12 +285,8 @@ void block_process(Process* p) {
     }
     
     _cli();
-    
-    print("[sched] blocking process pid=");
-    printDec(p->pid);
-    print("\n");
-    
-    // Cambiar estado a BLOCKED PRIMERO
+
+    // Cambiar estado a BLOCKED PRIMERO (de forma atómica con interrupciones deshabilitadas)
     p->state = BLOCKED;
     
     // Si está en la cola de listos, removerlo
@@ -341,13 +294,24 @@ void block_process(Process* p) {
         print("[sched] removed from ready_queue\n");
     }
     
-    // NO limpiar running_process aquí - dejar que el scheduler lo maneje
-    // cuando se llame a schedule() y vea que el estado es BLOCKED
     
     // Agregarlo a la cola de bloqueados
-    blocked_queue = enqueue(blocked_queue, &p);
+    QueueADT temp_blocked = enqueue(blocked_queue, &p);
+    if (temp_blocked == NULL) {
+        print("ERROR: failed to enqueue to blocked_queue\n");
+        // Proceso quedará bloqueado pero no en la cola - esto es un problema crítico
+        // pero al menos no corrompemos la cola
+        _sti();
+        return;
+    }
+    blocked_queue = temp_blocked;
     
     _sti();
+    
+    // Si bloqueamos el proceso actual, forzar un cambio de contexto inmediato
+    if (p == running_process) {
+        _force_scheduler_interrupt();
+    }
 }
 
 int get_running_pid() {
