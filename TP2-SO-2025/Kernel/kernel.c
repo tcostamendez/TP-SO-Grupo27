@@ -300,7 +300,7 @@ int main() {
   //Process* procA = create_process(2, arga, test_proc, 0);
   // Process* procB = create_process(2, argb, test_proc, 0);
 
-  print("[main] after create_process(procA)\n");
+  //print("[main] after create_process(procA)\n");
 
   // Lanzar demo de pipes
   run_pipe_demo();

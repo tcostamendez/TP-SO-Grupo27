@@ -43,6 +43,17 @@ GLOBAL sys_yield
 GLOBAL sys_wait_pid
 GLOBAL sys_wait_for_children
 
+GLOBAL sys_pipe_open
+GLOBAL sys_pipe_attach
+GLOBAL sys_pipe_close
+GLOBAL sys_set_read_target
+GLOBAL sys_set_write_target
+
+GLOBAL sys_sem_open
+GLOBAL sys_sem_close
+GLOBAL sys_sem_wait
+GLOBAL sys_sem_post
+
 section .text
 
 %macro sys_int80 1
@@ -104,3 +115,12 @@ sys_unblock_process: sys_int80 0x80000108
 sys_yield: sys_int80 0x80000109
 sys_wait_pid: sys_int80 0x8000010A
 sys_wait_for_children: sys_int80 0x8000010B
+sys_pipe_open:        sys_int80 0x80000110
+sys_pipe_attach:      sys_int80 0x80000111
+sys_pipe_close:       sys_int80 0x80000112
+sys_set_read_target:  sys_int80 0x80000113
+sys_set_write_target: sys_int80 0x80000114
+sys_sem_open:         sys_int80 0x80000120
+sys_sem_close:        sys_int80 0x80000121
+sys_sem_wait:         sys_int80 0x80000122
+sys_sem_post:         sys_int80 0x80000123

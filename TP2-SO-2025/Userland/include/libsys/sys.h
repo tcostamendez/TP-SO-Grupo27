@@ -134,4 +134,18 @@ void yieldCPU(void);
 int waitPid(int pid);
 int waitForChildren(void);
 
+// Pipe helpers (userland wrappers)
+int pipeOpen(void);
+int pipeAttach(uint8_t id);
+int pipeClose(uint8_t id);
+int setReadTarget(uint8_t id);
+int setWriteTarget(uint8_t id);
+
+// Semaphore helpers (opaque handle)
+typedef void* sem_t;
+sem_t semOpen(const char *name, uint16_t initialValue);
+int   semClose(sem_t s);
+int   semWait(sem_t s);
+int   semPost(sem_t s);
+
 #endif

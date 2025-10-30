@@ -7,6 +7,7 @@
 #include "strings.h"
 #include "sem.h"
 #include "fd.h" // for STDIN/STDOUT constants
+#include "pipe.h"
 
 /**
  * @brief Prepara un stack falso para un nuevo proceso.
@@ -99,6 +100,20 @@ void process_terminator(void) {
     // print("[process_terminator] removed from queues\n");
     
     _sti();
+    
+    // Detach and close any pipes attached to this process
+    if (cur) {
+        uint8_t r = cur->targetByFd[READ_FD];
+        uint8_t w = cur->targetByFd[WRITE_FD];
+        if (r != STDIN && r != STDOUT) {
+            removeAttached(r, pid);
+            closePipe(r);
+        }
+        if (w != STDIN && w != STDOUT && w != r) {
+            removeAttached(w, pid);
+            closePipe(w);
+        }
+    }
     
     // Notificar al padre mediante semPost (FUERA de _cli)
     if (sem_name) {
@@ -428,6 +443,20 @@ int kill_process(int pid) {
     extern void remove_process_from_scheduler(Process* p);
     print("[kill] removing from scheduler\n");
     remove_process_from_scheduler(p);
+    
+    // Detach and close any pipes attached to this process
+    if (p) {
+        uint8_t r = p->targetByFd[READ_FD];
+        uint8_t w = p->targetByFd[WRITE_FD];
+        if (r != STDIN && r != STDOUT) {
+            removeAttached(r, pid);
+            closePipe(r);
+        }
+        if (w != STDIN && w != STDOUT && w != r) {
+            removeAttached(w, pid);
+            closePipe(w);
+        }
+    }
     
     if (p->stackBase != NULL) {
         mm_free(p->stackBase);

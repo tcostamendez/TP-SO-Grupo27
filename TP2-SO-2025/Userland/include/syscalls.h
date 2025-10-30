@@ -72,4 +72,17 @@ void sys_yield(void);
 int sys_wait_pid(int pid);
 int sys_wait_for_children(void);
 
+// Pipe syscalls (0x80000110 - 0x80000114)
+int sys_pipe_open(void);
+int sys_pipe_attach(uint8_t id);
+int sys_pipe_close(uint8_t id);
+int sys_set_read_target(uint8_t id);
+int sys_set_write_target(uint8_t id);
+
+// Semaphore syscalls (0x80000120 - 0x80000123)
+void * sys_sem_open(const char *name, uint16_t value);
+int sys_sem_close(void *sem);
+int sys_sem_wait(void *sem);
+int sys_sem_post(void *sem);
+
 #endif

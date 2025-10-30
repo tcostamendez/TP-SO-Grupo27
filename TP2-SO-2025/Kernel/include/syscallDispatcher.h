@@ -5,6 +5,7 @@
 #include <keyboard.h>
 #include "scheduler.h"
 #include "strings.h"
+#include "sem.h"
 
 typedef struct {
     int64_t r15;
@@ -85,5 +86,18 @@ void sys_unblock_process(int pid);
 void sys_yield(void);
 int sys_wait_pid(int pid);
 int sys_wait_for_children(void);
+
+// Pipe syscall prototypes
+int sys_pipe_open(void);
+int sys_pipe_attach(uint8_t id);
+int sys_pipe_close(uint8_t id);
+int sys_set_read_target_sys(uint8_t id);
+int sys_set_write_target_sys(uint8_t id);
+
+// Semaphore syscall prototypes (opaque Sem handle)
+Sem sys_sem_open(const char *name, uint16_t value);
+int sys_sem_close(Sem sem);
+int sys_sem_wait(Sem sem);
+int sys_sem_post(Sem sem);
 
 #endif

@@ -9,6 +9,15 @@
 //#include "first_fit_mm.h"
 #include "buddy_system_mm.h"
 #include "alloc.h"
+#include "fd.h"
+#include "pipe.h"
+#include "sem.h"
+#ifndef SECONDS_TO_TICKS
+#include "time.h"
+#ifndef SECONDS_TO_TICKS
+#define SECONDS_TO_TICKS 18
+#endif
+#endif
 extern int64_t register_snapshot[18];
 extern int64_t register_snapshot_taken;
 
@@ -114,6 +123,24 @@ int32_t syscallDispatcher(Registers *registers) {
       return sys_wait_pid((int)registers->rdi);
   case 0x8000010B:
       return sys_wait_for_children();
+  case 0x80000110:
+    return sys_pipe_open();
+  case 0x80000111:
+    return sys_pipe_attach((uint8_t)registers->rdi);
+  case 0x80000112:
+    return sys_pipe_close((uint8_t)registers->rdi);
+  case 0x80000113:
+    return sys_set_read_target_sys((uint8_t)registers->rdi);
+  case 0x80000114:
+    return sys_set_write_target_sys((uint8_t)registers->rdi);
+  case 0x80000120:
+    return (int64_t)sys_sem_open((const char*)registers->rdi, (uint16_t)registers->rsi);
+  case 0x80000121:
+    return sys_sem_close((Sem)registers->rdi);
+  case 0x80000122:
+    return sys_sem_wait((Sem)registers->rdi);
+  case 0x80000123:
+    return sys_sem_post((Sem)registers->rdi);
   default:
     return 0;
   }
@@ -124,19 +151,13 @@ int32_t syscallDispatcher(Registers *registers) {
 // ==================================================================
 
 int32_t sys_write(int32_t fd, char *__user_buf, int32_t count) {
-  return printToFd(fd, __user_buf, count);
+  // Route through FD layer for transparent pipe/terminal behavior
+  return fd_write(fd, (const uint8_t *)__user_buf, count);
 }
 
 int32_t sys_read(int32_t fd, signed char *__user_buf, int32_t count) {
-  int32_t i;
-  int8_t c;
-  for (i = 0;
-       i < count && (c = getKeyboardCharacter(AWAIT_RETURN_KEY |
-                                              SHOW_BUFFER_WHILE_TYPING)) != EOF;
-       i++) {
-    *(__user_buf + i) = c;
-  }
-  return i;
+  // Route through FD layer: reads from STDIN (keyboard) or pipe depending on target
+  return fd_read(fd, (uint8_t *)__user_buf, count);
 }
 
 // ==================================================================
@@ -390,3 +411,61 @@ int sys_wait_pid(int pid){
 int sys_wait_for_children(){
   return wait_all_children();
 }
+
+// ==================================================================
+// Pipe syscalls
+// ==================================================================
+int sys_pipe_open(void) {
+  return openPipe();
+}
+
+int sys_pipe_attach(uint8_t id) {
+  return attach(id);
+}
+
+int sys_pipe_close(uint8_t id) {
+  return closePipe(id);
+}
+
+static void detach_if_pipe(uint8_t id, int pid) {
+  if (id != STDIN && id != STDOUT) {
+    removeAttached(id, pid);
+  }
+}
+
+int sys_set_read_target_sys(uint8_t id) {
+  Process *p = get_current_process();
+  if (!p) return -1;
+  uint8_t old = p->targetByFd[READ_FD];
+  // detach old if it was a pipe
+  detach_if_pipe(old, p->pid);
+  // attach new if it is a pipe
+  if (id != STDIN && id != STDOUT) {
+    if (attach(id) < 0) return -1;
+  }
+  return setReadTarget(p->targetByFd, id);
+}
+
+int sys_set_write_target_sys(uint8_t id) {
+  Process *p = get_current_process();
+  if (!p) return -1;
+  uint8_t old = p->targetByFd[WRITE_FD];
+  detach_if_pipe(old, p->pid);
+  if (id != STDIN && id != STDOUT) {
+    if (attach(id) < 0) return -1;
+  }
+  return setWriteTarget(p->targetByFd, id);
+}
+
+// ==================================================================
+// Semaphore syscalls
+// ==================================================================
+Sem sys_sem_open(const char *name, uint16_t value) {
+  return semOpen(name, value);
+}
+
+int sys_sem_close(Sem sem) { return semClose(sem); }
+
+int sys_sem_wait(Sem sem) { return semWait(sem); }
+
+int sys_sem_post(Sem sem) { return semPost(sem); }
