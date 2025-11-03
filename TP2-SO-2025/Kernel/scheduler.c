@@ -3,6 +3,7 @@
 #include <stddef.h>  
 #include <video.h>
 #include "queue.h"
+#include "pipe.h"
 #include "interrupts.h"
 
 QueueADT ready_queue = NULL;
@@ -43,7 +44,8 @@ void init_scheduler() {
     } 
     
     char* idleArgs[] = {"idle"};
-    idle_proc = create_process(1, idleArgs, idleProcess, MIN_PRIORITY);
+    int targets[] = {STDIN, STDOUT, STDOUT};
+    idle_proc = create_process(1, idleArgs, idleProcess, MIN_PRIORITY, targets, 0);
     if (idle_proc == NULL) {
         panic("Idle create failed\n");
     }

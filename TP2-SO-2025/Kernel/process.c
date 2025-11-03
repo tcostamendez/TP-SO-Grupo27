@@ -122,7 +122,7 @@ void process_terminator(void) {
     for(;;) _hlt();
 }
 
-Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, int priority) {
+Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, int priority, int targets[], int hasForeground) {
     _cli();
     
     Process* p = (Process*) mm_alloc(sizeof(Process));
@@ -162,7 +162,7 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
     }
     p->state = READY;
     p->rip = entry_point;
-    p->ground = BACKGROUND; 
+    p->ground = hasForeground? FOREGROUND: BACKGROUND; 
     p->rbp = 0;              
     
     if (priority < MIN_PRIORITY || priority > MAX_PRIORITY) {
@@ -240,8 +240,9 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
         }
     }
     
-    p->targetByFd[READ_FD] = STDIN;
-    p->targetByFd[WRITE_FD] = STDOUT;
+    p->targetByFd[READ_FD] = targets[0];
+    p->targetByFd[WRITE_FD] = targets[1];
+    p->targetByFd[ERR_FD] = targets[2];
 
     if(p->pid != 0){
         _cli();

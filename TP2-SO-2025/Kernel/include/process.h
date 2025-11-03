@@ -61,7 +61,7 @@ typedef struct Process {
     uint64_t rbp;           // Base pointer (para debugging/listing)
     // File descriptor targets: simple mapping for READ/WRITE (0/1)
     // Used with pipe subsystem to route reads/writes.
-    uint8_t targetByFd[2];
+    uint8_t targetByFd[3];
     // (Más adelante podemos añadir FDs avanzados, semáforos, etc.)
     int children[MAX_CHILDREN]; // IDs de los procesos hijos
     int child_count;            // Número de hijos actuales
@@ -88,7 +88,7 @@ void init_pcb();
  * @param priority Prioridad del proceso (0-3).
  * @return El PID del nuevo proceso, o -1 si hay error.
  */
-Process* create_process(int argc, char ** argv, ProcessEntryPoint entry_point, int priority);
+Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, int priority, int targets[], int hasForeground);
 
 /**
  * @brief Obtiene el PID del proceso que se está ejecutando.

@@ -131,8 +131,9 @@ void parent_process_test(int argc, char** argv) {
 
     // --- Prueba 1: wait_child() (esperar a un hijo específico) ---
     print("[Padre]: Lanzando Hijo A...\n");
-    char* arg_a[] = {"HijoA"};
-    Process* child_a_proc = create_process(1, arg_a, child_process_test, 0);
+  char* arg_a[] = {"HijoA"};
+  int targetsA[3] = {STDIN, STDOUT, STDOUT};
+  Process* child_a_proc = create_process(1, arg_a, child_process_test, 0, targetsA, 0);
     
     if (child_a_proc == NULL) {
         print("[Padre]: ERROR al crear Hijo A.\n");
@@ -150,11 +151,13 @@ void parent_process_test(int argc, char** argv) {
 
     // --- Prueba 2: wait_all_children() (esperar a todos los hijos restantes) ---
     print("[Padre]: Lanzando Hijo B e Hijo C...\n");
-    char* arg_b[] = {"HijoB"};
-    char* arg_c[] = {"HijoC"};
+  char* arg_b[] = {"HijoB"};
+  char* arg_c[] = {"HijoC"};
+  int targetsB[3] = {STDIN, STDOUT, STDOUT};
+  int targetsC[3] = {STDIN, STDOUT, STDOUT};
     
-    Process* child_b_proc = create_process(1, arg_b, child_process_test, 0);
-    Process* child_c_proc = create_process(1, arg_c, child_process_test, 0);
+  Process* child_b_proc = create_process(1, arg_b, child_process_test, 0, targetsB, 0);
+  Process* child_c_proc = create_process(1, arg_c, child_process_test, 0, targetsC, 0);
 
     if (child_b_proc == NULL || child_c_proc == NULL) {
         print("[Padre]: ERROR al crear Hijo B o C.\n");
@@ -240,8 +243,10 @@ static void run_pipe_demo(void) {
   char *wargv[] = { id_str };
   char *rargv[] = { id_str };
 
-  Process *reader = create_process(1, rargv, pipe_reader, 0);
-  Process *writer = create_process(1, wargv, pipe_writer, 0);
+  int targetsReader[3] = {id, STDOUT, STDOUT};
+  int targetsWriter[3] = {STDIN, id, STDOUT};
+  Process *reader = create_process(1, rargv, pipe_reader, 0, targetsReader, 0);
+  Process *writer = create_process(1, wargv, pipe_writer, 0, targetsWriter, 0);
 
   if (!reader || !writer) {
     print("[PipeDemo] ERROR: creando procesos de pipe\n");
@@ -290,7 +295,8 @@ int main() {
 
   // --- Iniciar el proceso de prueba ---
   char* arg_parent[] = {"TestPadre"};
-  Process* parent_test = create_process(1, arg_parent, parent_process_test, 0);
+  int targetsParent[3] = {STDIN, STDOUT, STDOUT};
+  Process* parent_test = create_process(1, arg_parent, parent_process_test, 0, targetsParent, 1);
 
   // Crear procesos con diferentes prioridades usando la interfaz correcta
   //char* arga[] ={"procA", "A"};
