@@ -31,12 +31,10 @@ int fd_read(int32_t fd, uint8_t *userBuff, int32_t count) {
         return -1;
     }
 
-    // Map FD to target; if STDIN, read from keyboard buffer
     uint8_t target = proc->targetByFd[fd];
     if (fd == READ_FD && target == STDIN) {
         int32_t i = 0;
         int8_t c;
-        // Mimic sys_read semantics: block until RETURN or count reached
         while (i < count && (c = getKeyboardCharacter(AWAIT_RETURN_KEY | SHOW_BUFFER_WHILE_TYPING)) != EOF) {
             *(userBuff + i) = c;
             i++;
@@ -56,9 +54,7 @@ int fd_write(int32_t fd, const uint8_t *userBuff, int32_t count) {
 
     uint8_t target = proc->targetByFd[fd];
 
-    // Fast path: write to terminal if targeting STDOUT directly
     if (fd == WRITE_FD && target == STDOUT) {
-        // printToFd can handle raw bytes with count
         return printToFd(STDOUT, (const char *)userBuff, count);
     }
 

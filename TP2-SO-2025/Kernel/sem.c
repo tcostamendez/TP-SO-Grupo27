@@ -1,5 +1,4 @@
 #include "sem.h"
-#include "alloc.h"
 #include "interrupts.h"
 #include "panic.h"
 #include "process.h"
@@ -14,7 +13,7 @@ typedef struct sem {
     uint16_t value;
     uint8_t lock;
     uint16_t users;
-    QueueADT blockedProcesses; // queue of int (pid)
+    QueueADT blockedProcesses; 
 } sem;
 
 typedef struct semQueue {
@@ -84,7 +83,6 @@ Sem semOpen(const char *name, uint16_t value) {
         return NULL;
     }
 
-    // copiar nombre
     my_strcpy(newSem->name, name);
     newSem->value = value;
     newSem->lock = 0;
@@ -154,12 +152,6 @@ int semPost(Sem semToPost) {
         }
     } else {
         semToPost->value++;
-        // Comentado para reducir spam
-        /*
-        print("[sem] incremented value to ");
-        printDec(semToPost->value);
-        print("\n");
-        */
     }
     semUnlock(&semToPost->lock);
     return 0;
@@ -189,17 +181,10 @@ int semWait(Sem semToWait) {
             semUnlock(&semToWait->lock);
             return -1;
         }
-        // block current process
         block_process(cur);
         blocked = 1;
     } else {
         semToWait->value--;
-        // Comentado para reducir spam
-        /*
-        print("[sem] decremented value to ");
-        printDec(semToWait->value);
-        print("\n");
-        */
     }
     semUnlock(&semToWait->lock);
     if (blocked) {

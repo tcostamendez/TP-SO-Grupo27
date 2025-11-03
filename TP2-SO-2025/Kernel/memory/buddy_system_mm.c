@@ -15,7 +15,6 @@ void mm_init(void *base_address, size_t total_size) {
         buddy_lists[i] = NULL;
     }
 
-    // Lógica simplificada y más segura para encontrar el orden máximo
     int k = 0;
     while ((((uint64_t)1 << k) * MIN_BLOCK_SIZE <= total_size) && (k <= MAX_ORDER)) {
         k++;
@@ -23,7 +22,7 @@ void mm_init(void *base_address, size_t total_size) {
     int max_k = k - 1;
 
     if (max_k < 0) {
-        return; // No hay suficiente memoria ni para el bloque más chico
+        return;
     }
   
     start_addr = base_address;
@@ -58,7 +57,6 @@ void *mm_alloc(size_t size) {
           
             while (current_order > target_order) {
                 current_order--;
-                // Lógica simplificada y más segura para calcular la mitad del tamaño
                 uint64_t half_size = (uint64_t)MIN_BLOCK_SIZE << current_order;
               
                 free_block_t *buddy = (free_block_t *)((uintptr_t)block + half_size);
@@ -85,7 +83,6 @@ void mm_free(void *ptr) {
     int current_order = metadata->order;
 
     while (current_order < MAX_ORDER) {
-        // Lógica simplificada y más segura para calcular el tamaño del bloque
         uint64_t block_size = (uint64_t)MIN_BLOCK_SIZE << current_order;
       
         uintptr_t relative_addr = (uintptr_t)block_to_free - (uintptr_t)start_addr;

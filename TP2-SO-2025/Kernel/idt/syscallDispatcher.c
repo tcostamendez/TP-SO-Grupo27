@@ -8,7 +8,6 @@
 #include <video.h>
 //#include "first_fit_mm.h"
 #include "buddy_system_mm.h"
-#include "alloc.h"
 #include "fd.h"
 #include "pipe.h"
 #include "sem.h"

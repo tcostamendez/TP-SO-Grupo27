@@ -2,7 +2,6 @@
 #define ARRAY_H
 
 #include "lib.h"
-#include "alloc.h"
 #include "stddef.h"
 
 typedef struct ArrayCDT * ArrayADT;

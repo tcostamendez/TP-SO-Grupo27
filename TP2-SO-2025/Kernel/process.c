@@ -1,12 +1,12 @@
 #include "process.h"
-#include "scheduler.h"      // Lo necesitamos para add_to_scheduler()
-#include "memory_manager.h" // (Tu header) Lo necesitamos para mm_alloc() y mm_free()
-#include <lib.h>            // (Tu header) Para memset()
-#include <strings.h>        // (Tu header) Para my_strcpy() y strlen()
+#include "scheduler.h"      
+#include "memory_manager.h" 
+#include <lib.h>           
+#include <strings.h>        
 #include <interrupts.h>
 #include "strings.h"
 #include "sem.h"
-#include "fd.h" // for STDIN/STDOUT constants
+#include "fd.h" 
 #include "pipe.h"
 
 /**
@@ -58,18 +58,15 @@ static void remove_from_process_table(int pid) {
 }
 
 void process_terminator(void) {
-    // Comentado para reducir spam
-    // print("[process_terminator] entry\n");
+   
     Process *cur = get_current_process();
     if (cur == NULL) {
-        // Shouldn't happen, pero en caso de problemas: halt CPU
         for(;;) _hlt();
     }
 
     int pid = cur->pid;
     print("[process_terminator] pid="); printDec(pid); print("\n");
 
-    // Preparar nombre del semáforo ANTES de _cli
     char *pid_str = num_to_str((uint64_t)pid);
     char *sem_name = NULL;
     if (pid_str) {
@@ -83,11 +80,8 @@ void process_terminator(void) {
 
     _cli();
     
-    // Marcar como TERMINATED
     cur->state = TERMINATED;
-    // print("[process_terminator] marked TERMINATED\n");
     
-    // CRÍTICO: Remover de todas las colas del scheduler
     extern QueueADT ready_queue;
     extern QueueADT blocked_queue;
     extern Process* running_process;
@@ -97,11 +91,9 @@ void process_terminator(void) {
     if (running_process == cur) {
         running_process = NULL;
     }
-    // print("[process_terminator] removed from queues\n");
     
     _sti();
     
-    // Detach and close any pipes attached to this process
     if (cur) {
         uint8_t r = cur->targetByFd[READ_FD];
         uint8_t w = cur->targetByFd[WRITE_FD];
@@ -115,38 +107,34 @@ void process_terminator(void) {
         }
     }
     
-    // Notificar al padre mediante semPost (FUERA de _cli)
     if (sem_name) {
         Sem s = semOpen(sem_name, 0);
         if (s) {
-            // print("[process_terminator] posting to semaphore\n");
             semPost(s);
             semClose(s);
         }
         mm_free(sem_name);
     }
-    // print("[process_terminator] antes _force_scheduler_interrupt()\n");
-    // Forzar cambio de contexto - NUNCA debería retornar
+
     _force_scheduler_interrupt();
     
-    // Si por alguna razón llegamos aquí, loop infinito
     print("[process_terminator] ERROR: returned from interrupt (should never happen)\n");
     for(;;) _hlt();
 }
 
 Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, int priority) {
-    _cli(); // Proteger asignación de PID
+    _cli();
     
     Process* p = (Process*) mm_alloc(sizeof(Process));
     if (p == NULL) {
-        print("PCB_ALLOC_FAIL\n"); // DEBUG
+        print("PCB_ALLOC_FAIL\n");
         _sti();
         return NULL;
     }
 
     p->stackBase = mm_alloc(PROCESS_STACK_SIZE);
     if (p->stackBase == NULL) {
-        print("STACK_ALLOC_FAIL\n"); // DEBUG
+        print("STACK_ALLOC_FAIL\n");
         mm_free(p);
         _sti();
         return NULL;
@@ -157,7 +145,7 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
     printDec(p->pid);
     print("\n");
     
-    _sti(); // Permitir interrupciones de nuevo
+    _sti();
     
     if(pid != 1){
         Process *parent = get_current_process();
@@ -170,19 +158,18 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
             p->ppid = 0;
         }
     }else{
-        p->ppid = 0; //el primer proceso es su propio padre
+        p->ppid = 0;
     }
     p->state = READY;
     p->rip = entry_point;
-    p->ground = BACKGROUND;  // Por defecto en background
-    p->rbp = 0;              // Se actualizará en runtime
+    p->ground = BACKGROUND; 
+    p->rbp = 0;              
     
-    // Validar y establecer prioridad
     if (priority < MIN_PRIORITY || priority > MAX_PRIORITY) {
         priority = DEFAULT_PRIORITY;
     }
     p->priority = priority;
-    p->quantum_remaining = p->priority + 1;  // Quantum basado en prioridad
+    p->quantum_remaining = p->priority + 1;
 
     uint64_t stack_top = (uint64_t)p->stackBase + PROCESS_STACK_SIZE;
 
@@ -216,25 +203,9 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
 		p->argv[0] = "unnamed_process";
 	}
 
-    // --- CAMBIO ---
-    // Llamada a stackInit simplificada
-    /*
-    print("[create_process] calling stackInit, stack_top=");
-    printHex(stack_top);
-    print(", entry=");
-    printHex((uint64_t)p->rip);
-    print("\n");
-    */
     
     p->rsp = stackInit(stack_top, p->rip, process_terminator, p->argc, p->argv);
     
-    /*
-    print("[create_process] stackInit returned rsp=");
-    printHex(p->rsp);
-    print("\n");
-    */
-    
-    // VALIDACIÓN: verificar que RSP esté dentro del stack
     uint64_t stack_bottom = (uint64_t)p->stackBase;
     if (p->rsp < stack_bottom || p->rsp >= stack_top) {
         print("[create_process] ERROR: RSP fuera de rango! stack_bottom=");
@@ -249,7 +220,6 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
         return NULL;
     }
     
-    // Agregar a la tabla de procesos
     if (add_to_process_table(p) != 0) {
         print("Error adding process to process table\n");
         mm_free(p->stackBase);
@@ -257,8 +227,7 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
         return NULL;
     }
 
-    // crear semaforo de wait para este pid: "wait_<pid>"
-    if(p->pid != 0){ //no lo quiero hacer para el primer proceso
+    if(p->pid != 0){
         char *pid_str = num_to_str((uint64_t)p->pid);
         if (pid_str) {
             int name_len = strlen("wait_") + strlen(pid_str) + 1;
@@ -266,19 +235,15 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
             if (name) {
                 my_strcpy(name, "wait_");
                 catenate(name, pid_str);
-                semOpen(name, 0); // crea sem con value 0
-                // no cerramos acá; dejar que quien espere cierre
-                // (liberaciones menores no cubiertas)
+                semOpen(name, 0);
             }
         }
     }
     
-    // Inicializar destinos de FDs por defecto
     p->targetByFd[READ_FD] = STDIN;
     p->targetByFd[WRITE_FD] = STDOUT;
 
-    //para asegurar que se cargue
-    if(p->pid != 0){ //el proceso idle no lo agrego
+    if(p->pid != 0){
         _cli();
         add_to_scheduler(p);
         _sti();
@@ -308,17 +273,17 @@ Process* get_process(int pid) {
 
 int set_priority(int pid, int new_priority) {
     if (new_priority < MIN_PRIORITY || new_priority > MAX_PRIORITY) {
-        return -1; // Prioridad inválida
+        return -1;
     }
     
     Process* p = get_process(pid);
     if (p == NULL) {
-        return -1; // Proceso no encontrado
+        return -1;
     }
     
     _cli();
     p->priority = new_priority;
-    p->quantum_remaining = new_priority + 1; // Resetear quantum
+    p->quantum_remaining = new_priority + 1;
     _sti();
     
     return 0;
@@ -333,8 +298,6 @@ int get_priority(int pid) {
 }
 
 Process* get_current_process() {
-    // Esta función debería llamar al scheduler para obtener el proceso running
-    extern Process* get_running_process();
     return get_running_process();
 }
 
@@ -365,7 +328,7 @@ int kill_process(int pid) {
     Process* p = get_process(pid);
     if (p == NULL) {
         print("[kill] pid not found\n");
-        return -1; // Proceso no existe
+        return -1;
     }
     
     extern Process* get_running_process();
@@ -373,14 +336,11 @@ int kill_process(int pid) {
 
     _cli();
     print("[kill] after cli, state="); printDec(p->state); print("\n");
-    
-    // Si el proceso a matar es el que se está ejecutando AHORA:
-    // Solo marcar TERMINATED y forzar cambio de contexto
+
     if (running == p) {
         print("[kill] killing self - marking TERMINATED\n");
         p->state = TERMINATED;
         
-        // CRÍTICO: Remover de scheduler antes de notificar
         extern QueueADT ready_queue;
         extern QueueADT blocked_queue;
         extern Process* running_process;
@@ -392,7 +352,6 @@ int kill_process(int pid) {
         }
         print("[kill] removed from scheduler\n");
         
-        // Notificar al padre mediante semPost en "wait_<pid>"
         char *pid_str = num_to_str((uint64_t)pid);
         if (pid_str) {
             int name_len = strlen("wait_") + strlen(pid_str) + 1;
@@ -414,16 +373,13 @@ int kill_process(int pid) {
         print("[kill] about to _force_scheduler_interrupt()\n");
         _force_scheduler_interrupt();
         
-        // NUNCA debería llegar aquí
         print("[kill] ERROR: returned from interrupt\n");
         for(;;) _hlt();
     }
 
-    // Para procesos que no son el running, limpiar de forma segura
     print("[kill] killing other process\n");
     p->state = TERMINATED;
     
-    // Notificar al padre
     char *pid_str = num_to_str((uint64_t)pid);
     if (pid_str) {
         int name_len = strlen("wait_") + strlen(pid_str) + 1;
@@ -444,7 +400,6 @@ int kill_process(int pid) {
     print("[kill] removing from scheduler\n");
     remove_process_from_scheduler(p);
     
-    // Detach and close any pipes attached to this process
     if (p) {
         uint8_t r = p->targetByFd[READ_FD];
         uint8_t w = p->targetByFd[WRITE_FD];
@@ -494,15 +449,12 @@ int get_ground(int pid) {
     return p->ground;
 }
 
-// Nuevas funciones para esperar por hijos
 int wait_child(int child_pid) {
-    // abre el sem "wait_<child_pid>" y espera
     char *pid_str = num_to_str((uint64_t)child_pid);
     if (!pid_str) return -1;
     int name_len = strlen("wait_") + strlen(pid_str) + 1;
     char *name = mm_alloc(name_len);
     if (!name) {
-        //habria que liberar
         return -1;
     }
     my_strcpy(name, "wait_");
@@ -513,13 +465,10 @@ int wait_child(int child_pid) {
     int r = semWait(s);
     semClose(s);
     
-    // IMPORTANTE: Remover este hijo del array de children del padre
-    // para que wait_all_children() no intente esperarlo de nuevo
     Process *cur = get_current_process();
     if (cur) {
         for (int i = 0; i < cur->child_count; ++i) {
             if (cur->children[i] == child_pid) {
-                // Shift todos los hijos subsiguientes una posición hacia la izquierda
                 for (int j = i; j < cur->child_count - 1; ++j) {
                     cur->children[j] = cur->children[j + 1];
                 }
@@ -547,8 +496,6 @@ void reap_terminated_processes(void) {
     for (int i = 0; i < MAX_PROCESSES; ++i) {
         Process* p = get_process(i);
         if (p && p->state == TERMINATED) {
-            // Si no es el running_process (o si running_process != p)
-            // liberá recursos y borrá de tabla
             if (p != get_running_process()) {
                 if (p->stackBase) { mm_free(p->stackBase); p->stackBase = NULL; }
                 remove_from_process_table(p->pid);
@@ -566,8 +513,8 @@ char ** get_process_data(int process_id){
     if(process_id < 0 || process_id >= MAX_PROCESSES || process_id > pid){
         return NULL;
     }
-    char ** ans = mm_alloc(sizeof(char*) * 7); //7 porque son 6 campos y un null en el final
-    char * name = mm_alloc(16); //magic number, pero se tienen que crear demasiados procesos para pasarlo
+    char ** ans = mm_alloc(sizeof(char*) * 7);
+    char * name = mm_alloc(16);
     char * id = num_to_str((uint64_t)process_table[process_id]->pid);
     my_strcpy(name, "Process ");
     catenate(name, id);

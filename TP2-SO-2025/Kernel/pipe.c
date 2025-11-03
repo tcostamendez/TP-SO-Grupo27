@@ -7,7 +7,7 @@
 #include "strings.h"
 #include "memory_manager.h"
 
-#define SEM_NAME_LONG 12 // "semPipe" (7) + 2 digits + 1 suffix + 1 null
+#define SEM_NAME_LONG 12
 
 #define NEXT_IDX(i) (((i) + 1) % (PIPE_BUFFER_SIZE))
 #define PREVIOUS_IDX(i) ((i) == 0 ? ((PIPE_BUFFER_SIZE) - 1) : ((i) - 1))
@@ -128,7 +128,6 @@ int writePipe(uint8_t id, const uint8_t *buffer, uint64_t bytes) {
     int writtenBytes = 0;
 
     while (writtenBytes < (int)bytes) {
-        // full buffer
         if (pipeToWrite->idxToWrite == PREVIOUS_IDX(pipeToWrite->idxToRead)) {
             pipeToWrite->waitingToWrite = 1;
             if (-1 == semWait(pipeToWrite->canWrite)) {
@@ -263,7 +262,6 @@ static Pipe createPipe(void) {
 }
 
 static void buildSemName(uint8_t id, char suffix, char out[SEM_NAME_LONG]) {
-    // Build: "semPipe" + two digits + suffix
     out[0]='s'; out[1]='e'; out[2]='m'; out[3]='P'; out[4]='i'; out[5]='p'; out[6]='e';
     out[7] = '0' + (id / 10);
     out[8] = '0' + (id % 10);

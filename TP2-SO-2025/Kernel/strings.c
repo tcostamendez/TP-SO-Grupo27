@@ -36,7 +36,7 @@ char * num_to_str(uint64_t num){
         aux /= 10;
         len++;
     }
-    len++; //para 0 del final
+    len++; 
     char * ans = mm_alloc(len * sizeof(char));
     int i = 0;
     while(num > 0){

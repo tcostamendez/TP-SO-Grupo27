@@ -4,7 +4,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "alloc.h"
 #include "lib.h"
 
 typedef struct QueueCDT * QueueADT; // queue that iterates cyclically

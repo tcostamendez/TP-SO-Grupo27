@@ -35,18 +35,7 @@ void exceptionDispatcher(int exception, uint64_t *registers) {
   case PAGE_FAULT_ID:
     return _exceptionHandler0E();
   default:
-
-
-    // // --- AÑADE ESTO ---
-    //   setFontSize(2);
-    //   print("!! UNHANDLED EXCEPTION: 0x");
-    //   printHex(exception);
-    //   print(" !!\n");
-    //   // (Aquí puedes llamar a printExceptionData(registers, exception) si quieres)
-    //   while(1) _hlt(); // Congela el kernel aquí
-    //   // --- FIN DE AÑADIDO ---
-     return; // returns to the asm exceptionHandler which will return to the
-            // shell
+     return;
   }
 }
 
@@ -86,8 +75,7 @@ void printExceptionData(uint64_t *registers, int errorCode) {
   print("Press r to go back to Shell");
 
   char a;
-  // getKeyboardCharacter calls _hlt which triggers _sti
-  // so non-keyboard interrupts are disabled until the user confirms
+
 
   picMasterMask(KEYBOARD_PIC_MASTER);
   picSlaveMask(NO_INTERRUPTS);

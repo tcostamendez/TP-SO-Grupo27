@@ -11,12 +11,10 @@ typedef struct free_block {
    struct free_block *next;
 } free_block_t;
 
-// --- ESTRUCTURA CORREGIDA ---
-// Se agrega un "relleno" (padding) para que la estructura ocupe 8 bytes en total.
-// Esto garantiza que el puntero devuelto por mm_alloc esté alineado a 8 bytes.
+
 typedef struct alloc_metadata {
    uint8_t order;
-   uint8_t __padding[7]; // Relleno para alinear a 8 bytes
+   uint8_t __padding[7]; 
 } alloc_metadata_t;
 
 
