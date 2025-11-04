@@ -45,18 +45,21 @@ int nice(void);
 int block(void);
 int mem(void);
 
-static void printPreviousCommand(enum REGISTERABLE_KEYS scancode);
-static void printNextCommand(enum REGISTERABLE_KEYS scancode);
+static int printPreviousCommand(enum REGISTERABLE_KEYS scancode);
+static int printNextCommand(enum REGISTERABLE_KEYS scancode);
+static int deleteCharacter(enum REGISTERABLE_KEYS scancode);
+static void emptyScreenBuffer(void);
 
 static uint8_t last_command_arrowed = 0;
 
 typedef struct {
   char *name;
-  int (*function)(void);
+  int (*function)(int, char**);
   char *description;
   char isBuiltin;
 } Command;
 
+/*
 //wrapper de test_mm
 int run_mm_test(void) {
   // 1. Parseamos el siguiente token, que debería ser la cantidad de memoria
@@ -84,85 +87,86 @@ int run_mm_test(void) {
 
   return result;
 }
+*/
 
 /* All available commands. Sorted alphabetically by their name */
 Command commands[] = {
     {.name = "clear",
-     .function = (int (*)(void))(unsigned long long)clear,
+     .function = (int (*)(int, char**))(unsigned long long)clear,
      .description = "Clears the screen",
      .isBuiltin = 1},
     {.name = "divzero",
-     .function = (int (*)(void))(unsigned long long)_divzero,
+     .function = (int (*)(int, char**))(unsigned long long)_divzero,
      .description = "Generates a division by zero exception",
      .isBuiltin=1},
     {.name = "echo",
-     .function = (int (*)(void))(unsigned long long)echo,
+     .function = (int (*)(int, char**))(unsigned long long)echo,
      .description = "Prints the input string",
      .isBuiltin=1},
     {.name = "exit",
-     .function = (int (*)(void))(unsigned long long)exit,
+     .function = (int (*)(int, char**))(unsigned long long)exit,
      .description = "Command exits w/ the provided exit code or 0",
      .isBuiltin = 1},
     {.name = "font",
-     .function = (int (*)(void))(unsigned long long)font,
+     .function = (int (*)(int, char**))(unsigned long long)font,
      .description =
          "Increases or decreases the font size.\n\t\t\t\tUse:\n\t\t\t\t\t  + "
          "font increase\n\t\t\t\t\t  + font decrease",
       .isBuiltin = 1},
     {.name = "help",
-     .function = (int (*)(void))(unsigned long long)help,
+     .function = (int (*)(int, char**))(unsigned long long)help,
      .description = "Prints the available commands",
      .isBuiltin = 0},
     {.name = "history",
-     .function = (int (*)(void))(unsigned long long)history,
+     .function = (int (*)(int, char**))(unsigned long long)history,
      .description = "Prints the command history",
      .isBuiltin = 1},
     {.name = "invop",
-     .function = (int (*)(void))(unsigned long long)_invalidopcode,
+     .function = (int (*)(int, char**))(unsigned long long)_invalidopcode,
      .description = "Generates an invalid Opcode exception",
      .isBuiltin = 1},
     {.name = "regs",
-     .function = (int (*)(void))(unsigned long long)regs,
+     .function = (int (*)(int, char**))(unsigned long long)regs,
      .description = "Prints the register snapshot, if any",
      .isBuiltin=1},
     {.name = "man",
-     .function = (int (*)(void))(unsigned long long)man,
+     .function = (int (*)(int, char**))(unsigned long long)man,
      .description = "Prints the description of the provided command",
      .isBuiltin=1},
     {.name = "snake",
-     .function = (int (*)(void))(unsigned long long)snake,
+     .function = (int (*)(int, char**))(unsigned long long)snake,
      .description = "Launches the snake game",
      .isBuiltin=1},
-    {.name = "testmm",
-     .function = (int (*)(void))(unsigned long long)run_mm_test,
+    /*{.name = "testmm",
+     .function = (int (*)(int, char**))(unsigned long long)run_mm_test,
      .description = "Corre el test de stress del Memory Manager.\n\t\t\t\tUso: testmm <bytes>",
-     .isBuiltin=1},
+     .isBuiltin=1}, */
     {.name = "time",
-     .function = (int (*)(void))(unsigned long long)time,
+     .function = (int (*)(int, char**))(unsigned long long)time,
      .description = "Prints the current time",
      .isBuiltin=1},
     {.name = "ps",
-     .function = (int (*)(void))(unsigned long long)ps,
+     .function = (int (*)(int, char**))(unsigned long long)ps,
      .description = "Lists all processes",
      .isBuiltin=1},
     {.name = "loop",
-     .function = (int (*)(void))(unsigned long long)loop,
+     .function = (int (*)(int, char**))(unsigned long long)loop,
      .description = "Prints hello message every N seconds\n\t\t\t\tUso: loop <delay_seconds>",
      .isBuiltin=1},
     {.name = "kill",
-     .function = (int (*)(void))(unsigned long long)kill,
+     .function = (int (*)(int, char**))(unsigned long long)kill,
      .description = "Kills a process by PID\n\t\t\t\tUso: kill <pid>",
      .isBuiltin=1},
     {.name = "nice",
-     .function = (int (*)(void))(unsigned long long)nice,
+     .function = (int (*)(int, char**))(unsigned long long)nice,
      .description = "Changes process priority\n\t\t\t\tUso: nice <pid> <priority>",
      .isBuiltin=1},
     {.name = "block",
-     .function = (int (*)(void))(unsigned long long)block,
+     .function = (int (*)(int, char**))(unsigned long long)block,
      .description = "Blocks a process\n\t\t\t\tUso: block <pid>",
      .isBuiltin=1},
     {.name = "mem",
-     .function = (int (*)(void))(unsigned long long)mem,
+     .function = (int (*)(int, char**))(unsigned long long)mem,
      .description = "Shows memory status",
      .isBuiltin=1},
 };
@@ -207,16 +211,19 @@ static int parse_command(char *buffer, char *command, ParsedCommand *parsedComma
   parsedCommand->argv[0]= commands[command_i].name;
   parsedCommand->argc=1;
 
-  while(arg!=NULL && strcasecmp(arg, "|") && parsedCommand->argc < MAX_ARGUMENT_COUNT - 1){
-    parsedCommand->argv[parsedCommand->argc] = malloc(strlen(arg)+1);
-    if(parsedCommand->argv[parsedCommand->argc]=NULL){
+  while(arg!=NULL && strcasecmp(arg, "|") && parsedCommand->argc < MAX_ARGUMENT_COUNT - 1) {
+    parsedCommand->argv[parsedCommand->argc] = allocMemory(strlen(arg)+1);
+    
+    if (parsedCommand->argv[parsedCommand->argc] == NULL) {
       perror("Memory allocation failed for command argument");
 			freeMemory(parsedCommand->name);
+
 			for (int i = 0; i < parsedCommand->argc; i++) {
 				freeMemory(parsedCommand->argv[i]);
 			}
 			return -1;
     }
+
     strcpy(parsedCommand->argv[parsedCommand->argc],arg);
     arg = strtok(NULL, " ");
     parsedCommand->argc++;
@@ -233,9 +240,9 @@ static int parse_command(char *buffer, char *command, ParsedCommand *parsedComma
 int main() {
   clear();
 
-  registerKey(KP_UP_KEY, printPreviousCommand);
-  registerKey(KP_DOWN_KEY, printNextCommand);
-  registerKey(BACKSPACE_KEY, deleteCharacter);
+  // registerKey(KP_UP_KEY, printPreviousCommand);
+  // registerKey(KP_DOWN_KEY, printNextCommand);
+  // registerKey(BACKSPACE_KEY, deleteCharacter);
   
   buffer[0] = 0;
   buffer_dim = 0;
@@ -253,7 +260,7 @@ int main() {
 	}
 
   while(1){
-    printf("\e[0mshell (%d) \e[0;32m$\e[0m ", getpid());
+    printf("\e[0mshell (%d) \e[0;32m$\e[0m ", getMyPid());
 
 		signed char c;
 
@@ -279,7 +286,7 @@ int main() {
 
     while(parse_command(parsed==0? buffer:NULL, command, &parsedCommands[parsed])!=-1){
     	if ((++parsed % 5 == 0) && parsed >= parsed_commands_dim) {
-				ParsedCommand *newParsedCommands = malloc(sizeof(ParsedCommand) * (parsed_commands_dim + 5));
+				ParsedCommand *newParsedCommands = allocMemory(sizeof(ParsedCommand) * (parsed_commands_dim + 5));
 				if (newParsedCommands == NULL) {
 					perror("Memory allocation failed for parsed commands");
 					freeMemory(parsedCommands);
@@ -314,7 +321,7 @@ int main() {
 			// 	}
       int targets[2]= {0,1};
       int requestsForeground =1;
-      int newPid = createProcess((void *)parsedCommands[p].function, parsedCommands[p].argc,(char **)parsedCommands[p].argv, 1, targets, requestsForeground);
+      int newPid = createProcess(parsedCommands[p].argc,(char **)parsedCommands[p].argv, (void *)parsedCommands[p].function, 1, targets, requestsForeground);
 
     }
 
@@ -327,28 +334,39 @@ int main() {
   return 0;
 }
 
-static void printPreviousCommand(enum REGISTERABLE_KEYS scancode) {
-  clearInputBuffer();
+static int printPreviousCommand(enum REGISTERABLE_KEYS scancode) {
+
   last_command_arrowed = SUB_MOD(last_command_arrowed, 1, HISTORY_SIZE);
   if (command_history[last_command_arrowed][0] != 0) {
     fprintf(FD_STDIN, command_history[last_command_arrowed]);
   }
+  return 1;
 }
 
-static void printNextCommand(enum REGISTERABLE_KEYS scancode) {
-  clearInputBuffer();
+static int printNextCommand(enum REGISTERABLE_KEYS scancode) {
+
   last_command_arrowed = (last_command_arrowed + 1) % HISTORY_SIZE;
   if (command_history[last_command_arrowed][0] != 0) {
     fprintf(FD_STDIN, command_history[last_command_arrowed]);
   }
+  return 1;
 }
-static int deleteCharacter(enum REGISTERABLE_KEYS scancode, int Ctrl, int Alt, int Shift) {
+
+static int deleteCharacter(enum REGISTERABLE_KEYS scancode) {
 	if (buffer_dim > 0) {
-		clearScreenCharacter();
+		//clearScreenCharacter();
 		buffer_dim--;
 	}
 	return 1;
 }
+
+static void emptyScreenBuffer(void) {
+	while (buffer_dim > 0) {
+		//clearScreenCharacter();
+		buffer_dim--;
+	}
+}
+
 int history(void) {
   uint8_t last = command_history_last;
   DEC_MOD(last, HISTORY_SIZE);

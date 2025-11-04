@@ -1,5 +1,4 @@
 #include <sys.h>
-#include <syscalls.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -25,7 +24,7 @@ void getDate(int *hour, int *minute, int *second) {
 
 void clearScreen(void) { sys_clear_screen(); }
 
-void clearInputBuffer(void) { sys_clear_input_buffer(); }
+// void clearInputBuffer(void) { sys_clear_input_buffer(); }
 
 void drawCircle(uint32_t color, long long int topleftX, long long int topLefyY,
                 long long int diameter) {

@@ -6,6 +6,7 @@
 #include "scheduler.h"
 #include "strings.h"
 #include "sem.h"
+#include "process.h"
 
 typedef struct {
     int64_t r15;
@@ -41,7 +42,7 @@ int32_t sys_fonts_decrease_size(void);
 int32_t sys_fonts_increase_size(void);
 int32_t sys_fonts_set_size(uint8_t size);
 int32_t sys_clear_screen(void);
-int32_t sys_clear_input_buffer(void);
+int32_t sys_clear_screen_character(void);
 uint16_t sys_window_width(void);
 uint16_t sys_window_height(void);
 
@@ -76,7 +77,7 @@ void * sys_malloc(uint64_t size);
 void sys_free(void * ap);
 
 // Process management syscalls prototypes
-Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, int priority, int targets[], int hasForeground);
+int sys_create_process(int argc, char** argv, ProcessEntryPoint entry_point, int priority, int targets[], int hasForeground);
 int sys_get_pid(void);
 int sys_kill(int pid);
 void sys_modify_priority(int pid, int new_priority);
@@ -86,6 +87,7 @@ void sys_unblock_process(int pid);
 void sys_yield(void);
 int sys_wait_pid(int pid);
 int sys_wait_for_children(void);
+int sys_get_process_info(ProcessInfo* info, int pid);
 
 // Pipe syscall prototypes
 int sys_pipe_open(void);

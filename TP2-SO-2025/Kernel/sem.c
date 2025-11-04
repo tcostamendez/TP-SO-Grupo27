@@ -189,6 +189,7 @@ int semWait(Sem semToWait) {
     semUnlock(&semToWait->lock);
     if (blocked) {
         print("[sem] forcing scheduler interrupt\n");
+        extern void _force_scheduler_interrupt();
         _force_scheduler_interrupt();
     }
     return 0;

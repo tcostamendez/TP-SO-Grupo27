@@ -7,7 +7,7 @@ GLOBAL sys_fonts_decrease_size
 GLOBAL sys_fonts_increase_size
 GLOBAL sys_fonts_set_size
 GLOBAL sys_clear_screen
-GLOBAL sys_clear_input_buffer
+GLOBAL sys_clear_screen_character
 
 GLOBAL sys_hour
 GLOBAL sys_minute
@@ -42,6 +42,7 @@ GLOBAL sys_unblock_process
 GLOBAL sys_yield
 GLOBAL sys_wait_pid
 GLOBAL sys_wait_for_children
+GLOBAL sys_get_process_info
 
 GLOBAL sys_pipe_open
 GLOBAL sys_pipe_attach
@@ -78,7 +79,7 @@ sys_fonts_decrease_size: sys_int80 0x80000007
 sys_fonts_increase_size: sys_int80 0x80000008
 sys_fonts_set_size: sys_int80 0x80000009
 sys_clear_screen: sys_int80 0x8000000A
-sys_clear_input_buffer: sys_int80 0x8000000B
+sys_clear_screen_character: sys_int80 0x8000000B
 
 
 sys_hour: sys_int80 0x80000010
@@ -124,3 +125,4 @@ sys_sem_open:         sys_int80 0x80000120
 sys_sem_close:        sys_int80 0x80000121
 sys_sem_wait:         sys_int80 0x80000122
 sys_sem_post:         sys_int80 0x80000123
+sys_get_process_info: sys_int80 0x80000124

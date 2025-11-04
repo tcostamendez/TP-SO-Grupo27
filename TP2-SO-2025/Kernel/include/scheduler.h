@@ -2,13 +2,16 @@
 #define SCHEDULER_H
 
 #include <stdint.h>
-#include "process.h" // Depende de la definición de 'Process'
 #include "queue.h"
 
-QueueADT ready_queue = NULL;
-QueueADT blocked_queue = NULL;
-Process* running_process = NULL;
-Process* idle_proc = NULL;
+// Para evitar dependencias circulares
+typedef struct Process Process;
+
+// External declarations - defined in scheduler.c
+extern QueueADT ready_queue;
+extern QueueADT blocked_queue;
+extern Process* running_process;
+extern Process* idle_proc;
 
 /**
  * @brief Inicializa el scheduler.

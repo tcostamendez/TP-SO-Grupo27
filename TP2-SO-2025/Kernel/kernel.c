@@ -289,6 +289,7 @@ int main() {
   create_process(1, argv, shellModuleAddress,3, targets, 1);
   _sti();
 
+  extern void _force_scheduler_interrupt();
   _force_scheduler_interrupt();
  // while (1) {
  //    _hlt(); // Espera la próxima interrupción

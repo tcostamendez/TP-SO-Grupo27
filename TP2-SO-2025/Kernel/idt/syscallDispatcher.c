@@ -94,7 +94,7 @@ int32_t syscallDispatcher(Registers *registers) {
   
   /* ----------------------------------------------------------------------------------------------------------- */
   case 0x80000100:
-      return (uint32_t) sys_malloc(registers->rdi);
+      return (uint64_t) sys_malloc(registers->rdi);
   case 0x80000101:
       sys_free((void*)registers->rdi);
       return 0;
@@ -317,7 +317,6 @@ int32_t sys_get_character_without_display(void) {
 // ==================================================================
 
 void * sys_malloc(size_t size) {
-  //! REVISAR CASTEO
   return (void *) mm_alloc(size);
 }
 
@@ -414,9 +413,10 @@ int sys_wait_for_children(){
   return wait_all_children();
 }
 
-int sys_get_process_info(ProcessInfo * info, pid){
+int sys_get_process_info(ProcessInfo* info, int pid){
   return get_process_info(info, pid);
 }
+
 // ==================================================================
 // Pipe syscalls
 // ==================================================================
