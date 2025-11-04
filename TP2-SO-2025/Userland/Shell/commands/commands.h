@@ -16,7 +16,6 @@ int _nice(int, char **);
 int _orphan(int, char **);
 int _ps(int, char **);
 int _regs(int, char **);
-int _snake(int, char **);
 int _spawn(int, char **);
 int _time(int, char **);
 int _wc(int, char **);

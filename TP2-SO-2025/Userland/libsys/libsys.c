@@ -145,3 +145,7 @@ int semClose(sem_t s) { return sys_sem_close(s); }
 int semWait(sem_t s) { return sys_sem_wait(s); }
 
 int semPost(sem_t s) { return sys_sem_post(s); }
+
+void shutdown(void) {
+  sys_shutdown();
+}

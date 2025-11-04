@@ -31,7 +31,6 @@ static const uint64_t PageSize = 0x1000;
 //static void *const HEAP_END_ADDRESS = (void *)0x10600000; //256mb
 static void *const HEAP_END_ADDRESS = (void *)0x20000000;  //512mb
 static void *const shellModuleAddress = (void *)0x400000;
-static void *const snakeModuleAddress = (void *)0x500000;
 
 typedef int (*EntryPoint)();
 
@@ -50,7 +49,6 @@ void *getStackBase() {
 void *initializeKernelBinary() {
   void *moduleAddresses[] = {
       shellModuleAddress,
-      snakeModuleAddress,
   };
 
   loadModules(&endOfKernelBinary, moduleAddresses);

@@ -12,7 +12,6 @@
 #include <ansiColors.h>
 #endif
 
-static void *const snakeModuleAddress = (void *)0x500000;
 
 static char buffer[MAX_BUFFER_SIZE];
 static int buffer_dim = 0;
