@@ -2,6 +2,7 @@
 #define _LIBC_SYSCALLS_H_
 
 #include <stdint.h>
+#include "syscall_numbers.h"
 
 #define MAX_PROCESS_NAME 32
 
@@ -119,31 +120,31 @@ int32_t sys_write(int64_t fd, const void * buf, int64_t count);
 int32_t sys_read(int64_t fd, void * buf, int64_t count);
 
 // Custom syscall prototypes
-/* 0x80000000 */
+/* SYS_START_BEEP = 10 */
 int32_t sys_start_beep(uint32_t nFrequence);
-/* 0x80000001 */
+/* SYS_STOP_BEEP = 11 */
 int32_t sys_stop_beep(void);
-/* 0x80000002 */
+/* SYS_FONTS_TEXT_COLOR = 12 */
 int32_t sys_fonts_text_color(uint32_t color);
-/* 0x80000003 */
+/* SYS_FONTS_BACKGROUND_COLOR = 13 */
 int32_t sys_fonts_background_color(uint32_t color);
-/* 0x80000007 */
+/* SYS_FONTS_DECREASE_SIZE = 14 */
 int32_t sys_fonts_decrease_size(void);
-/* 0x80000008 */
+/* SYS_FONTS_INCREASE_SIZE = 15 */
 int32_t sys_fonts_increase_size(void);
-/* 0x80000009 */
+/* SYS_FONTS_SET_SIZE = 16 */
 int32_t sys_fonts_set_size(uint8_t size);
-/* 0x8000000A */
+/* SYS_CLEAR_SCREEN = 17 */
 int32_t sys_clear_screen(void);
-/* 0x8000000B */
+/* SYS_CLEAR_INPUT_BUFFER = 18 */
 int32_t sys_clear_input_buffer(void);
 
 // Date syscall prototypes
-/* 0x80000010 */
+/* SYS_HOUR = 19 */
 int32_t sys_hour(int * hour);
-/* 0x80000011 */
+/* SYS_MINUTE = 20 */
 int32_t sys_minute(int * minute);
-/* 0x80000012 */
+/* SYS_SECOND = 21 */
 int32_t sys_second(int * second);
 
 int32_t sys_circle(int color, long long int topleftX, long long int topLefyY, long long int diameter);
@@ -170,7 +171,7 @@ void * sys_malloc(uint64_t size);
 
 void sys_free(void * ap);
 
-// Process management syscalls (0x80000102-0x8000010C)
+// Process management syscalls (34-43)
 int sys_create_process(int argc, char** argv, void (*entry_point)(int, char**), int priority, int * targets, int hasForeground);
 int sys_get_pid(void);
 int sys_kill_process(int pid);
@@ -183,14 +184,14 @@ int sys_wait_pid(int pid);
 int sys_wait_for_children(void);
 int sys_get_process_info(ProcessInfo* info, int pid);
 
-// Pipe syscalls (0x80000110 - 0x80000114)
+// Pipe syscalls (44-48)
 int sys_pipe_open(void);
 int sys_pipe_attach(uint8_t id);
 int sys_pipe_close(uint8_t id);
 int sys_set_read_target(uint8_t id);
 int sys_set_write_target(uint8_t id);
 
-// Semaphore syscalls (0x80000120 - 0x80000123)
+// Semaphore syscalls (49-52)
 void * sys_sem_open(const char *name, uint16_t value);
 int sys_sem_close(void *sem);
 int sys_sem_wait(void *sem);

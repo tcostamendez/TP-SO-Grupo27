@@ -65,7 +65,6 @@ void process_terminator(void) {
     }
 
     int pid = cur->pid;
-    print("[process_terminator] pid="); printDec(pid); print("\n");
 
     char *pid_str = num_to_str((uint64_t)pid);
     char *sem_name = NULL;
@@ -118,7 +117,6 @@ void process_terminator(void) {
 
     _force_scheduler_interrupt();
     
-    print("[process_terminator] ERROR: returned from interrupt (should never happen)\n");
     for(;;) _hlt();
 }
 
@@ -127,23 +125,18 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
     
     Process* p = (Process*) mm_alloc(sizeof(Process));
     if (p == NULL) {
-        print("PCB_ALLOC_FAIL\n");
         _sti();
         return NULL;
     }
 
     p->stackBase = mm_alloc(PROCESS_STACK_SIZE);
     if (p->stackBase == NULL) {
-        print("STACK_ALLOC_FAIL\n");
         mm_free(p);
         _sti();
         return NULL;
     }
 
     p->pid = pid++;
-    print("[create_process] assigned PID=");
-    printDec(p->pid);
-    print("\n");
     
     _sti();
     
@@ -208,20 +201,12 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
     
     uint64_t stack_bottom = (uint64_t)p->stackBase;
     if (p->rsp < stack_bottom || p->rsp >= stack_top) {
-        print("[create_process] ERROR: RSP fuera de rango! stack_bottom=");
-        printHex(stack_bottom);
-        print(", rsp=");
-        printHex(p->rsp);
-        print(", stack_top=");
-        printHex(stack_top);
-        print("\n");
         mm_free(p->stackBase);
         mm_free(p);
         return NULL;
     }
     
     if (add_to_process_table(p) != 0) {
-        print("Error adding process to process table\n");
         mm_free(p->stackBase);
         mm_free(p);
         return NULL;
@@ -325,10 +310,8 @@ void foreach_process(void (*callback)(Process* p, void* arg), void* arg) {
 }
 
 int kill_process(int pid) {
-    print("[kill] entry pid="); printDec(pid); print("\n");
     Process* p = get_process(pid);
     if (p == NULL) {
-        print("[kill] pid not found\n");
         return -1;
     }
     
@@ -336,10 +319,8 @@ int kill_process(int pid) {
     Process* running = get_running_process();
 
     _cli();
-    print("[kill] after cli, state="); printDec(p->state); print("\n");
 
     if (running == p) {
-        print("[kill] killing self - marking TERMINATED\n");
         p->state = TERMINATED;
         
         extern QueueADT ready_queue;
@@ -351,7 +332,6 @@ int kill_process(int pid) {
         if (running_process == p) {
             running_process = NULL;
         }
-        print("[kill] removed from scheduler\n");
         
         char *pid_str = num_to_str((uint64_t)pid);
         if (pid_str) {
@@ -362,7 +342,6 @@ int kill_process(int pid) {
                 catenate(name, pid_str);
                 Sem s = semOpen(name, 0);
                 if (s) {
-                    print("[kill] posting to wait sem\n");
                     semPost(s);
                     semClose(s);
                 }
@@ -371,14 +350,11 @@ int kill_process(int pid) {
         }
         
         _sti();
-        print("[kill] about to _force_scheduler_interrupt()\n");
         _force_scheduler_interrupt();
         
-        print("[kill] ERROR: returned from interrupt\n");
         for(;;) _hlt();
     }
 
-    print("[kill] killing other process\n");
     p->state = TERMINATED;
     
     char *pid_str = num_to_str((uint64_t)pid);
@@ -398,7 +374,6 @@ int kill_process(int pid) {
     }
 
     extern void remove_process_from_scheduler(Process* p);
-    print("[kill] removing from scheduler\n");
     remove_process_from_scheduler(p);
     
     if (p) {
@@ -423,7 +398,6 @@ int kill_process(int pid) {
     mm_free(p);
 
     _sti();
-    print("[kill] done\n");
     return 0;
 }
 
@@ -561,3 +535,4 @@ int get_process_info(ProcessInfo * info, int pid){
 
     return 1;
 }
+

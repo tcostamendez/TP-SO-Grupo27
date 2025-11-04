@@ -1,15 +1,15 @@
 #include "stdio.h"
 
-int block(int argc, char* argv[]){
+int _block(int argc, char* argv[]){
     if(argc != 2){
-        //error
+        perror("Usage: block <pid>");       
         return 1;
     }
     int pid = 0;
     sscanf(argv[1], "%d", &pid);
     if(pid <= 0){
-        //error
+        perror("Invalid pid");
         return 1;
     }
-    
+    return blockProcess(pid);
 }

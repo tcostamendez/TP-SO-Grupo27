@@ -273,16 +273,10 @@ int main() {
   mm_init(heapStart, heapSize);
 
   /* Inicializar subsistema de semáforos antes de crear procesos que usen semOpen */
-  if (initSemQueue() < 0) {
-    print("Failed to init sem queue\n");
-  } else {
-    print("Sem queue initialized\n");
-  }
+  initSemQueue();
 
   // Inicializar almacenamiento de pipes
-  if (initPipeStorage() < 0) {
-    print("Failed to init pipe storage\n");
-  }
+  initPipeStorage();
   init_scheduler();
   char * argv[]= {"shell"};
   int targets []= {STDIN, STDOUT, ERR_FD};

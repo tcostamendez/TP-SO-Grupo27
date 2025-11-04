@@ -52,7 +52,6 @@ void init_scheduler() {
       
     running_process = idle_proc;
     idle_proc->state = RUNNING;
-    print("init scheduler");
     scheduler_online = 1;
 }
 
@@ -112,17 +111,9 @@ uint64_t schedule(uint64_t current_rsp) {
         running_process->rsp = current_rsp;
         
         if (running_process->state == TERMINATED) {
-            print("[sched] current process TERMINATED, pid=");
-            printDec(running_process->pid);
-            print("\n");
             running_process = NULL;
         }
         else if (running_process->state == BLOCKED) {
-            print("[sched] current process BLOCKED, pid=");
-            printDec(running_process->pid);
-            print(" - RSP saved=");
-            printHex(current_rsp);
-            print("\n");
             running_process = NULL;
         }
         else if (running_process != idle_proc && running_process->state == RUNNING) {
@@ -142,23 +133,16 @@ uint64_t schedule(uint64_t current_rsp) {
     if (!queueIsEmpty(ready_queue)) {
         while (!queueIsEmpty(ready_queue)) {
             if (dequeue(ready_queue, &next) == NULL) {
-                print("[sched] dequeue returned NULL\n");
                 next = NULL;
                 break;
             }
             
-            if (next->state == TERMINATED) {
-                print("[sched] skipping TERMINATED process, pid=");
-                printDec(next->pid);
-                print("\n");
+            if (next->state == TERMINATED) {;
                 next = NULL;
                 continue; 
             }
             
             if (next->state == BLOCKED) {
-                print("[sched] WARNING: BLOCKED process in ready_queue, pid=");
-                printDec(next->pid);
-                print(" - moving to blocked_queue\n");
                 blocked_queue = enqueue(blocked_queue, &next);
                 next = NULL;
                 continue;
@@ -179,11 +163,6 @@ uint64_t schedule(uint64_t current_rsp) {
     } 
     
     if (next->state != READY) {
-        print("[sched] ERROR: selected process pid=");
-        printDec(next->pid);
-        print(" is not READY! state=");
-        printDec(next->state);
-        print("\n");
         next = idle_proc;
         idle_proc->state = RUNNING;
         running_process = idle_proc;
@@ -200,16 +179,6 @@ uint64_t schedule(uint64_t current_rsp) {
         uint64_t stack_top = stack_bottom + PROCESS_STACK_SIZE;
         
         if (next->rsp < stack_bottom || next->rsp >= stack_top) {
-            print("[sched] CRITICAL ERROR: Invalid RSP for pid=");
-            printDec(next->pid);
-            print(" rsp=");
-            printHex(next->rsp);
-            print(" stack_bottom=");
-            printHex(stack_bottom);
-            print(" stack_top=");
-            printHex(stack_top);
-            print("\n");
-            
             next = idle_proc;
             next->state = RUNNING;
             running_process = idle_proc;
@@ -241,18 +210,11 @@ void unblock_process(Process* p) {
         return;
     }
     _cli();
-    
-    print("[sched] unblocking process pid=");
-    printDec(p->pid);
-    print("\n");
-    
+
     if (queueRemove(blocked_queue, &p) != NULL) {
-        print("[sched] removed from blocked_queue\n");
         add_to_scheduler(p);
-        print("[sched] added to ready_queue\n");
-    } else {
-        print("[sched] WARNING: process not in blocked_queue!\n");
-    }
+    } 
+
     _sti();
 }
 
@@ -263,22 +225,20 @@ void block_process(Process* p) {
     
     _cli();
     
-    print("[sched] blocking process pid=");
-    printDec(p->pid);
-    print("\n");
-    
     p->state = BLOCKED;
     
-    if (queueRemove(ready_queue, &p) != NULL) {
-        print("[sched] removed from ready_queue\n");
-    }
-    
+    queueRemove(ready_queue, &p);
     blocked_queue = enqueue(blocked_queue, &p);
-    
+
     _sti();
+
+    if (running_process == p) {
+        running_process = NULL;
+        _force_scheduler_interrupt();
+    }
 }
 
-int get_running_pid(){
+int get_running_pid() {
     if (running_process != NULL) {
         return running_process->pid;
     }

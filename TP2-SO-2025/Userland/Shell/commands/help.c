@@ -6,7 +6,7 @@
 
 extern Command commands[];
 extern const int commands_size;
-//la implementacion de ellos
+
 int _help(int argc, char *argv[]) {
 	if (argc > 1) {
 		perror("Usage: help\n");

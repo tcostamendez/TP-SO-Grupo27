@@ -93,9 +93,6 @@ void blockProcess(int pid) {
   sys_block_process(pid);
 }
 
-void unblockProcess(int pid) {
-  sys_unblock_process(pid);
-}
 
 void yieldCPU(void) {
   sys_yield();

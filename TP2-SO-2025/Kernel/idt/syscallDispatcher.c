@@ -12,6 +12,7 @@
 #include "fd.h"
 #include "pipe.h"
 #include "sem.h"
+#include "syscall_numbers.h"
 #ifndef SECONDS_TO_TICKS
 #include "time.h"
 #ifndef SECONDS_TO_TICKS
@@ -25,124 +26,119 @@ extern int64_t register_snapshot_taken;
 // struct pointer, not struct).
 int32_t syscallDispatcher(Registers *registers) {
   switch (registers->rax) {
-  case 3:
+  case SYS_READ:
     return sys_read(registers->rdi, (signed char *)registers->rsi,
                     registers->rdx);
-  // Note: Register parameters are 64-bit
-  case 4:
+  case SYS_WRITE:
     return sys_write(registers->rdi, (char *)registers->rsi, registers->rdx);
 
-  case 0x80000000:
+  case SYS_START_BEEP:
     return sys_start_beep(registers->rdi);
-  case 0x80000001:
+  case SYS_STOP_BEEP:
     return sys_stop_beep();
-  case 0x80000002:
+  case SYS_FONTS_TEXT_COLOR:
     return sys_fonts_text_color(registers->rdi);
-  case 0x80000003:
+  case SYS_FONTS_BACKGROUND_COLOR:
     return sys_fonts_background_color(registers->rdi);
-  case 0x80000004: /* Reserved for sys_set_italics */
-  case 0x80000005: /* Reserved for sys_set_bold */
-  case 0x80000006: /* Reserved for sys_set_underline */
-    return -1;
-  case 0x80000007:
+  case SYS_FONTS_DECREASE_SIZE:
     return sys_fonts_decrease_size();
-  case 0x80000008:
+  case SYS_FONTS_INCREASE_SIZE:
     return sys_fonts_increase_size();
-  case 0x80000009:
+  case SYS_FONTS_SET_SIZE:
     return sys_fonts_set_size((uint8_t)registers->rdi);
-  case 0x8000000A:
+  case SYS_CLEAR_SCREEN:
     return sys_clear_screen();
-  case 0x8000000B:
+  case SYS_CLEAR_INPUT_BUFFER:
     return sys_clear_input_buffer();
 
-  case 0x80000010:
+  case SYS_HOUR:
     return sys_hour((int *)registers->rdi);
-  case 0x80000011:
+  case SYS_MINUTE:
     return sys_minute((int *)registers->rdi);
-  case 0x80000012:
+  case SYS_SECOND:
     return sys_second((int *)registers->rdi);
 
-  case 0x80000019:
+  case SYS_CIRCLE:
     return sys_circle(registers->rdi, registers->rsi, registers->rdx,
                       registers->rcx);
-  case 0x80000020:
+  case SYS_RECTANGLE:
     return sys_rectangle(registers->rdi, registers->rsi, registers->rdx,
                          registers->rcx, registers->r8);
-  case 0x80000021:
+  case SYS_FILL_VIDEO_MEMORY:
     return sys_fill_video_memory(registers->rdi);
 
-  case 0x800000A0:
+  case SYS_EXEC:
     return sys_exec((int (*)(void))registers->rdi);
 
-  case 0x800000B0:
+  case SYS_REGISTER_KEY:
     return sys_register_key((uint8_t)registers->rdi,
                             (SpecialKeyHandler)registers->rsi);
 
-  case 0x800000C0:
+  case SYS_WINDOW_WIDTH:
     return sys_window_width();
-  case 0x800000C1:
+  case SYS_WINDOW_HEIGHT:
     return sys_window_height();
 
-  case 0x800000D0:
+  case SYS_SLEEP_MILIS:
     return sys_sleep_milis(registers->rdi);
 
-  case 0x800000E0:
+  case SYS_GET_REGISTER_SNAPSHOT:
     return sys_get_register_snapshot((int64_t *)registers->rdi);
 
-  case 0x800000F0:
+  case SYS_GET_CHARACTER_NO_DISPLAY:
     return sys_get_character_without_display();
   
-  /* ----------------------------------------------------------------------------------------------------------- */
-  case 0x80000100:
+  case SYS_MALLOC:
       return (uint64_t) sys_malloc(registers->rdi);
-  case 0x80000101:
+  case SYS_FREE:
       sys_free((void*)registers->rdi);
       return 0;
-  case 0x80000102:
+  case SYS_CREATE_PROCESS:
       return sys_create_process((int)registers->rdi, (char**)registers->rsi, (ProcessEntryPoint)registers->rdx, (int)registers->rcx, (int*)registers->r8, (int)registers->r9);
-  case 0x80000103:
+  case SYS_GET_PID:
       return sys_get_pid();
-  case 0x80000104:
+  case SYS_KILL_PROCESS:
       return sys_kill((int)registers->rdi);
-  case 0x80000105:
+  case SYS_MODIFY_PRIORITY:
       sys_modify_priority((int)registers->rdi, registers->rsi);
       return 0;
-  case 0x80000106:
+  case SYS_LIST_PROCESSES:
       sys_print_processes();
       return 0;
-  case 0x80000107:
+  case SYS_BLOCK_PROCESS:
       sys_block_process((int)registers->rdi);
       return 0;
-  case 0x80000108:
-      sys_unblock_process((int)registers->rdi);
-      return 0;
-  case 0x80000109:
+  case SYS_YIELD:
       sys_yield();
       return 0;
-  case 0x8000010A:
+  case SYS_WAIT_PID:
       return sys_wait_pid((int)registers->rdi);
-  case 0x8000010B:
+  case SYS_WAIT_FOR_CHILDREN:
       return sys_wait_for_children();
-  case 0x8000010C:
+  case SYS_GET_PROCESS_INFO:
       return sys_get_process_info((ProcessInfo*)registers->rdi, (int)registers->rsi);    
-  case 0x80000110:
+  case SYS_PIPE_OPEN:
     return sys_pipe_open();
-  case 0x80000111:
+  case SYS_PIPE_ATTACH:
     return sys_pipe_attach((uint8_t)registers->rdi);
-  case 0x80000112:
+  case SYS_PIPE_CLOSE:
     return sys_pipe_close((uint8_t)registers->rdi);
-  case 0x80000113:
+  case SYS_SET_READ_TARGET:
     return sys_set_read_target_sys((uint8_t)registers->rdi);
-  case 0x80000114:
+  case SYS_SET_WRITE_TARGET:
     return sys_set_write_target_sys((uint8_t)registers->rdi);
-  case 0x80000120:
+  case SYS_SEM_OPEN:
     return (int64_t)sys_sem_open((const char*)registers->rdi, (uint16_t)registers->rsi);
-  case 0x80000121:
+  case SYS_SEM_CLOSE:
     return sys_sem_close((Sem)registers->rdi);
-  case 0x80000122:
+  case SYS_SEM_WAIT:
     return sys_sem_wait((Sem)registers->rdi);
-  case 0x80000123:
+  case SYS_SEM_POST:
     return sys_sem_post((Sem)registers->rdi);
+  case SYS_SHUTDOWN:
+    extern void outw(uint16_t port, uint16_t val);
+    outw(0x604, 0x2000);  // QEMU ACPI shutdown
+    return 0;
   default:
     return 0;
   }
@@ -389,7 +385,13 @@ void sys_print_processes() {
 
 void sys_block_process(int pid){
   Process* p = get_process(pid);
-  if (p != NULL) {
+  if (p == NULL || p == idle_proc || p->state == TERMINATED) {
+    return;
+  }
+
+  if (p->state == BLOCKED) {
+    unblock_process(p);
+  } else if (p->state == RUNNING || p->state == READY) {
     block_process(p);
   }
 }

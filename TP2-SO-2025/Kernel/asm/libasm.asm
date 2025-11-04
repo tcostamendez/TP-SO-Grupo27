@@ -14,8 +14,11 @@ GLOBAL getRegisterSnapshot
 GLOBAL stackInit
 GLOBAL _process_wrapper
 
+GLOBAL outw
+
 EXTERN register_snapshot
 EXTERN register_snapshot_taken
+
 
 section .text
 
@@ -265,3 +268,11 @@ setSpeaker:
 	mov rsp, rbp
 	pop rbp
 	ret
+
+; void outw(uint16_t port, uint16_t val)
+; Writes a word (2 bytes) to an I/O port
+outw:
+    mov rdx, rdi    ; First argument (port)
+    mov rax, rsi    ; Second argument (value)
+    out dx, ax      ; Send word to port
+    ret
