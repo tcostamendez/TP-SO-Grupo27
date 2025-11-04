@@ -191,4 +191,4 @@ sys_sem_close:        sys_int80 SYS_SEM_CLOSE
 sys_sem_wait:         sys_int80 SYS_SEM_WAIT
 sys_sem_post:         sys_int80 SYS_SEM_POST
 sys_get_process_info: sys_int80 SYS_GET_PROCESS_INFO
-sys_shutdown: sys_int80 SYS_SHUTDOWN
+sys_shutdown:         sys_int80 SYS_SHUTDOWN
