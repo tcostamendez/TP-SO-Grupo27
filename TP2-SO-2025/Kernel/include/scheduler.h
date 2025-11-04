@@ -3,6 +3,12 @@
 
 #include <stdint.h>
 #include "process.h" // Depende de la definición de 'Process'
+#include "queue.h"
+
+QueueADT ready_queue = NULL;
+QueueADT blocked_queue = NULL;
+Process* running_process = NULL;
+Process* idle_proc = NULL;
 
 /**
  * @brief Inicializa el scheduler.

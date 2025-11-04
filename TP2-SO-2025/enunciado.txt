@@ -117,6 +117,7 @@ necesaria.
 ● kill: Mata un proceso dado su ID. 
 ● nice: Cambia la prioridad de un proceso dado su ID y la nueva prioridad. 
 ● block: Cambia el estado de un proceso entre bloqueado y listo dado su ID. 
+
 Inter process communication 
 ● cat: Imprime el stdin tal como lo recibe. 
 ● wc: Cuenta la cantidad de líneas del input. 

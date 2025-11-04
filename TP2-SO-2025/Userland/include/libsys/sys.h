@@ -123,7 +123,7 @@ void* allocMemory(size_t size);
 void freeMemory(void* ptr);
 
 // Process management functions
-int createProcess(int argc, char** argv, void (*entry_point)(int, char**), int priority);
+int createProcess(int argc, char** argv, void (*entry_point)(int, char**), int priority, int* targets, int hasForeground);
 int getMyPid(void);
 int killProcess(int pid);
 void setProcessPriority(int pid, int priority);
@@ -133,6 +133,7 @@ void unblockProcess(int pid);
 void yieldCPU(void);
 int waitPid(int pid);
 int waitForChildren(void);
+int sys_get_process_info(ProcessInfo* info, int pid);
 
 // Pipe helpers (userland wrappers)
 int pipeOpen(void);

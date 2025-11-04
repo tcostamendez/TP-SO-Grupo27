@@ -70,8 +70,8 @@ void freeMemory(void* ptr) {
   sys_free(ptr);
 }
 
-int createProcess(int argc, char** argv, void (*entry_point)(int, char**), int priority) {
-  return sys_create_process(argc, argv, entry_point, priority);
+int createProcess(int argc, char** argv, void (*entry_point)(int, char**), int priority, int * targets, int hasForeground) {
+  return sys_create_process(argc, argv, entry_point, priority, targets, hasForeground);
 }
 
 int getMyPid(void) {
@@ -108,6 +108,10 @@ int waitPid(int pid) {
 
 int waitForChildren(void) {
   return sys_wait_for_children();
+}
+
+int getProcessInfo(ProcessInfo* info, int pid){
+  return sys_get_process_info(info, pid);
 }
 
 // ==========================

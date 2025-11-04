@@ -6,6 +6,7 @@
 #include <syscallDispatcher.h>
 #include <time.h>
 #include <video.h>
+#include <process.h>
 //#include "first_fit_mm.h"
 #include "buddy_system_mm.h"
 #include "fd.h"
@@ -122,6 +123,8 @@ int32_t syscallDispatcher(Registers *registers) {
       return sys_wait_pid((int)registers->rdi);
   case 0x8000010B:
       return sys_wait_for_children();
+  case 0x8000010C:
+      return sys_get_process_info((ProcessInfo*)registers->rdi, (int)registers->rsi);    
   case 0x80000110:
     return sys_pipe_open();
   case 0x80000111:
@@ -411,6 +414,9 @@ int sys_wait_for_children(){
   return wait_all_children();
 }
 
+int sys_get_process_info(ProcessInfo * info, pid){
+  return get_process_info(info, pid);
+}
 // ==================================================================
 // Pipe syscalls
 // ==================================================================

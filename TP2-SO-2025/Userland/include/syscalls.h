@@ -60,8 +60,8 @@ void * sys_malloc(uint64_t size);
 
 void sys_free(void * ap);
 
-// Process management syscalls (0x80000102-0x8000010B)
-int sys_create_process(int argc, char** argv, void (*entry_point)(int, char**), int priority);
+// Process management syscalls (0x80000102-0x8000010C)
+int sys_create_process(int argc, char** argv, void (*entry_point)(int, char**), int priority, int * targets, int hasForeground);
 int sys_get_pid(void);
 int sys_kill_process(int pid);
 void sys_modify_priority(int pid, int new_priority);
@@ -71,6 +71,7 @@ void sys_unblock_process(int pid);
 void sys_yield(void);
 int sys_wait_pid(int pid);
 int sys_wait_for_children(void);
+int sys_get_process_info(ProcessInfo* info, int pid);
 
 // Pipe syscalls (0x80000110 - 0x80000114)
 int sys_pipe_open(void);

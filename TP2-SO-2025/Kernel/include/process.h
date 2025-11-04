@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 #include <stddef.h> // Para size_t
+#include "queue.h"
+#include "scheduler.h"
+#include "strings.h"
 
 // Definimos un tamaño de stack por defecto para cada proceso (ej: 8KB)
 // Lo tomamos de tu memory_manager.h (FIRST_FIT_MM_H)
@@ -39,34 +42,53 @@ typedef enum {
  * Esta estructura contiene toda la información de un proceso.
  */
 typedef struct Process {
-    int pid;                // Process ID
-    int ppid;               // Parent Process ID
-    ProcessState state;     // Estado actual (READY, RUNNING, etc.)
+    // --- ... --- 
+    int pid;                    // Process ID
+    int ppid;                   // Parent Process ID
+    ProcessState state;         // Estado actual (READY, RUNNING, etc.)
+    
+    // --- ... ---
     int argc;
     char ** argv;
+
     // --- Contexto de la CPU ---
-    // El RSP es lo único que necesitamos guardar para el context switch.
-    // El 'schedule' en C recibirá el RSP del proceso saliente
-    // y lo guardará aquí.
     uint64_t rsp;
+
     // --- Gestión de Memoria ---
-    void *stackBase;        // Puntero al inicio del stack (para mm_free())
+    void *stackBase;            // Puntero al inicio del stack (para mm_free())
+    
     // --- Info de Ejecución ---
-    ProcessEntryPoint rip;    // Puntero a la función a ejecutar
+    ProcessEntryPoint rip;      // Puntero a la función a ejecutar
+    
     // --- Scheduling ---
-    int priority;           // Prioridad del proceso (0-3, mayor = más prioridad)
-    int quantum_remaining;  // Ticks restantes en el quantum actual
+    int priority;               // Prioridad del proceso (0-3, mayor = más prioridad)
+    int quantum_remaining;      // Ticks restantes en el quantum actual
+    
     // --- Estado de Ejecución ---
-    int ground;      // 1 si está en foreground, 0 si en background
-    uint64_t rbp;           // Base pointer (para debugging/listing)
-    // File descriptor targets: simple mapping for READ/WRITE (0/1)
-    // Used with pipe subsystem to route reads/writes.
+    int ground;                 // 1 si está en foreground, 0 si en background
+    uint64_t rbp;               // Base pointer (para debugging/listing)
+    
+    // --- Targets de File descriptors ---
     uint8_t targetByFd[3];
+
     // (Más adelante podemos añadir FDs avanzados, semáforos, etc.)
     int children[MAX_CHILDREN]; // IDs de los procesos hijos
     int child_count;            // Número de hijos actuales
 } Process;
 
+typedef struct ProcessInfo {
+    int pid;
+    int ppid;
+    char name[MAX_PROCESS_NAME];
+    ProcessState state;
+
+    uint64_t rsp;
+    void *stackBase;
+    
+    int priority;
+    
+    int ground; 
+} ProcessInfo;
 
 // --- Interfaz Pública de Gestión de Procesos ---
 
@@ -145,6 +167,14 @@ int get_process_count();
 void foreach_process(void (*callback)(Process* p, void* arg), void* arg);
 
 /**
+ * @brief Lists all processes and returns their information.
+ * 
+ * @param count Output parameter - will be set to the number of processes returned.
+ * @return Array of ProcessInfo structs (caller must free), or NULL if no processes or error.
+ */
+ProcessInfo* ps(int* count); 
+
+/**
  * @brief Termina un proceso dado su PID.
  * Libera sus recursos y lo marca como TERMINATED.
  * @param pid PID del proceso a terminar.
@@ -170,5 +200,7 @@ int get_ground(int pid);
 int wait_child(int child_pid);
 
 int wait_all_children(void);
+
+int get_process_info(ProcessInfo * info, int pid);
 
 #endif // PROCESS_H

@@ -506,25 +506,58 @@ void reap_terminated_processes(void) {
     }
 }
 
+ProcessInfo* ps(int* count) {
+    if (count == NULL) {
+        return NULL;
+    }
+    
+    // Obtengo el numero de procesos actuales
+    *count = queueSize(ready_queue) + queueSize(blocked_queue) + (get_running_process() != NULL ? 1 : 0);
 
-char ** get_process_data(int process_id){
-    if(process_id == NULL){
+    // Allocate array for ProcessInfo structures
+    ProcessInfo* info_array = (ProcessInfo*) mm_alloc(sizeof(ProcessInfo) * *count);
+    if (info_array == NULL) {
+        *count = 0;
         return NULL;
     }
-    if(process_id < 0 || process_id >= MAX_PROCESSES || process_id > pid){
-        return NULL;
+    
+    // Fill the array with process information
+    int index = 0;
+    for (int i = 0; i < MAX_PROCESSES && index < (*count); i++) {
+        Process* p = process_table[i];
+        if (p != NULL && p->state != TERMINATED) {
+            info_array[index].pid = p->pid;
+            info_array[index].ppid = p->ppid;
+            info_array[index].state = p->state;
+            info_array[index].rsp = p->rsp;
+            info_array[index].stackBase = p->stackBase;
+            info_array[index].priority = p->priority;
+            info_array[index].ground = p->ground;
+            
+            if (p->argc > 0 && p->argv != NULL && p->argv[0] != NULL) {
+                my_strcpy(info_array[index].name, p->argv[0]);
+            } else {
+                my_strcpy(info_array[index].name, "unknown");
+            }
+            
+            index++;
+        }
     }
-    char ** ans = mm_alloc(sizeof(char*) * 7);
-    char * name = mm_alloc(16);
-    char * id = num_to_str((uint64_t)process_table[process_id]->pid);
-    my_strcpy(name, "Process ");
-    catenate(name, id);
-    ans[0] = name;
-    ans[1] = id;
-    ans[2] = num_to_str((uint64_t)process_table[process_id]->priority);
-    ans[3] = num_to_str(process_table[process_id]->rsp);
-    ans[4] = num_to_str(process_table[process_id]->rbp);
-    ans[5] = num_to_str((uint64_t)process_table[process_id]->ground); //0 si esta en background, 1 si esta en foregorund
-    ans[6] = NULL;
-    return ans;
+    
+    return info_array;
+}
+
+int get_process_info(ProcessInfo * info, int pid){
+    if(info == NULL || process_table[pid] != NULL|| pid >= MAX_PROCESSES){
+         return -1;
+    }
+    info->pid = process_table[pid]->pid;
+    info->ppid = process_table[pid]->ppid;
+    info->state = process_table[pid]->state;
+    info->rsp = process_table[pid]->rsp;
+    info->stackBase = process_table[pid]->stackBase;
+    info->priority = process_table[pid]->priority;
+    info->ground = process_table[pid]->ground;
+
+    return 1;
 }

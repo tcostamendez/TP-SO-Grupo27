@@ -1,15 +1,9 @@
 #include "scheduler.h"
-#include "process.h" 
 #include <stddef.h>  
 #include <video.h>
-#include "queue.h"
 #include "pipe.h"
 #include "interrupts.h"
-
-QueueADT ready_queue = NULL;
-QueueADT blocked_queue = NULL;
-Process* running_process = NULL;
-Process* idle_proc = NULL;
+#include "process.h"
 
 static volatile int scheduler_online = 0;   
 
