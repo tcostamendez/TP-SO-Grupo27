@@ -259,6 +259,7 @@ static void run_pipe_demo(void) {
 int main() {
   load_idt();
 
+  setFontSize(2);
 
   void *heapStartOriginal = (void *)((uint64_t)&endOfKernel + PageSize * 8);
 

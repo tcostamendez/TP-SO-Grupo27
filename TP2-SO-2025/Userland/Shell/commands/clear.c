@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys.h>
+#include <libsys.h>
 
 int _clear(int argc, char *argv[]) {
     if (argc > 1) {

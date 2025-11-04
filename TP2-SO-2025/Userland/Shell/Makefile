@@ -1,8 +1,7 @@
 include ../Makefile.inc
 
 MODULE=shell.bin
-# Only include shell.c, test_mm.c, and test_util.c - exclude test_memory.c and test_processes.c
-SOURCES=shell.c test_mm.c test_util.c
+SOURCES=$(filter-out _loader.c, $(wildcard *.c ./commands/*.c))
 
 all: $(MODULE)
 

@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-
-#include "shell.h"
+#include "../shell.h"
 
 extern Command commands[];
 extern const int commands_size;

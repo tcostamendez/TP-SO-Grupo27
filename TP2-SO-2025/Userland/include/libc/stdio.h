@@ -8,6 +8,8 @@
 #define FD_STDOUT 1
 #define FD_STDERR 2
 
+#define EOF -1
+
 void puts(const char * str);
 void vprintf(const char * str, va_list args);
 void printf(const char * str, ...);

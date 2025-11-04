@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+#include "libsys.h"
 
 int _nice(int argc, char *argv[]) {
 	if (argc != 3) {
@@ -19,11 +19,7 @@ int _nice(int argc, char *argv[]) {
 		return 1;
 	}
 
-	int ret = setProcessPriority(pid, new_prio);
-	if (ret == -1) {
-		perror("Error changing process priority\n");
-		return 1;
-	}
+	setProcessPriority(pid, new_prio);
 
 	return 0;
 }

@@ -1,8 +1,8 @@
-#include <unistd.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "shell.h"
+#include "../shell.h"
 
 extern Command commands[];
 extern const int commands_size;
@@ -27,8 +27,7 @@ int _help(int argc, char *argv[]) {
 		for (; j < sizeof(padding) / sizeof(*padding); j++) padding[j] = ' ';
 		padding[j] = '\0';
 
-		char *color = i % 2 == 1 ? "\e[0;90m" : "";
-		printf("%s%s%s -\t%s\e[0m\n", color, commands[i].name, padding, commands[i].description);
+		printf("%s%s -\t%s\n\n", commands[i].name, padding, commands[i].description);
 	}
 
 	printf("\n");
