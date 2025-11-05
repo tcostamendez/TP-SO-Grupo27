@@ -24,36 +24,6 @@ static void emptyScreenBuffer(void);
 
 static uint8_t last_command_arrowed = 0;
 
-/*
-//wrapper de test_mm
-int run_mm_test(void) {
-  // 1. Parseamos el siguiente token, que debería ser la cantidad de memoria
-  char *max_mem_str = strtok(NULL, " ");
-
-  if (max_mem_str == NULL) {
-    printf("Error: Faltó especificar la memoria máxima.\n");
-    printf("Uso: testmm <bytes>\n");
-    return 1; // Devolvemos un código de error
-  }
-
-  // 2. "Falsificamos" argc y argv para pasárselos a test_mm
-  char *fake_argv[] = { max_mem_str };
-  uint64_t fake_argc = 1;
-
-  // 3. Llamamos a la función de test original
-  printf("Iniciando test de memoria con %s bytes...\n", max_mem_str);
-  uint64_t result = test_mm(fake_argc, fake_argv);
-
-  if (result == 0) {
-      printf("Test de memoria finalizado con éxito.\n");
-  } else {
-      printf("Test de memoria falló!\n");
-  }
-
-  return result;
-}
-*/
-
 /* All available commands. Sorted alphabetically by their name */
 Command commands[] = {
     {.name="block",
@@ -204,8 +174,6 @@ int main() {
 			command_history_buffer[buffer_dim] = c;
 			buffer[buffer_dim++] = c;
 		}
-    
-    //putchar('\n');  
 
     buffer[buffer_dim] = 0;
 
@@ -235,6 +203,16 @@ int main() {
     }
 
 
+    // Check if user entered something but it wasn't a valid command
+    if (parsed == 0 && buffer_dim > 0) {
+      // Extract the command name that was tried
+      char invalid_cmd[MAX_ARGUMENT_SIZE] = {0};
+      strcpy(invalid_cmd, strtok(buffer_dim > 0 ? buffer : "", " "));
+      
+      printf("Command '%s' not found\n", invalid_cmd);
+      printf("For a list of valid commands type 'help'\n");
+    }
+
     if(parsed != 0) {
       strncpy(command_history[command_history_last], command_history_buffer, 255);
       command_history[command_history_last][buffer_dim]='\0';
@@ -250,17 +228,13 @@ int main() {
 				// Non-built-in commands run as separate processes
 				// Get the appropriate entry point wrapper based on command name
 				void (*entry_point)(void) = NULL;
-				
-				if (strcmp(parsedCommands[p].name, "block") == 0) entry_point = entry_block;
-				else if (strcmp(parsedCommands[p].name, "cat") == 0) entry_point = entry_cat;
-				else if (strcmp(parsedCommands[p].name, "clear") == 0) entry_point = entry_clear;
-				else if (strcmp(parsedCommands[p].name, "echo") == 0) entry_point = entry_echo;
-				else if (strcmp(parsedCommands[p].name, "kill") == 0) entry_point = entry_kill;
-				else if (strcmp(parsedCommands[p].name, "loop") == 0) entry_point = entry_loop;
-				else if (strcmp(parsedCommands[p].name, "mem") == 0) entry_point = entry_mem;
-				else if (strcmp(parsedCommands[p].name, "nice") == 0) entry_point = entry_nice;
-				else if (strcmp(parsedCommands[p].name, "ps") == 0) entry_point = entry_ps;
-				else if (strcmp(parsedCommands[p].name, "wc") == 0) entry_point = entry_wc;
+
+				for (int i = 0; i < commands_size; i++) {
+					if (strcmp(parsedCommands[p].name, commands[i].name) == 0) {
+						entry_point = commands[i].function;
+						break;
+					}
+				}
 				
 				if (entry_point != NULL) {
 					int targets[3] = {0, 1, 2};  // stdin, stdout, stderr

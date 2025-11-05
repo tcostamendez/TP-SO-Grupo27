@@ -65,15 +65,23 @@ void process_terminator(void) {
     }
 
     int pid = cur->pid;
-    print("[DEBUG] process_terminator: Terminating PID ");
-    printDec(pid);
-    print("\n");
+    // ! ACA ESTA EL ERROR, SE METE EN UN DEADLOCK
+    /* Semaphore approach
+    char *pid_str = num_to_str((uint64_t)pid);
+    char *sem_name = NULL;
+    if (pid_str) {
+        int name_len = strlen("wait_") + strlen(pid_str) + 1;
+        sem_name = mm_alloc(name_len);
+        if (sem_name) {
+            my_strcpy(sem_name, "wait_");
+            catenate(sem_name, pid_str);
+        }
+    }*/ 
 
     _cli();
     
     // Mark process as TERMINATED so waiting parents can detect it
     cur->state = TERMINATED;
-    print("[DEBUG] process_terminator: Set state to TERMINATED\n");
     
     extern QueueADT ready_queue;
     extern QueueADT blocked_queue;
@@ -99,8 +107,17 @@ void process_terminator(void) {
             closePipe(w);
         }
     }
-
-    print("[DEBUG] process_terminator: Done cleaning up, halting\n");
+    // ! ESTO ES CONTINUACION DEL ERROR
+    /*
+    if (sem_name) {
+        Sem s = semOpen(sem_name, 0);
+        if (s) {
+            semPost(s);
+            semClose(s);
+        }
+        mm_free(sem_name);
+    }
+    */
     _force_scheduler_interrupt();
     
     for(;;) _hlt();
@@ -411,11 +428,25 @@ int get_ground(int pid) {
 }
 
 int wait_child(int child_pid) {
+    /*
+    char *pid_str = num_to_str((uint64_t)child_pid);
+    if (!pid_str) return -1;
+    int name_len = strlen("wait_") + strlen(pid_str) + 1;
+    char *name = mm_alloc(name_len);
+    if (!name) {
+        return -1;
+    }
+    my_strcpy(name, "wait_");
+    catenate(name, pid_str);
+
+    Sem s = semOpen(name, 0);
+    if (!s) {
+        mm_free(name);
+        return -1;
+    }
+    */
     // Poll until the process is terminated (non-blocking approach)
     // This avoids deadlock with spinlocks in a preemptive system
-    print("[DEBUG] wait_child: Waiting for PID ");
-    printDec(child_pid);
-    print(" to terminate\n");
     
     while (1) {
         Process *child = get_process(child_pid);
@@ -435,7 +466,10 @@ int wait_child(int child_pid) {
         extern void _force_scheduler_interrupt();
         _force_scheduler_interrupt();
     }
-    
+    /*
+    int r = semWait(s);
+    semClose(s);
+    */
     Process *cur = get_current_process();
     if (cur) {
         for (int i = 0; i < cur->child_count; ++i) {
