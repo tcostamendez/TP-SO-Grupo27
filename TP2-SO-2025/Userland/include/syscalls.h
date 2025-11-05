@@ -104,6 +104,18 @@ typedef enum {
     TERMINATED // Usaremos este estado para 'limpiar' procesos
 } ProcessState;
 
+// Límite de procesos que podemos tener.
+#define MAX_PROCESSES 64
+#define MAX_CHILDREN 32
+
+// Nombre máximo para un proceso (debugging)
+#define MAX_PROCESS_NAME 32
+
+// Prioridades del proceso
+#define MIN_PRIORITY 0
+#define MAX_PRIORITY 3
+#define DEFAULT_PRIORITY 0
+
 typedef struct ProcessInfo {
     int pid;
     int ppid;
@@ -176,7 +188,7 @@ int sys_create_process(int argc, char** argv, void (*entry_point)(int, char**), 
 int sys_get_pid(void);
 int sys_kill_process(int pid);
 void sys_modify_priority(int pid, int new_priority);
-void sys_list_processes(void);
+int sys_ps(ProcessInfo* process_info);
 void sys_block_process(int pid);
 void sys_unblock_process(int pid);
 void sys_yield(void);
@@ -196,5 +208,8 @@ void * sys_sem_open(const char *name, uint16_t value);
 int sys_sem_close(void *sem);
 int sys_sem_wait(void *sem);
 int sys_sem_post(void *sem);
+
+// Shutdown syscall (53)
+void sys_shutdown(void);
 
 #endif

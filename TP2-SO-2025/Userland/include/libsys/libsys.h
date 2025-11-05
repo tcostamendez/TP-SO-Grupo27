@@ -39,7 +39,7 @@ int createProcess(int argc, char** argv, void (*entry_point)(int, char**), int p
 int getMyPid(void);
 int killProcess(int pid);
 void setProcessPriority(int pid, int priority);
-void listProcesses(void);
+int ps(ProcessInfo* process_info);
 void blockProcess(int pid);
 void yieldCPU(void);
 int waitPid(int pid);
@@ -60,4 +60,6 @@ int   semClose(sem_t s);
 int   semWait(sem_t s);
 int   semPost(sem_t s);
 
+// Shutdown helper
+void shutdown(void);
 #endif

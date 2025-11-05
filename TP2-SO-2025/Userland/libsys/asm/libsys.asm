@@ -36,7 +36,7 @@ GLOBAL sys_create_process
 GLOBAL sys_get_pid
 GLOBAL sys_kill_process
 GLOBAL sys_modify_priority
-GLOBAL sys_list_processes
+GLOBAL sys_ps
 GLOBAL sys_block_process
 GLOBAL sys_yield
 GLOBAL sys_wait_pid
@@ -102,7 +102,7 @@ GLOBAL sys_shutdown
 %define SYS_GET_PID                  35
 %define SYS_KILL_PROCESS             36
 %define SYS_MODIFY_PRIORITY          37
-%define SYS_LIST_PROCESSES           38
+%define SYS_PS                       38
 %define SYS_BLOCK_PROCESS            39
 %define SYS_YIELD                    40
 %define SYS_WAIT_PID                 41
@@ -176,7 +176,7 @@ sys_create_process: sys_int80 SYS_CREATE_PROCESS
 sys_get_pid: sys_int80 SYS_GET_PID
 sys_kill_process: sys_int80 SYS_KILL_PROCESS
 sys_modify_priority: sys_int80 SYS_MODIFY_PRIORITY
-sys_list_processes: sys_int80 SYS_LIST_PROCESSES
+sys_ps: sys_int80 SYS_PS
 sys_block_process: sys_int80 SYS_BLOCK_PROCESS
 sys_yield: sys_int80 SYS_YIELD
 sys_wait_pid: sys_int80 SYS_WAIT_PID

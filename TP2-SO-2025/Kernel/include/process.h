@@ -172,7 +172,7 @@ void foreach_process(void (*callback)(Process* p, void* arg), void* arg);
  * @param count Output parameter - will be set to the number of processes returned.
  * @return Array of ProcessInfo structs (caller must free), or NULL if no processes or error.
  */
-ProcessInfo* ps(int* count); 
+int ps(ProcessInfo* process_info); 
 
 /**
  * @brief Termina un proceso dado su PID.

@@ -10,5 +10,6 @@ void strcpy(char * dest, char * src);
 void strncpy(char * dest, char * src, int n);
 void perror(const char * s1);
 char * strtok(char * s1, const char * s2);
+int strtol(const char* str, char** endptr, int base);
 
 #endif

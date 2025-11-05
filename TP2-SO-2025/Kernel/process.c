@@ -65,21 +65,15 @@ void process_terminator(void) {
     }
 
     int pid = cur->pid;
-
-    char *pid_str = num_to_str((uint64_t)pid);
-    char *sem_name = NULL;
-    if (pid_str) {
-        int name_len = strlen("wait_") + strlen(pid_str) + 1;
-        sem_name = mm_alloc(name_len);
-        if (sem_name) {
-            my_strcpy(sem_name, "wait_");
-            catenate(sem_name, pid_str);
-        }
-    }
+    print("[DEBUG] process_terminator: Terminating PID ");
+    printDec(pid);
+    print("\n");
 
     _cli();
     
+    // Mark process as TERMINATED so waiting parents can detect it
     cur->state = TERMINATED;
+    print("[DEBUG] process_terminator: Set state to TERMINATED\n");
     
     extern QueueADT ready_queue;
     extern QueueADT blocked_queue;
@@ -105,16 +99,8 @@ void process_terminator(void) {
             closePipe(w);
         }
     }
-    
-    if (sem_name) {
-        Sem s = semOpen(sem_name, 0);
-        if (s) {
-            semPost(s);
-            semClose(s);
-        }
-        mm_free(sem_name);
-    }
 
+    print("[DEBUG] process_terminator: Done cleaning up, halting\n");
     _force_scheduler_interrupt();
     
     for(;;) _hlt();
@@ -425,20 +411,30 @@ int get_ground(int pid) {
 }
 
 int wait_child(int child_pid) {
-    char *pid_str = num_to_str((uint64_t)child_pid);
-    if (!pid_str) return -1;
-    int name_len = strlen("wait_") + strlen(pid_str) + 1;
-    char *name = mm_alloc(name_len);
-    if (!name) {
-        return -1;
+    // Poll until the process is terminated (non-blocking approach)
+    // This avoids deadlock with spinlocks in a preemptive system
+    print("[DEBUG] wait_child: Waiting for PID ");
+    printDec(child_pid);
+    print(" to terminate\n");
+    
+    while (1) {
+        Process *child = get_process(child_pid);
+        
+        // Process is done
+        if (child == NULL || child->state == TERMINATED) {
+            print("[DEBUG] wait_child: Process ");
+            printDec(child_pid);
+            print(" has terminated\n");
+            break;
+        }
+        
+        // Process still running, yield CPU and try again
+        print("[DEBUG] wait_child: Process ");
+        printDec(child_pid);
+        print(" still running, yielding...\n");
+        extern void _force_scheduler_interrupt();
+        _force_scheduler_interrupt();
     }
-    my_strcpy(name, "wait_");
-    catenate(name, pid_str);
-
-    Sem s = semOpen(name, 0);
-    if (!s) return -1;
-    int r = semWait(s);
-    semClose(s);
     
     Process *cur = get_current_process();
     if (cur) {
@@ -453,7 +449,7 @@ int wait_child(int child_pid) {
         }
     }
     
-    return r;
+    return 0;
 }
 
 int wait_all_children(void) {
@@ -480,45 +476,31 @@ void reap_terminated_processes(void) {
     }
 }
 
-ProcessInfo* ps(int* count) {
-    if (count == NULL) {
-        return NULL;
+int ps(ProcessInfo* process_info) {
+    if (process_info == NULL) {
+        return -1;
     }
-    
-    // Obtengo el numero de procesos actuales
-    *count = queueSize(ready_queue) + queueSize(blocked_queue) + (get_running_process() != NULL ? 1 : 0);
 
-    // Allocate array for ProcessInfo structures
-    ProcessInfo* info_array = (ProcessInfo*) mm_alloc(sizeof(ProcessInfo) * *count);
-    if (info_array == NULL) {
-        *count = 0;
-        return NULL;
-    }
-    
-    // Fill the array with process information
-    int index = 0;
-    for (int i = 0; i < MAX_PROCESSES && index < (*count); i++) {
+    // Lleno el array con la información de los procesos
+    for (int i = 0; i < MAX_PROCESSES; i++) {
         Process* p = process_table[i];
         if (p != NULL && p->state != TERMINATED) {
-            info_array[index].pid = p->pid;
-            info_array[index].ppid = p->ppid;
-            info_array[index].state = p->state;
-            info_array[index].rsp = p->rsp;
-            info_array[index].stackBase = p->stackBase;
-            info_array[index].priority = p->priority;
-            info_array[index].ground = p->ground;
+            process_info[i].pid = p->pid;
+            process_info[i].ppid = p->ppid;
+            process_info[i].state = p->state;
+            process_info[i].rsp = p->rsp;
+            process_info[i].stackBase = p->stackBase;
+            process_info[i].priority = p->priority;
+            process_info[i].ground = p->ground;
             
             if (p->argc > 0 && p->argv != NULL && p->argv[0] != NULL) {
-                my_strcpy(info_array[index].name, p->argv[0]);
+                my_strcpy(process_info[i].name, p->argv[0]);
             } else {
-                my_strcpy(info_array[index].name, "unknown");
+                my_strcpy(process_info[i].name, "unknown");
             }
-            
-            index++;
         }
     }
-    
-    return info_array;
+    return 0;
 }
 
 int get_process_info(ProcessInfo * info, int pid){

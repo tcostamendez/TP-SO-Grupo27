@@ -102,9 +102,8 @@ int32_t syscallDispatcher(Registers *registers) {
   case SYS_MODIFY_PRIORITY:
       sys_modify_priority((int)registers->rdi, registers->rsi);
       return 0;
-  case SYS_LIST_PROCESSES:
-      sys_print_processes();
-      return 0;
+  case SYS_PS:
+      return sys_ps((ProcessInfo*)registers->rdi);
   case SYS_BLOCK_PROCESS:
       sys_block_process((int)registers->rdi);
       return 0;
@@ -344,43 +343,8 @@ void sys_modify_priority(int pid, int new_priority){
   set_priority(pid, new_priority);
 }
 
-void sys_print_processes() {
-    print("NAME         | PID | PRIO | FG/BG | STACK_PTR (DEC)      | BASE_PTR (DEC)\n");
-    print("----------------------------------------------------------------------------\n");
-    for (int j = 0; j < MAX_PROCESSES; j++) {
-        Process* p = get_process(j); 
-        if (p != NULL) {
-            char* pid_str    = num_to_str(p->pid);
-            char* prio_str   = num_to_str(p->priority);
-            char* ground_str = num_to_str(p->ground);
-            char* rsp_str    = num_to_str(p->rsp);
-            char* rbp_str    = num_to_str(p->rbp);
-            if (pid_str == NULL || prio_str == NULL || ground_str == NULL || rsp_str == NULL || rbp_str == NULL) {
-                print("Error: Fallo de memoria al listar proceso ID: ");
-                if (pid_str) print(pid_str); else print("?");
-                print("\n");
-                if (pid_str) mm_free(pid_str);
-                if (prio_str) mm_free(prio_str);
-                if (ground_str) mm_free(ground_str);
-                if (rsp_str) mm_free(rsp_str);
-                if (rbp_str) mm_free(rbp_str);
-                
-                continue; // Saltar al siguiente proceso
-            }
-            print("Process ");   print(pid_str); print("   | "); // NAME
-            print(pid_str);      print(" | ");                   // PID
-            print(prio_str);     print("  | ");                   // PRIO
-            print(ground_str);       print("     | ");                   // FG/BG
-            print(rsp_str);      print(" | ");                   // STACK
-            print(rbp_str);                                       // BASE
-            print("\n");                                          // Fin de línea
-            mm_free(pid_str);
-            mm_free(prio_str);
-            mm_free(ground_str);
-            mm_free(rsp_str);
-            mm_free(rbp_str);
-        }
-    }
+int sys_ps(ProcessInfo* process_info) {
+  return ps(process_info);  
 }
 
 void sys_block_process(int pid){

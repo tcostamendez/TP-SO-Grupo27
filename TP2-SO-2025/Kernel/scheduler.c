@@ -234,6 +234,7 @@ void block_process(Process* p) {
 
     if (running_process == p) {
         running_process = NULL;
+        extern void _force_scheduler_interrupt();
         _force_scheduler_interrupt();
     }
 }

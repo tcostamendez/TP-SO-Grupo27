@@ -211,8 +211,6 @@ int scanf(const char *format, ...) {
   return aux;
 }
 
-void perror(const char *s1) { fprintf(FD_STDERR, s1); }
-
 int getchar(void) {
   signed char c[1];
   while (sys_read(FD_STDIN, c, 1) == -1)

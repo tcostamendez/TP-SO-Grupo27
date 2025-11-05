@@ -85,8 +85,8 @@ void setProcessPriority(int pid, int priority) {
   sys_modify_priority(pid, priority);
 }
 
-void listProcesses(void) {
-  sys_list_processes();
+int ps(ProcessInfo* process_info) {
+  return sys_ps(process_info);
 }
 
 void blockProcess(int pid) {
@@ -146,6 +146,4 @@ int semWait(sem_t s) { return sys_sem_wait(s); }
 
 int semPost(sem_t s) { return sys_sem_post(s); }
 
-void shutdown(void) {
-  sys_shutdown();
-}
+void shutdown(void) { sys_shutdown(); }

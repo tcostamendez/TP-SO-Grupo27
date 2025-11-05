@@ -44,7 +44,7 @@
 #define SYS_GET_PID                  35
 #define SYS_KILL_PROCESS             36
 #define SYS_MODIFY_PRIORITY          37
-#define SYS_LIST_PROCESSES           38
+#define SYS_PS                       38
 #define SYS_BLOCK_PROCESS            39
 #define SYS_YIELD                    40
 #define SYS_WAIT_PID                 41

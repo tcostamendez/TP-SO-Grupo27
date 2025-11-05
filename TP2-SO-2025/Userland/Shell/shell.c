@@ -7,6 +7,7 @@
 #include "test_util.h"
 #include "shell.h"
 #include "./commands/commands.h"
+#include "./commands/entry_points.h"
 
 #ifdef ANSI_4_BIT_COLOR_SUPPORT
 #include <ansiColors.h>
@@ -56,55 +57,55 @@ int run_mm_test(void) {
 /* All available commands. Sorted alphabetically by their name */
 Command commands[] = {
     {.name="block",
-     .function = (int (*)(int, char**))(unsigned long long)_block,
+     .function = (int (*)(int, char**))_block,
      .description = "Blocks or unblocks a process",
      .isBuiltIn = 0},
     {.name="cat",
-     .function = (int (*)(int, char**))(unsigned long long)_cat,
+     .function = (int (*)(int, char**))_cat,
      .description = "Prints the content of the file",
      .isBuiltIn = 0},
     {.name = "clear",
-     .function = (int (*)(int, char**))(unsigned long long)_clear,
+     .function = (int (*)(int, char**))_clear,
      .description = "Clears the screen",
      .isBuiltIn = 0},
     {.name = "echo",
-     .function = (int (*)(int, char**))(unsigned long long)_echo,
+     .function = (int (*)(int, char**))_echo,
      .description = "Prints the input string",
      .isBuiltIn = 0},
     {.name = "exit",
-     .function = (int (*)(int, char**))(unsigned long long)_exit,
+     .function = (int (*)(int, char**))_exit,
      .description = "Closes qemu window",
      .isBuiltIn = 1},
     {.name = "help",
-     .function = (int (*)(int, char**))(unsigned long long)_help,
+     .function = (int (*)(int, char**))_help,
      .description = "Prints the available commands",
      .isBuiltIn = 1},
     {.name = "man",
-     .function = (int (*)(int, char**))(unsigned long long)_man,
+     .function = (int (*)(int, char**))_man,
      .description = "Prints the description of the provided command",
      .isBuiltIn = 1},
     /*{.name = "testmm",
-     .function = (int (*)(int, char**))(unsigned long long)run_mm_test,
-     .description = "Corre el test de stress del Memory Manager.\n\t\t\t\tUso: testmm <bytes>",
+     .function = (int (*)(int, char**))run_mm_test,
+     .description = "Corre el test de stress del Memory Manager.\n\t\tUso: testmm <bytes>",
      .isBuiltIn=1}, */
     {.name = "ps",
-     .function = (int (*)(int, char**))(unsigned long long)_ps,
+     .function = (int (*)(int, char**))_ps,
      .description = "Lists all processes",
      .isBuiltIn = 0},
     {.name = "loop",
-     .function = (int (*)(int, char**))(unsigned long long)_loop,
-     .description = "Prints hello message every N seconds\n\t\t\t\tUso: loop <delay_seconds>",
+     .function = (int (*)(int, char**))_loop,
+     .description = "Prints hello message every N seconds\n\t\tUso: loop <delay_seconds>",
      .isBuiltIn = 0},
     {.name = "kill",
-     .function = (int (*)(int, char**))(unsigned long long)_kill,
-     .description = "Kills a process by PID\n\t\t\t\tUso: kill <pid>",
+     .function = (int (*)(int, char**))_kill,
+     .description = "Kills a process by PID\n\t\tUso: kill <pid>",
      .isBuiltIn = 0},
     {.name = "nice",
-     .function = (int (*)(int, char**))(unsigned long long)_nice,
-     .description = "Changes process priority\n\t\t\t\tUso: nice <pid> <priority>",
+     .function = (int (*)(int, char**))_nice,
+     .description = "Changes process priority\n\t\tUso: nice <pid> <priority>",
      .isBuiltIn = 0},
     {.name = "mem",
-     .function = (int (*)(int, char**))(unsigned long long)_mem,
+     .function = (int (*)(int, char**))_mem,
      .description = "Shows memory status",
      .isBuiltIn = 0},
      {.name = "wc",
@@ -247,14 +248,30 @@ int main() {
 				parsedCommands[p].function(parsedCommands[p].argc, parsedCommands[p].argv);
 			} else {
 				// Non-built-in commands run as separate processes
-				int targets[2]= {0,1};
-				int requestsForeground = 1;
-				int newPid = createProcess(parsedCommands[p].argc, (char **)parsedCommands[p].argv, 
-				                          (void *)parsedCommands[p].function, 1, targets, requestsForeground);
+				// Get the appropriate entry point wrapper based on command name
+				void (*entry_point)(void) = NULL;
 				
-				if (newPid > 0 && requestsForeground) {
-					// Wait for foreground process to finish before continuing
-					waitPid(newPid);
+				if (strcmp(parsedCommands[p].name, "block") == 0) entry_point = entry_block;
+				else if (strcmp(parsedCommands[p].name, "cat") == 0) entry_point = entry_cat;
+				else if (strcmp(parsedCommands[p].name, "clear") == 0) entry_point = entry_clear;
+				else if (strcmp(parsedCommands[p].name, "echo") == 0) entry_point = entry_echo;
+				else if (strcmp(parsedCommands[p].name, "kill") == 0) entry_point = entry_kill;
+				else if (strcmp(parsedCommands[p].name, "loop") == 0) entry_point = entry_loop;
+				else if (strcmp(parsedCommands[p].name, "mem") == 0) entry_point = entry_mem;
+				else if (strcmp(parsedCommands[p].name, "nice") == 0) entry_point = entry_nice;
+				else if (strcmp(parsedCommands[p].name, "ps") == 0) entry_point = entry_ps;
+				else if (strcmp(parsedCommands[p].name, "wc") == 0) entry_point = entry_wc;
+				
+				if (entry_point != NULL) {
+					int targets[3] = {0, 1, 2};  // stdin, stdout, stderr
+					int requestsForeground = 1;
+					int newPid = createProcess(parsedCommands[p].argc, (char **)parsedCommands[p].argv, 
+					                          (void *)entry_point, 1, targets, requestsForeground);
+					
+					if (newPid > 0 && requestsForeground) {
+						// Wait for foreground process to finish before continuing
+						waitPid(newPid);
+					}
 				}
 			}
     }
