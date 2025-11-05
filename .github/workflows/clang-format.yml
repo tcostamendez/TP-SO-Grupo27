@@ -22,7 +22,7 @@ jobs:
       - name: Run clang-format
         run: |
           echo "🧹 Formateando código con clang-format..."
-          clang-format -i --style=file **/*.c ./Kernel/**/*.c ./Userland/**/*.c ./Bootloader/**/*.c
+          clang-format -i --style=file ./TP2-SO-2025/Kernel/**/*.c ./TP2-SO-2025/Userland/**/*.c ./TP2-SO-2025/Bootloader/**/*.c
 
       - name: Auto-commit changes
         uses: stefanzweifel/git-auto-commit-action@v5
