@@ -1,8 +1,10 @@
 name: ClangFormat Check
 
 on:
-  push:      
-    branches: [main, "*"]  
+  push:
+    branches:
+      - main
+      - "*"
 
 jobs:
   check-format:
@@ -13,14 +15,16 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install clang-format
-        run: sudo apt-get update && sudo apt-get install -y clang-format
-
-      - name: Run clang-format check
         run: |
-          sudo apt-get install clang-format -y
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+
+      - name: Run clang-format
+        run: |
+          echo "🧹 Formateando código con clang-format..."
           clang-format -i --style=file **/*.c ./Kernel/**/*.c ./Userland/**/*.c ./Bootloader/**/*.c
 
       - name: Auto-commit changes
-      uses: stefanzweifel/git-auto-commit-action@v5
-      with:
-        commit_message: "style-bot: Formateo de codigo con clang-format"
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style-bot: Formateo de código con clang-format"
