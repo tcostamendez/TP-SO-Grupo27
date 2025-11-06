@@ -22,19 +22,19 @@ void mm_init(void *base_address, size_t total_size) {
   }
   int max_k = k - 1;
 
-    if (max_k < 0) {
-        total_managed_bytes = 0;
-        return;
-    }
-  
-    start_addr = base_address;
-    free_block_t *initial_block = (free_block_t *)base_address;
-    initial_block->next = NULL;
-  
-    buddy_lists[max_k] = initial_block;
+  if (max_k < 0) {
+    total_managed_bytes = 0;
+    return;
+  }
 
-    // Bytes totales realmente manejados por el buddy
-    total_managed_bytes = ((size_t)1ULL << max_k) * (size_t)MIN_BLOCK_SIZE;
+  start_addr = base_address;
+  free_block_t *initial_block = (free_block_t *)base_address;
+  initial_block->next = NULL;
+
+  buddy_lists[max_k] = initial_block;
+
+  // Bytes totales realmente manejados por el buddy
+  total_managed_bytes = ((size_t)1ULL << max_k) * (size_t)MIN_BLOCK_SIZE;
 }
 
 void *mm_alloc(size_t size) {
@@ -146,18 +146,20 @@ static void remove_from_list(free_block_t *block_to_remove, int order) {
 }
 
 MemoryStats mm_get_stats() {
-    MemoryStats s = {0, 0, 0};
-    s.total_memory = total_managed_bytes;
+  MemoryStats s = {0, 0, 0};
+  s.total_memory = total_managed_bytes;
 
-    size_t free_bytes = 0;
-    for (int order = 0; order <= MAX_ORDER; order++) {
-        uint64_t block_size = ((uint64_t)MIN_BLOCK_SIZE) << order;
-        for (free_block_t *node = buddy_lists[order]; node != NULL; node = node->next) {
-            free_bytes += (size_t)block_size;
-        }
+  size_t free_bytes = 0;
+  for (int order = 0; order <= MAX_ORDER; order++) {
+    uint64_t block_size = ((uint64_t)MIN_BLOCK_SIZE) << order;
+    for (free_block_t *node = buddy_lists[order]; node != NULL;
+         node = node->next) {
+      free_bytes += (size_t)block_size;
     }
+  }
 
-    s.free_memory = free_bytes;
-    s.occupied_memory = (s.total_memory >= s.free_memory)? (s.total_memory - s.free_memory): 0;
-    return s;
+  s.free_memory = free_bytes;
+  s.occupied_memory =
+      (s.total_memory >= s.free_memory) ? (s.total_memory - s.free_memory) : 0;
+  return s;
 }

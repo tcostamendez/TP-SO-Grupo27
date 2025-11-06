@@ -63,11 +63,9 @@ int32_t getCharacterWithoutDisplay(void) {
 
 void *allocMemory(size_t size) { return sys_malloc(size); }
 
-void freeMemory(void* ptr) {
-  sys_free(ptr);
-}
+void freeMemory(void *ptr) { sys_free(ptr); }
 
-void memoryStats(int * total, int * available, int * used){
+void memoryStats(int *total, int *available, int *used) {
   sys_get_memory_stats(total, available, used);
 }
 
