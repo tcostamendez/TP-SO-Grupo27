@@ -38,9 +38,13 @@ void idleProcess(){
 
 void init_scheduler() {
     ready_queue = createQueue(compareProcesses, sizeof(Process*));
+    if(ready_queue == NULL){
+        panic("Failed to create ready queue");
+    }
+    
     blocked_queue = createQueue(compareProcesses, sizeof(Process*));
-    if(ready_queue == NULL || blocked_queue == NULL){
-        panic("Failed to create scheduler queues");
+    if(blocked_queue == NULL){
+        panic("Failed to create blocked queue");
     } 
     
     char* idleArgs[] = {"idle"};
