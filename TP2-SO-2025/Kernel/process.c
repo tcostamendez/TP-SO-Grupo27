@@ -29,10 +29,22 @@ void reap_terminated_processes(void);
  */
 extern void _force_scheduler_interrupt();
 
-static int pid = 0;
-
 // Tabla global de procesos - almacena punteros a todos los procesos
 static Process* process_table[MAX_PROCESSES] = {NULL};
+
+/**
+ * @brief Asigna un PID iterando a través de la tabla de procesos.
+ * Busca un slot que esté desocupado (NULL) o que contenga un proceso terminado.
+ * @return PID asignado (0-MAX_PROCESSES-1), o -1 si la tabla está llena.
+ */
+static int assign_pid() {
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (process_table[i] == NULL || process_table[i]->state == TERMINATED) {
+            return i;
+        }
+    }
+    return -1; // Tabla llena
+}
 
 /**
  * @brief Agrega un proceso a la tabla global de procesos.
@@ -139,11 +151,17 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
         return NULL;
     }
 
-    p->pid = pid++;
+    p->pid = assign_pid();
+    if (p->pid == -1) {
+        mm_free(p->stackBase);
+        mm_free(p);
+        _sti();
+        return NULL;
+    }
     
     _sti();
     
-    if(pid != 1){
+    if(p->pid != 0){
         Process *parent = get_current_process();
         if (parent != NULL) {
             p->ppid = parent->pid;

@@ -1,10 +1,7 @@
 name: ClangFormat Check
 
 on:
-  push:
-    branches:
-      - main
-      - "*"
+  workflow_dispatch:
 
 jobs:
   check-format:
