@@ -41,10 +41,9 @@ int atoi(const char *str) {
   return sign * result;
 }
 
-
 // Same as Kernel's memcpy
 void *memcpy(void *destination, const void *source, uint64_t length) {
-	/*
+  /*
    * memcpy does not support overlapping buffers, so always do it
    * forwards. (Don't change this without adjusting memmove.)
    *
@@ -56,58 +55,63 @@ void *memcpy(void *destination, const void *source, uint64_t length) {
    * the compiler to be reasonably intelligent about optimizing
    * the divides and modulos out. Fortunately, it is.
    */
-	uint64_t i;
+  uint64_t i;
 
 #ifdef DEBUG_LIB_MEM_FNS
-	if (destination == NULL || source == NULL) {
-		panic("memcpy: destination or source is NULL\n");
-		return NULL;
-	}
-	// If the destination and source overlap, panic
-	if (((uint8_t *)destination >= (uint8_t *)source &&
-		 ((int64_t)(uint8_t *)destination - (int64_t)(uint8_t *)source <= (int64_t)length)) ||
-		((uint8_t *)source >= (uint8_t *)destination &&
-		 ((int64_t)(uint8_t *)source - (int64_t)(uint8_t *)destination <= (int64_t)length))) {
-		print("Overlapping buffers detected:\n");
-		print("  Destination: 0x");
-		printHex((uint64_t)destination);
-		print("\n");
-		print("  Source:      0x");
-		printHex((uint64_t)source);
-		print("\n");
-		print("  Length:      ");
-		printDec(length);
-		print("\n");
-		panic("memcpy: destination and source overlap\n");
-		return NULL;
-	}
+  if (destination == NULL || source == NULL) {
+    panic("memcpy: destination or source is NULL\n");
+    return NULL;
+  }
+  // If the destination and source overlap, panic
+  if (((uint8_t *)destination >= (uint8_t *)source &&
+       ((int64_t)(uint8_t *)destination - (int64_t)(uint8_t *)source <=
+        (int64_t)length)) ||
+      ((uint8_t *)source >= (uint8_t *)destination &&
+       ((int64_t)(uint8_t *)source - (int64_t)(uint8_t *)destination <=
+        (int64_t)length))) {
+    print("Overlapping buffers detected:\n");
+    print("  Destination: 0x");
+    printHex((uint64_t)destination);
+    print("\n");
+    print("  Source:      0x");
+    printHex((uint64_t)source);
+    print("\n");
+    print("  Length:      ");
+    printDec(length);
+    print("\n");
+    panic("memcpy: destination and source overlap\n");
+    return NULL;
+  }
 #endif
 
-	if ((uint64_t)destination % sizeof(uint32_t) == 0 && (uint64_t)source % sizeof(uint32_t) == 0 &&
-		length % sizeof(uint32_t) == 0) {
-		uint32_t *d = (uint32_t *)destination;
-		const uint32_t *s = (const uint32_t *)source;
+  if ((uint64_t)destination % sizeof(uint32_t) == 0 &&
+      (uint64_t)source % sizeof(uint32_t) == 0 &&
+      length % sizeof(uint32_t) == 0) {
+    uint32_t *d = (uint32_t *)destination;
+    const uint32_t *s = (const uint32_t *)source;
 
-		for (i = 0; i < length / sizeof(uint32_t); i++) d[i] = s[i];
-	} else {
-		uint8_t *d = (uint8_t *)destination;
-		const uint8_t *s = (const uint8_t *)source;
+    for (i = 0; i < length / sizeof(uint32_t); i++)
+      d[i] = s[i];
+  } else {
+    uint8_t *d = (uint8_t *)destination;
+    const uint8_t *s = (const uint8_t *)source;
 
-		for (i = 0; i < length; i++) d[i] = s[i];
-	}
+    for (i = 0; i < length; i++)
+      d[i] = s[i];
+  }
 
-	return destination;
+  return destination;
 }
 
 int get_free_bytes(void) {
-    // Placeholder implementation
-    return 0;
+  // Placeholder implementation
+  return 0;
 }
 int get_used_bytes(void) {
-    // Placeholder implementation
-    return 0;
+  // Placeholder implementation
+  return 0;
 }
 int get_total_bytes(void) {
-    // Placeholder implementation
-    return 0;
+  // Placeholder implementation
+  return 0;
 }

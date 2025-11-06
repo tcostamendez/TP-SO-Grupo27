@@ -22,7 +22,7 @@ static void invalid_opcode(uint64_t *registers, int errorCode);
 void printExceptionData(uint64_t *registers, int errorCode);
 
 void exceptionDispatcher(int exception, uint64_t *registers) {
-  //clear();
+  // clear();
   switch (exception) {
   case ZERO_EXCEPTION_ID:
     return zero_division(registers, exception);
@@ -35,7 +35,7 @@ void exceptionDispatcher(int exception, uint64_t *registers) {
   case PAGE_FAULT_ID:
     return _exceptionHandler0E();
   default:
-     return;
+    return;
   }
 }
 
@@ -75,7 +75,6 @@ void printExceptionData(uint64_t *registers, int errorCode) {
   print("Press r to go back to Shell");
 
   char a;
-
 
   picMasterMask(KEYBOARD_PIC_MASTER);
   picSlaveMask(NO_INTERRUPTS);

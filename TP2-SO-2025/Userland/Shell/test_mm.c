@@ -1,9 +1,9 @@
-#include <syscalls.h>
-#include <libsys.h>
 #include "test_util.h"
+#include <libsys.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <syscalls.h>
 
 #define MAX_BLOCKS 128
 
@@ -25,7 +25,7 @@ uint64_t test_mm(uint64_t argc, char *argv[]) {
   if ((max_memory = satoi(argv[0])) <= 0)
     return -1;
 
-  char flag=1;
+  char flag = 1;
   while (flag) {
     rq = 0;
     total = 0;
@@ -37,7 +37,7 @@ uint64_t test_mm(uint64_t argc, char *argv[]) {
       if (mm_rqs[rq].address) {
         total += mm_rqs[rq].size;
         rq++;
-      }else{
+      } else {
         printf("NULL");
       }
     }
@@ -60,7 +60,7 @@ uint64_t test_mm(uint64_t argc, char *argv[]) {
     for (i = 0; i < rq; i++)
       if (mm_rqs[i].address)
         sys_free(mm_rqs[i].address);
-    flag=0;
+    flag = 0;
     printf("termine");
   }
   return 0;
