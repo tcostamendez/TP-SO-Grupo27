@@ -17,9 +17,9 @@ int _loop(int argc, char *argv[]) {
 
     int pid = getMyPid();
 
+    // Intentional infinite loop for demonstration purposes
+    //-V776 (PVS error)
     while (1) {
-		// Note: although getpid() could be called just once
-		// it is called every time to demonstrate that the process ID does not change
 		printf("Hello from PID: %d\n", pid);
 		sleep(milliseconds);
 	}
