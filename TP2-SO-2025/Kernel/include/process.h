@@ -203,4 +203,6 @@ int wait_all_children(void);
 
 int get_process_info(ProcessInfo * info, int pid);
 
+void reap_terminated_processes(void);
+
 #endif // PROCESS_H

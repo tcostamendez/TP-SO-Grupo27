@@ -9,28 +9,53 @@
 #include "fd.h" 
 #include "pipe.h"
 
-/**
- * @brief Prepara un stack falso para un nuevo proceso.
- * (Esta función la crearemos en 'libasm.asm' más adelante).
- * * @param stack_top Puntero al tope del stack (ej: stackBase + STACK_SIZE)
- * @param rip       Puntero a la función a ejecutar (el entry point)
- * @param argc      Argument count
- * @param argv      Argument vector
- * @param terminator Puntero a la función (wrapper) que debe ejecutarse
- * cuando 'rip' retorne.
- * @return El nuevo valor de RSP para este contexto.
- */
-extern uint64_t stackInit(uint64_t stack_top, ProcessEntryPoint rip, void (*terminator)(), int argc, char*argv[]);
 
-void reap_terminated_processes(void);
-/**
- * @brief Fuerza una interrupción de timer (int 0x20).
- * (Esta función ya la tienes en 'interrupts.asm' (o similar)).
- */
+extern uint64_t stackInit(uint64_t stack_top, ProcessEntryPoint rip, void (*terminator)(), int argc, char*argv[]);
 extern void _force_scheduler_interrupt();
+extern void remove_process_from_scheduler(Process* p);
+extern Process* get_running_process();
+
+extern QueueADT ready_queue;
+extern QueueADT blocked_queue;
+extern Process* running_process;
 
 // Tabla global de procesos - almacena punteros a todos los procesos
 static Process* process_table[MAX_PROCESSES] = {NULL};
+
+/**
+ * @brief Libera toda la memoria asociada a un proceso.
+ * Centraliza toda la lógica de limpieza de procesos.
+ * @param p Puntero al proceso a limpiar.
+ * @param remove_from_scheduler  Booleano para indicar si el proceso debe ser removido del scheduler.
+ */
+static void free_process_resources(Process* p, int remove_from_scheduler) {
+    if (p == NULL) {
+        return;
+    }
+    
+    // Liberar argv y sus elementos
+    if (p->argv != NULL) {
+        for (int i = 0; i < p->argc; i++) {
+            if (p->argv[i] != NULL) {
+                mm_free(p->argv[i]);
+            }
+        }
+        mm_free(p->argv);
+    }
+    
+    // Liberar stack
+    if (p->stackBase != NULL) {
+        mm_free(p->stackBase);
+    }
+    
+    // Remover del scheduler si es necesario
+    if (remove_from_scheduler) {
+        remove_process_from_scheduler(p);
+    }
+    
+    // Liberar la estructura del proceso
+    mm_free(p);
+}
 
 /**
  * @brief Asigna un PID iterando a través de la tabla de procesos.
@@ -95,10 +120,6 @@ void process_terminator(void) {
     // Mark process as TERMINATED so waiting parents can detect it
     cur->state = TERMINATED;
     
-    extern QueueADT ready_queue;
-    extern QueueADT blocked_queue;
-    extern Process* running_process;
-    
     queueRemove(ready_queue, &cur);
     queueRemove(blocked_queue, &cur);
     if (running_process == cur) {
@@ -153,8 +174,7 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
 
     p->pid = assign_pid();
     if (p->pid == -1) {
-        mm_free(p->stackBase);
-        mm_free(p);
+        free_process_resources(p, 0);
         _sti();
         return NULL;
     }
@@ -193,7 +213,7 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
 		p->argv = (char **)mm_alloc(sizeof(char *) * p->argc);
 
 		if (p->argv == NULL) {
-			mm_free(p);
+			free_process_resources(p, 0);
 			return NULL;
 		}
 	}
@@ -201,11 +221,7 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
 	for (int i = 0; i < p->argc; i++) {
 		p->argv[i] = (char *)mm_alloc(sizeof(char) * (strlen(argv[i]) + 1));
 		if (p->argv[i] == NULL) {
-			for (int j = 0; j < i; j++) {
-				mm_free(p->argv[j]);
-			}
-			mm_free(p->argv);
-			mm_free(p);
+			free_process_resources(p, 0);
 			return NULL;
 		}
 		my_strcpy(p->argv[i], argv[i]);
@@ -222,14 +238,12 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
     
     uint64_t stack_bottom = (uint64_t)p->stackBase;
     if (p->rsp < stack_bottom || p->rsp >= stack_top) {
-        mm_free(p->stackBase);
-        mm_free(p);
+        free_process_resources(p, 0);
         return NULL;
     }
     
     if (add_to_process_table(p) != 0) {
-        mm_free(p->stackBase);
-        mm_free(p);
+        free_process_resources(p, 0);
         return NULL;
     }
 
@@ -336,17 +350,12 @@ int kill_process(int pid) {
         return -1;
     }
     
-    extern Process* get_running_process();
     Process* running = get_running_process();
 
     _cli();
 
     if (running == p) {
         p->state = TERMINATED;
-        
-        extern QueueADT ready_queue;
-        extern QueueADT blocked_queue;
-        extern Process* running_process;
         
         queueRemove(ready_queue, &p);
         queueRemove(blocked_queue, &p);
@@ -393,8 +402,7 @@ int kill_process(int pid) {
             mm_free(name);
         }
     }
-
-    extern void remove_process_from_scheduler(Process* p);
+    
     remove_process_from_scheduler(p);
     
     if (p) {
@@ -409,14 +417,9 @@ int kill_process(int pid) {
             closePipe(w);
         }
     }
-    
-    if (p->stackBase != NULL) {
-        mm_free(p->stackBase);
-        p->stackBase = NULL;
-    }
-
     remove_from_process_table(pid);
-    mm_free(p);
+    // Centralized cleanup: removes from scheduler and frees all memory
+    free_process_resources(p, 1);
 
     _sti();
     return 0;
@@ -481,7 +484,6 @@ int wait_child(int child_pid) {
         print("[DEBUG] wait_child: Process ");
         printDec(child_pid);
         print(" still running, yielding...\n");
-        extern void _force_scheduler_interrupt();
         _force_scheduler_interrupt();
     }
     /*
@@ -520,9 +522,8 @@ void reap_terminated_processes(void) {
         Process* p = get_process(i);
         if (p && p->state == TERMINATED) {
             if (p != get_running_process()) {
-                if (p->stackBase) { mm_free(p->stackBase); p->stackBase = NULL; }
-                remove_from_process_table(p->pid);
-                mm_free(p);
+                // Centralized cleanup: removes from scheduler and frees all memory
+                free_process_resources(p, 0);
             }
         }
     }
