@@ -33,6 +33,7 @@ int32_t getCharacterWithoutDisplay(void);
 // Memory management functions
 void* allocMemory(size_t size);
 void freeMemory(void* ptr);
+void memoryStats(int * total, int * available, int * used);
 
 // Process management functions
 int createProcess(int argc, char** argv, void (*entry_point)(int, char**), int priority, int* targets, int hasForeground);

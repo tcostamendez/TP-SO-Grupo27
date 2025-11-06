@@ -69,6 +69,10 @@ void freeMemory(void* ptr) {
   sys_free(ptr);
 }
 
+void memoryStats(int * total, int * available, int * used){
+  sys_get_memory_stats(total, available, used);
+}
+
 int createProcess(int argc, char** argv, void (*entry_point)(int, char**), int priority, int * targets, int hasForeground) {
   return sys_create_process(argc, argv, entry_point, priority, targets, hasForeground);
 }

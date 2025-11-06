@@ -325,7 +325,7 @@ void sys_free(void* ap){
 void sys_get_memory_stats(int * total, int * available, int * used){
   MemoryStats aux = mm_get_stats();
   *total = aux.total_memory;
-  *avaliable = aux.free_memory;
+  *available = aux.free_memory;
   *used = aux.occupied_memory;
 }
 

@@ -190,7 +190,7 @@ void * sys_malloc(uint64_t size);
 
 void sys_free(void * ap);
 
-void sys_get
+void sys_get_memory_stats(int * total, int * avaliable, int * used);
 
 // Process management syscalls (34-43)
 int sys_create_process(int argc, char** argv, void (*entry_point)(int, char**), int priority, int * targets, int hasForeground);

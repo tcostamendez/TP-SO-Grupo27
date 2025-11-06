@@ -140,7 +140,7 @@ static int parse_command(char *buffer, char *command, ParsedCommand *parsedComma
       perror("Memory allocation failed for command argument");
 			freeMemory(parsedCommand->name);
 
-			for (int i = 0; i < parsedCommand->argc; i++) {
+			for (int i = 1; i < parsedCommand->argc; i++) {
 				freeMemory(parsedCommand->argv[i]);
 			}
 			return -1;
@@ -151,6 +151,9 @@ static int parse_command(char *buffer, char *command, ParsedCommand *parsedComma
     parsedCommand->argc++;
   }
 
+  if(arg != NULL && strcmp(arg, "|")==0){
+    (void) strtok(NULL, " ");
+  }
   parsedCommand->argv[parsedCommand->argc] = NULL;
 
 	parsedCommand->isBuiltIn = commands[command_i].isBuiltIn;
@@ -220,7 +223,8 @@ int main() {
 				freeMemory(parsedCommands);
 				parsed_commands_dim += 5;
 				parsedCommands = newParsedCommands;
-      };
+      }
+      if(parsed == 2) break;
     }
 
 
@@ -275,13 +279,13 @@ int main() {
       if(parsedCommands[0].isBuiltIn){
         parsedCommands[0].function(parsedCommands[0].argc, parsedCommands[0].argv);
       }else {
-        void (*entry_point)(void) = NULL;
-        for (int i = 0; i < commands_size; i++) {
-          if (strcmp(parsedCommands[0].name, commands[i].name) == 0) {
-            entry_point = commands[i].function;
-            break;
-          }
-        }
+        void (*entry_point)(int, char **) = (void(*) (int, char**))parsedCommands[0].function;
+        // for (int i = 0; i < commands_size; i++) {
+        //   if (strcmp(parsedCommands[0].name, commands[i].name) == 0) {
+        //     entry_point = commands[i].function;
+        //     break;
+        //   }
+        //}
         if (entry_point != NULL) {
           int targets[3] = {0, 1, 2}; // STDIN, STDOUT, STDERR
           int requestsForeground = 1;
@@ -297,7 +301,7 @@ int main() {
       if (parsedCommands[0].isBuiltIn || parsedCommands[1].isBuiltIn) {
         printf("Pipelines with built-in commands are not supported.\n");
       } else {
-        int pipeId = PipeOpen();
+        int pipeId = pipeOpen();
         if (pipeId < 0) {
           perror("Failed to open pipe");
         } else {
@@ -305,13 +309,13 @@ int main() {
 
           // Comando izquierdo: STDOUT -> pipe, STDIN -> terminal
           {
-            void (*entry_point)(void) = NULL;
-            for (int i = 0; i < commands_size; i++) {
-              if (strcmp(parsedCommands[0].name, commands[i].name) == 0) {
-                entry_point = commands[i].function;
-                break;
-              }
-            }
+            void (*entry_point)(int, char**) = (void(*)(int, char**))parsedCommands[0].function;
+            // for (int i = 0; i < commands_size; i++) {
+            //   if (strcmp(parsedCommands[0].name, commands[i].name) == 0) {
+            //     entry_point = commands[i].function;
+            //     break;
+            //   }
+            // }
             if (entry_point != NULL) {
               int targets[3] = {0, pipeId, 2};
               int requestsForeground = 1; // recibe teclado
@@ -321,13 +325,13 @@ int main() {
           }
           // Comando derecho: STDIN <- pipe, STDOUT -> terminal
           {
-            void (*entry_point)(void) = NULL;
-            for (int i = 0; i < commands_size; i++) {
-              if (strcmp(parsedCommands[1].name, commands[i].name) == 0) {
-                entry_point = commands[i].function;
-                break;
-              }
-            }
+            void (*entry_point)(int, char**) = (void(*)(int, char**))parsedCommands[1].function;
+            // for (int i = 0; i < commands_size; i++) {
+            //   if (strcmp(parsedCommands[1].name, commands[i].name) == 0) {
+            //     entry_point = commands[i].function;
+            //     break;
+            //   }
+            // }
             if (entry_point != NULL) {
               int targets[3] = {pipeId, 1, 2};
               int requestsForeground = 0; // corre en paralelo
@@ -340,12 +344,24 @@ int main() {
               waitPid(pids[i]);
             }
           }
+          pipeClose(pipeId);
         }
       }
     } else if (parsed > 2) {
       printf("Pipelines with more than 2 commands are not supported yet.\n");
     }
   
+    // Liberar argv alocados (argv[0] es literal de commands[])
+    for (int p = 0; p < parsed; p++) {
+      for (int i = 1; i < parsedCommands[p].argc; i++) {
+        if (parsedCommands[p].argv[i]) {
+          freeMemory(parsedCommands[p].argv[i]);
+          parsedCommands[p].argv[i] = NULL;
+        }
+      }
+      parsedCommands[p].argc = 1;
+      parsedCommands[p].argv[1] = NULL;
+    }
     
 
     buffer_dim = 0;
