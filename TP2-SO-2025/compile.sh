@@ -23,7 +23,7 @@ NC='\033[0m'
 docker ps -a &> /dev/null
 
 if [ $? -ne 0 ]; then
-    echo -e "${RED}Docker is not running. Please start Docker and try again.${NC}"
+    echo -e "${RED} Docker is not running. Please start Docker and try again.${NC}"
     exit 1
 fi
 
