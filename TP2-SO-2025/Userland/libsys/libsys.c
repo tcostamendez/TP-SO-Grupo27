@@ -61,9 +61,7 @@ int32_t getCharacterWithoutDisplay(void) {
   return sys_get_character_without_display();
 }
 
-void* allocMemory(size_t size) {
-  return sys_malloc(size);
-}
+void *allocMemory(size_t size) { return sys_malloc(size); }
 
 void freeMemory(void* ptr) {
   sys_free(ptr);
@@ -73,69 +71,46 @@ void memoryStats(int * total, int * available, int * used){
   sys_get_memory_stats(total, available, used);
 }
 
-int createProcess(int argc, char** argv, void (*entry_point)(int, char**), int priority, int * targets, int hasForeground) {
-  return sys_create_process(argc, argv, entry_point, priority, targets, hasForeground);
+int createProcess(int argc, char **argv, void (*entry_point)(int, char **),
+                  int priority, int *targets, int hasForeground) {
+  return sys_create_process(argc, argv, entry_point, priority, targets,
+                            hasForeground);
 }
 
-int getMyPid(void) {
-  return sys_get_pid();
-}
+int getMyPid(void) { return sys_get_pid(); }
 
-int killProcess(int pid) {
-  return sys_kill_process(pid);
-}
+int killProcess(int pid) { return sys_kill_process(pid); }
 
 void setProcessPriority(int pid, int priority) {
   sys_modify_priority(pid, priority);
 }
 
-int ps(ProcessInfo* process_info) {
-  return sys_ps(process_info);
-}
+int ps(ProcessInfo *process_info) { return sys_ps(process_info); }
 
-void blockProcess(int pid) {
-  sys_block_process(pid);
-}
+void blockProcess(int pid) { sys_block_process(pid); }
 
+void yieldCPU(void) { sys_yield(); }
 
-void yieldCPU(void) {
-  sys_yield();
-}
+int waitPid(int pid) { return sys_wait_pid(pid); }
 
-int waitPid(int pid) {
-  return sys_wait_pid(pid);
-}
+int waitForChildren(void) { return sys_wait_for_children(); }
 
-int waitForChildren(void) {
-  return sys_wait_for_children();
-}
-
-int getProcessInfo(ProcessInfo* info, int pid){
+int getProcessInfo(ProcessInfo *info, int pid) {
   return sys_get_process_info(info, pid);
 }
 
 // ==========================
 // Pipe wrappers
 // ==========================
-int pipeOpen(void) {
-  return sys_pipe_open();
-}
+int pipeOpen(void) { return sys_pipe_open(); }
 
-int pipeAttach(uint8_t id) {
-  return sys_pipe_attach(id);
-}
+int pipeAttach(uint8_t id) { return sys_pipe_attach(id); }
 
-int pipeClose(uint8_t id) {
-  return sys_pipe_close(id);
-}
+int pipeClose(uint8_t id) { return sys_pipe_close(id); }
 
-int setReadTarget(uint8_t id) {
-  return sys_set_read_target(id);
-}
+int setReadTarget(uint8_t id) { return sys_set_read_target(id); }
 
-int setWriteTarget(uint8_t id) {
-  return sys_set_write_target(id);
-}
+int setWriteTarget(uint8_t id) { return sys_set_write_target(id); }
 
 // ==========================
 // Semaphore wrappers

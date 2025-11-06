@@ -12,17 +12,19 @@
 #define TO_UPPER(c) (IS_ALPHA(c) ? ((c) - 'a' + 'A') : (c))
 
 #define IS_KEYCODE(c) (c >= ESCAPE_KEY && c <= F12_KEY)
-#define IS_PRINTABLE(c)                                                                                                       \
-  (IS_KEYCODE((c)) &&                                                                                                         \
-   (((c) >= 0x02 && (c) <= 0x0D) || /* 1,2,3,4,5,6,7,8,9,0,-,= */                                                             \
-    ((c) >= 0x0F && (c) <= 0x1C) || /* TAB,q,w,e,r,t,y,u,i,o,p,[,],RET */                                                     \
-    ((c) >= 0x1E && (c) <= 0x29) || /* a,s,d,f,g,h,j,k,l,;,',` */                                                             \
-    ((c) >= 0x2B && (c) <= 0x35) || /* \,z,x,c,v,b,n,m,,,.,/ */                                                               \
-    ((c) == 0x37) ||                /* * */                                                                                   \
-    ((c) == 0x39) ||                /* space */                                                                               \
-    ((SHIFT_KEY_PRESSED) && (c) >= 0x47 && (c) <= 0x53) || /* home,up,pageup,-,left,5,right,+,end,down,pagedown,insert,delete \
-                                                            */                                                                \
-    ((c) == 0x4A || (c) == 0x4E) || /* -,+ */                                                                                 \
+#define IS_PRINTABLE(c)                                                              \
+  (IS_KEYCODE((c)) &&                                                                \
+   (((c) >= 0x02 && (c) <= 0x0D) || /* 1,2,3,4,5,6,7,8,9,0,-,= */                    \
+    ((c) >= 0x0F && (c) <= 0x1C) || /* TAB,q,w,e,r,t,y,u,i,o,p,[,],RET */            \
+    ((c) >= 0x1E && (c) <= 0x29) || /* a,s,d,f,g,h,j,k,l,;,',` */                    \
+    ((c) >= 0x2B && (c) <= 0x35) || /* \,z,x,c,v,b,n,m,,,.,/ */                      \
+    ((c) == 0x37) ||                /* * */                                          \
+    ((c) == 0x39) ||                /* space */                                      \
+    ((SHIFT_KEY_PRESSED) && (c) >= 0x47 &&                                           \
+     (c) <=                                                                          \
+         0x53) || /* home,up,pageup,-,left,5,right,+,end,down,pagedown,insert,delete \
+                   */                                                                \
+    ((c) == 0x4A || (c) == 0x4E) || /* -,+ */                                        \
     ((c)) == 0x56))
 
 #define IS_SPECIAL_KEY(c) (IS_KEYCODE(c) && !IS_PRINTABLE(c))

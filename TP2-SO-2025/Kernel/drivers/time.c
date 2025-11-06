@@ -8,7 +8,7 @@ static unsigned long ticks = 0;
 
 void timer_handler() {
   ticks++;
-  //toggleCursor();
+  // toggleCursor();
 }
 
 int ticks_elapsed() { return ticks; }

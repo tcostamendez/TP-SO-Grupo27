@@ -62,7 +62,7 @@ void putPixel(uint32_t hexColor, uint64_t x, uint64_t y) {
       (uint8_t *)(unsigned long long)(VBE_mode_info->framebuffer);
   uint64_t offset =
       (x * ((VBE_mode_info->bpp) >> 3)) + (y * VBE_mode_info->pitch);
-  uint8_t b = (hexColor)&0xFF, g = (hexColor >> 8) & 0xFF,
+  uint8_t b = (hexColor) & 0xFF, g = (hexColor >> 8) & 0xFF,
           r = (hexColor >> 16) & 0xFF;
 
   framebuffer[offset] = b;
@@ -100,7 +100,7 @@ void fillVideoMemory(uint32_t hexColor) {
   uint16_t width = getWindowWidth();
   uint16_t height = getWindowHeight();
 
-  uint8_t b = (hexColor)&0xFF, g = (hexColor >> 8) & 0xFF,
+  uint8_t b = (hexColor) & 0xFF, g = (hexColor >> 8) & 0xFF,
           r = (hexColor >> 16) & 0xFF;
   uint64_t yoffset;
   for (uint16_t y = 0; y < height; y++) {
@@ -126,7 +126,7 @@ void scrollVideoMemoryUp(uint16_t scroll, uint32_t fillColor) {
   uint16_t width = getWindowWidth();
   uint16_t height = getWindowHeight();
 
-  uint8_t b = (fillColor)&0xFF, g = (fillColor >> 8) & 0xFF,
+  uint8_t b = (fillColor) & 0xFF, g = (fillColor >> 8) & 0xFF,
           r = (fillColor >> 16) & 0xFF;
 
   // Iterating over Y, then X

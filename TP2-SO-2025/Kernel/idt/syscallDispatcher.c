@@ -1,19 +1,19 @@
+#include "buddy_system_mm.h"
+#include "fd.h"
+#include "first_fit_mm.h"
+#include "memory_manager.h"
+#include "pipe.h"
+#include "sem.h"
+#include "syscall_numbers.h"
 #include <fonts.h>
 #include <keyboard.h>
 #include <lib.h>
+#include <process.h>
 #include <sound.h>
 #include <stddef.h>
 #include <syscallDispatcher.h>
 #include <time.h>
 #include <video.h>
-#include <process.h>
-#include "memory_manager.h"
-#include "first_fit_mm.h"
-#include "buddy_system_mm.h"
-#include "fd.h"
-#include "pipe.h"
-#include "sem.h"
-#include "syscall_numbers.h"
 #ifndef SECONDS_TO_TICKS
 #include "time.h"
 #ifndef SECONDS_TO_TICKS
@@ -89,36 +89,41 @@ int32_t syscallDispatcher(Registers *registers) {
   case SYS_GET_CHARACTER_NO_DISPLAY:
     return sys_get_character_without_display();
   case SYS_MALLOC:
-      return (uint64_t) sys_malloc(registers->rdi);
+    return (uint64_t)sys_malloc(registers->rdi);
   case SYS_FREE:
-      sys_free((void*)registers->rdi);
-      return 0;
+    sys_free((void *)registers->rdi);
+    return 0;
   case SYS_MM_STATS:
-      sys_get_memory_stats((int *)registers->rdi, (int *)registers->rsi, (int *)registers->rdx);
-      return 0;    
+    sys_get_memory_stats((int *)registers->rdi, (int *)registers->rsi,
+                         (int *)registers->rdx);
+    return 0;
   case SYS_CREATE_PROCESS:
-      return sys_create_process((int)registers->rdi, (char**)registers->rsi, (ProcessEntryPoint)registers->rdx, (int)registers->rcx, (int*)registers->r8, (int)registers->r9);
+    return sys_create_process((int)registers->rdi, (char **)registers->rsi,
+                              (ProcessEntryPoint)registers->rdx,
+                              (int)registers->rcx, (int *)registers->r8,
+                              (int)registers->r9);
   case SYS_GET_PID:
-      return sys_get_pid();
+    return sys_get_pid();
   case SYS_KILL_PROCESS:
-      return sys_kill((int)registers->rdi);
+    return sys_kill((int)registers->rdi);
   case SYS_MODIFY_PRIORITY:
-      sys_modify_priority((int)registers->rdi, registers->rsi);
-      return 0;
+    sys_modify_priority((int)registers->rdi, registers->rsi);
+    return 0;
   case SYS_PS:
-      return sys_ps((ProcessInfo*)registers->rdi);
+    return sys_ps((ProcessInfo *)registers->rdi);
   case SYS_BLOCK_PROCESS:
-      sys_block_process((int)registers->rdi);
-      return 0;
+    sys_block_process((int)registers->rdi);
+    return 0;
   case SYS_YIELD:
-      sys_yield();
-      return 0;
+    sys_yield();
+    return 0;
   case SYS_WAIT_PID:
-      return sys_wait_pid((int)registers->rdi);
+    return sys_wait_pid((int)registers->rdi);
   case SYS_WAIT_FOR_CHILDREN:
-      return sys_wait_for_children();
+    return sys_wait_for_children();
   case SYS_GET_PROCESS_INFO:
-      return sys_get_process_info((ProcessInfo*)registers->rdi, (int)registers->rsi);    
+    return sys_get_process_info((ProcessInfo *)registers->rdi,
+                                (int)registers->rsi);
   case SYS_PIPE_OPEN:
     return sys_pipe_open();
   case SYS_PIPE_ATTACH:
@@ -130,7 +135,8 @@ int32_t syscallDispatcher(Registers *registers) {
   case SYS_SET_WRITE_TARGET:
     return sys_set_write_target_sys((uint8_t)registers->rdi);
   case SYS_SEM_OPEN:
-    return (int64_t)sys_sem_open((const char*)registers->rdi, (uint16_t)registers->rsi);
+    return (int64_t)sys_sem_open((const char *)registers->rdi,
+                                 (uint16_t)registers->rsi);
   case SYS_SEM_CLOSE:
     return sys_sem_close((Sem)registers->rdi);
   case SYS_SEM_WAIT:
@@ -139,7 +145,7 @@ int32_t syscallDispatcher(Registers *registers) {
     return sys_sem_post((Sem)registers->rdi);
   case SYS_SHUTDOWN:
     extern void outw(uint16_t port, uint16_t val);
-    outw(0x604, 0x2000);  // QEMU ACPI shutdown
+    outw(0x604, 0x2000); // QEMU ACPI shutdown
     return 0;
   default:
     return 0;
@@ -156,7 +162,8 @@ int32_t sys_write(int32_t fd, char *__user_buf, int32_t count) {
 }
 
 int32_t sys_read(int32_t fd, signed char *__user_buf, int32_t count) {
-  // Route through FD layer: reads from STDIN (keyboard) or pipe depending on target
+  // Route through FD layer: reads from STDIN (keyboard) or pipe depending on
+  // target
   return fd_read(fd, (uint8_t *)__user_buf, count);
 }
 
@@ -314,15 +321,11 @@ int32_t sys_get_character_without_display(void) {
 // Memory managment system calls
 // ==================================================================
 
-void * sys_malloc(size_t size) {
-  return (void *) mm_alloc(size);
-}
+void *sys_malloc(size_t size) { return (void *)mm_alloc(size); }
 
-void sys_free(void* ap){
-  mm_free(ap);
-}
+void sys_free(void *ap) { mm_free(ap); }
 
-void sys_get_memory_stats(int * total, int * available, int * used){
+void sys_get_memory_stats(int *total, int *available, int *used) {
   MemoryStats aux = mm_get_stats();
   *total = aux.total_memory;
   *available = aux.free_memory;
@@ -333,32 +336,28 @@ void sys_get_memory_stats(int * total, int * available, int * used){
 // Process system calls
 // ==================================================================
 
-int sys_create_process(int argc, char ** argv, ProcessEntryPoint entryPoint, int priority, int targets[], int hasForeground){
-  Process* p = create_process(argc, argv, entryPoint, priority, targets, hasForeground);
-  if(p == NULL){
+int sys_create_process(int argc, char **argv, ProcessEntryPoint entryPoint,
+                       int priority, int targets[], int hasForeground) {
+  Process *p =
+      create_process(argc, argv, entryPoint, priority, targets, hasForeground);
+  if (p == NULL) {
     return -1;
   }
   return get_pid(p);
 }
 
-int sys_get_pid() {
-  return get_running_pid();
-}
+int sys_get_pid() { return get_running_pid(); }
 
-int sys_kill(int pid) {
-  return kill_process(pid);
-}
+int sys_kill(int pid) { return kill_process(pid); }
 
-void sys_modify_priority(int pid, int new_priority){
+void sys_modify_priority(int pid, int new_priority) {
   set_priority(pid, new_priority);
 }
 
-int sys_ps(ProcessInfo* process_info) {
-  return ps(process_info);  
-}
+int sys_ps(ProcessInfo *process_info) { return ps(process_info); }
 
-void sys_block_process(int pid){
-  Process* p = get_process(pid);
+void sys_block_process(int pid) {
+  Process *p = get_process(pid);
   if (p == NULL || p == idle_proc || p->state == TERMINATED) {
     return;
   }
@@ -370,43 +369,31 @@ void sys_block_process(int pid){
   }
 }
 
-void sys_unblock_process(int pid){
-  Process* p = get_process(pid);
+void sys_unblock_process(int pid) {
+  Process *p = get_process(pid);
   if (p != NULL) {
     unblock_process(p);
   }
 }
 
-void sys_yield(){
-  yield_cpu();
-}
+void sys_yield() { yield_cpu(); }
 
-int sys_wait_pid(int pid){
-  return wait_child(pid);
-}
+int sys_wait_pid(int pid) { return wait_child(pid); }
 
-int sys_wait_for_children(){
-  return wait_all_children();
-}
+int sys_wait_for_children() { return wait_all_children(); }
 
-int sys_get_process_info(ProcessInfo* info, int pid){
+int sys_get_process_info(ProcessInfo *info, int pid) {
   return get_process_info(info, pid);
 }
 
 // ==================================================================
 // Pipe syscalls
 // ==================================================================
-int sys_pipe_open(void) {
-  return openPipe();
-}
+int sys_pipe_open(void) { return openPipe(); }
 
-int sys_pipe_attach(uint8_t id) {
-  return attach(id);
-}
+int sys_pipe_attach(uint8_t id) { return attach(id); }
 
-int sys_pipe_close(uint8_t id) {
-  return closePipe(id);
-}
+int sys_pipe_close(uint8_t id) { return closePipe(id); }
 
 static void detach_if_pipe(uint8_t id, int pid) {
   if (id != STDIN && id != STDOUT) {
@@ -416,24 +403,28 @@ static void detach_if_pipe(uint8_t id, int pid) {
 
 int sys_set_read_target_sys(uint8_t id) {
   Process *p = get_current_process();
-  if (!p) return -1;
+  if (!p)
+    return -1;
   uint8_t old = p->targetByFd[READ_FD];
   // detach old if it was a pipe
   detach_if_pipe(old, p->pid);
   // attach new if it is a pipe
   if (id != STDIN && id != STDOUT) {
-    if (attach(id) < 0) return -1;
+    if (attach(id) < 0)
+      return -1;
   }
   return setReadTarget(p->targetByFd, id);
 }
 
 int sys_set_write_target_sys(uint8_t id) {
   Process *p = get_current_process();
-  if (!p) return -1;
+  if (!p)
+    return -1;
   uint8_t old = p->targetByFd[WRITE_FD];
   detach_if_pipe(old, p->pid);
   if (id != STDIN && id != STDOUT) {
-    if (attach(id) < 0) return -1;
+    if (attach(id) < 0)
+      return -1;
   }
   return setWriteTarget(p->targetByFd, id);
 }

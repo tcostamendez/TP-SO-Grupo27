@@ -1,6 +1,6 @@
 #include <idtLoader.h>
-#include <stdint.h> // Necesario para uint64_t, etc.
 #include <interrupts.h> // Para las declaraciones de los handlers
+#include <stdint.h>     // Necesario para uint64_t, etc.
 
 #pragma pack(push) // save current alignment values into the compilers stack
 #pragma pack(1)    // set alignment
@@ -21,8 +21,8 @@ typedef struct {
 
 // Estructura para el registro IDTR
 typedef struct {
-    uint16_t limit;
-    uint64_t base;
+  uint16_t limit;
+  uint64_t base;
 } IDTR;
 
 // ¡NO APUNTAR A CERO!
@@ -35,9 +35,9 @@ static IDTR idtr;
 
 // Lee el registro CS actual
 static inline uint16_t get_cs(void) {
-    uint16_t cs;
-    __asm__ volatile("mov %%cs, %0" : "=r"(cs));
-    return cs;
+  uint16_t cs;
+  __asm__ volatile("mov %%cs, %0" : "=r"(cs));
+  return cs;
 }
 
 #pragma pack(pop) // restore previous alignment
@@ -56,9 +56,12 @@ void load_idt() {
   // Load exception handlers
   setup_IDT_entry(0x00, (uint64_t)&_exceptionHandler00, kernel_cs);
   setup_IDT_entry(0x06, (uint64_t)&_exceptionHandler06, kernel_cs);
-  setup_IDT_entry(0x08, (uint64_t)&_exceptionHandler08, kernel_cs); // <-- AÑADIR
-  setup_IDT_entry(0x0D, (uint64_t)&_exceptionHandler0D, kernel_cs); // <-- AÑADIR
-  setup_IDT_entry(0x0E, (uint64_t)&_exceptionHandler0E, kernel_cs); // <-- AÑADIR
+  setup_IDT_entry(0x08, (uint64_t)&_exceptionHandler08,
+                  kernel_cs); // <-- AÑADIR
+  setup_IDT_entry(0x0D, (uint64_t)&_exceptionHandler0D,
+                  kernel_cs); // <-- AÑADIR
+  setup_IDT_entry(0x0E, (uint64_t)&_exceptionHandler0E,
+                  kernel_cs); // <-- AÑADIR
 
   // Load ISRs
   // https://wiki.osdev.org/Interrupts#General_IBM-PC_Compatible_Interrupt_Information
@@ -72,7 +75,7 @@ void load_idt() {
   picMasterMask(KEYBOARD_PIC_MASTER & TIMER_PIC_MASTER);
   picSlaveMask(NO_INTERRUPTS);
 
-  extern void _load_idt_asm(IDTR* idtr);
+  extern void _load_idt_asm(IDTR * idtr);
   _load_idt_asm(&idtr);
 
   _sti();
