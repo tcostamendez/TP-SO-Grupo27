@@ -22,6 +22,14 @@ struct pipe {
     Sem canRead;
     Sem canWrite;
     uint8_t attached;
+
+    // Contadores por rol
+    uint16_t readers;
+    uint16_t writers;
+
+    // Expectativas iniciales (evitan EOF antes de que conecte el otro extremo)
+    uint8_t exp_readers;
+    uint8_t exp_writers;
 };
 
 static Pipe createPipe(void);
@@ -61,17 +69,76 @@ int openPipe(void) {
 
     return pipe->id;
 }
-
+//no usar mas
 int attach(uint8_t id) {
     Pipe pipe;
-
     if (-1 == getValidPipe(id, &pipe)) {
         return -1;
     }
-
     pipe->attached++;
-
     return 0;
+}
+//usar estos
+int attachReader(uint8_t id) {
+    Pipe p;
+    if (-1 == getValidPipe(id, &p)) return -1;
+    p->readers++;
+    if (p->exp_readers > 0) p->exp_readers--;
+    return 0;
+}
+
+int attachWriter(uint8_t id) {
+    Pipe p;
+    if (-1 == getValidPipe(id, &p)) return -1;
+    p->writers++;
+    if (p->exp_writers > 0) p->exp_writers--;
+    return 0;
+}
+
+static void wake_all(Sem s) {
+    int users = semGetUsersCount(s);
+    while (users-- > 0) semPost(s);
+}
+
+void detachReader(uint8_t id, int pid) {
+    Pipe p;
+    if (-1 == getValidPipe(id, &p)) return;
+
+    removeFromSemaphore(p->canRead, pid);
+    removeFromSemaphore(p->canWrite, pid);
+
+    if (p->readers > 0) p->readers--;
+
+    // Si ya no quedan readers, despertá a writers bloqueados
+    if (p->readers == 0 && p->waitingToWrite) {
+        wake_all(p->canWrite);
+        p->waitingToWrite = 0;
+    }
+
+    // Si no quedan endpoints y no se esperan más, borra pipe
+    if (p->readers == 0 && p->writers == 0 && p->exp_readers == 0 && p->exp_writers == 0) {
+        deletePipe(p);
+    }
+}
+
+void detachWriter(uint8_t id, int pid) {
+    Pipe p;
+    if (-1 == getValidPipe(id, &p)) return;
+
+    removeFromSemaphore(p->canRead, pid);
+    removeFromSemaphore(p->canWrite, pid);
+
+    if (p->writers > 0) p->writers--;
+
+    // Si ya no quedan writers, despertá a readers bloqueados (para que vean EOF)
+    if (p->writers == 0 && p->waitingToRead) {
+        wake_all(p->canRead);
+        p->waitingToRead = 0;
+    }
+
+    if (p->readers == 0 && p->writers == 0 && p->exp_readers == 0 && p->exp_writers == 0) {
+        deletePipe(p);
+    }
 }
 
 int readPipe(uint8_t id, uint8_t *buffer, uint64_t bytes) {

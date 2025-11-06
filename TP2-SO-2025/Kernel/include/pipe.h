@@ -18,8 +18,13 @@ int initPipeStorage(void);
 
 int openPipe(void);
 
-int attach(uint8_t id);
+// Nuevo: adjuntar/detachar por rol
+int attachReader(uint8_t id);
+int attachWriter(uint8_t id);
+void detachReader(uint8_t id, int pid);
+void detachWriter(uint8_t id, int pid);
 
+int attach(uint8_t id);
 int readPipe(uint8_t id, uint8_t * buffer, uint64_t bytes);
 
 int writePipe(uint8_t id, const uint8_t * buffer, uint64_t bytes);
