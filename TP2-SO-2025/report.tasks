@@ -1,0 +1,61 @@
+pvs-studio.com/en/docs/warnings/	1	err	Help: The documentation for all analyzer warnings is available here: https://pvs-studio.com/en/docs/warnings/.
+/root/Bootloader/BMFS/bmfs.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Kernel/datastructures/array.c	62	note	V560 A part of conditional expression is always false: index < 0. Unsigned type value is never < 0.
+/root/Kernel/datastructures/array.c	73	note	V560 A part of conditional expression is always false: index < 0. Unsigned type value is never < 0.
+/root/Kernel/drivers/keyboard.c	168	warn	V557 Array overrun is possible. The value of 'scancode' index could reach 88.
+/root/Kernel/drivers/keyboard.c	169	warn	V557 Array overrun is possible. The value of 'scancode' index could reach 88.
+/root/Kernel/drivers/keyboard.c	170	warn	V557 Array overrun is possible. The value of 'scancode' index could reach 88.
+/root/Kernel/drivers/keyboard.c	299	warn	V557 Array overrun is possible. The value of 'scancode' index could reach 88.
+/root/Kernel/drivers/keyboard.c	300	warn	V557 Array overrun is possible. The value of 'scancode' index could reach 88.
+/root/Kernel/drivers/keyboard.c	168	warn	V728 An excessive check can be simplified. The '||' operator is surrounded by opposite expressions 'registeredFromKernel != 0' and 'registeredFromKernel == 0'. 
+/root/Kernel/drivers/keyboard.c	265	warn	V779 Unreachable code detected. It is possible that an error is present.
+/root/Kernel/drivers/keyboard.c	16	note	V1003 The macro 'IS_KEYCODE' is a dangerous expression. The parameter 'c' must be surrounded by parentheses.
+/root/Kernel/fd.c	40	err	V739 EOF should not be compared with a value of the 'char' type. Consider using the 'int' type.
+/root/Kernel/fonts.c	103	warn	V547 Expression 'ascii < 128' is always true. The value range of char type: [-128, 127].
+/root/Kernel/fonts.c	69	warn	V1009 Check the array initialization. Only the first element is initialized explicitly. The rest elements are initialized with zeros.
+/root/Kernel/idt/syscallDispatcher.c	55	warn	V1031 The 'sys_clear_input_buffer' function is not declared. Passing data to or from this function can be affected.
+/root/Kernel/idt/syscallDispatcher.c	115	warn	V1031 The 'sys_ps' function is not declared. Passing data to or from this function can be affected.
+/root/Kernel/idt/syscallDispatcher.c	348	note	V1107 Function declared as accepting unspecified number of parameters is called with '1' arguments. Consider explicitly specifying the function parameters list.
+/root/Kernel/kernel.c	65	warn	V1031 The 'sleep' function is not declared. Passing data to or from this function can be affected.
+/root/Kernel/kernel.c	34	note	V566 The integer constant is converted to pointer. Possibly an error or a bad coding style: (void *) 0x20000000
+/root/Kernel/kernel.c	35	note	V566 The integer constant is converted to pointer. Possibly an error or a bad coding style: (void *) 0x400000
+/root/Kernel/process.c	565	err	V522 Dereferencing of the null pointer 'process_table[pid]' might take place.
+/root/Kernel/process.c	566	err	V522 Dereferencing of the null pointer 'process_table[pid]' might take place.
+/root/Kernel/process.c	567	err	V522 Dereferencing of the null pointer 'process_table[pid]' might take place.
+/root/Kernel/process.c	568	err	V522 Dereferencing of the null pointer 'process_table[pid]' might take place.
+/root/Kernel/process.c	569	err	V522 Dereferencing of the null pointer 'process_table[pid]' might take place.
+/root/Kernel/process.c	570	err	V522 Dereferencing of the null pointer 'process_table[pid]' might take place.
+/root/Kernel/process.c	571	err	V522 Dereferencing of the null pointer 'process_table[pid]' might take place.
+/root/Kernel/process.c	233	err	V570 The 'p->argv[0]' variable is assigned to itself.
+/root/Kernel/process.c	229	err	V595 The 'p->argv' pointer was utilized before it was verified against nullptr. Check lines: 229, 232.
+/root/Kernel/process.c	562	err	V781 The value of the 'pid' index is checked after it was used. Perhaps there is a mistake in program logic.
+/root/Kernel/process.c	410	warn	V547 Expression 'p' is always true.
+/root/Kernel/process.c	235	note	V522 There might be dereferencing of a potential null pointer 'p->argv'.
+/root/Kernel/process.c	158	note	V776 Potentially infinite loop.
+/root/Kernel/process.c	387	note	V776 Potentially infinite loop.
+/root/Userland/Shell/_loader.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/commands/block.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/commands/cat.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/commands/clear.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/commands/echo.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/commands/exit.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/commands/filter.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/commands/help.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/commands/kill.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/commands/loop.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/commands/man.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/commands/mem.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/commands/mvar.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/commands/nice.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/commands/ps.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/commands/wc.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/shell.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/test_memory.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/test_mm.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/test_processes.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/Shell/test_util.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/libc/stdio.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/libc/stdlib.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/libc/string.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/libsys/ansiColors.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.
+/root/Userland/libsys/libsys.c	1	err	V009 To use free version of PVS-Studio, source code files are required to start with a special comment.

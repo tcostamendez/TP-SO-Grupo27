@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "process.h"
 #include "scheduler.h"      
 #include "memory_manager.h" 
@@ -216,7 +218,10 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
 			free_process_resources(p, 0);
 			return NULL;
 		}
-	}
+	} else {
+        free_process_resources(p, 0);
+        return NULL;
+    }
 
 	for (int i = 0; i < p->argc; i++) {
 		p->argv[i] = (char *)mm_alloc(sizeof(char) * (strlen(argv[i]) + 1));
@@ -227,12 +232,9 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
 		my_strcpy(p->argv[i], argv[i]);
 	}
 
-	if (p->argc >= 0 && p->argv != NULL) {
-		p->argv[0] = p->argv[0];
-	} else {
+	if (p->argc < 0 || p->argv == NULL) {
 		p->argv[0] = "unnamed_process";
-	}
-
+	} 
     
     p->rsp = stackInit(stack_top, p->rip, process_terminator, p->argc, p->argv);
     
@@ -403,21 +405,19 @@ int kill_process(int pid) {
         }
     }
     
-    remove_process_from_scheduler(p);
-    
-    if (p) {
-        uint8_t r = p->targetByFd[READ_FD];
-        uint8_t w = p->targetByFd[WRITE_FD];
-        if (r != STDIN && r != STDOUT) {
-            removeAttached(r, pid);
-            closePipe(r);
-        }
-        if (w != STDIN && w != STDOUT && w != r) {
-            removeAttached(w, pid);
-            closePipe(w);
-        }
+    uint8_t r = p->targetByFd[READ_FD];
+    uint8_t w = p->targetByFd[WRITE_FD];
+    if (r != STDIN && r != STDOUT) {
+        removeAttached(r, pid);
+        closePipe(r);
     }
+    if (w != STDIN && w != STDOUT && w != r) {
+        removeAttached(w, pid);
+        closePipe(w);
+    }
+    
     remove_from_process_table(pid);
+
     // Centralized cleanup: removes from scheduler and frees all memory
     free_process_resources(p, 1);
 
@@ -557,7 +557,7 @@ int ps(ProcessInfo* process_info) {
 }
 
 int get_process_info(ProcessInfo * info, int pid){
-    if(info == NULL || process_table[pid] != NULL|| pid >= MAX_PROCESSES){
+    if(info == NULL || pid >= MAX_PROCESSES || process_table[pid] != NULL){
          return -1;
     }
     info->pid = process_table[pid]->pid;

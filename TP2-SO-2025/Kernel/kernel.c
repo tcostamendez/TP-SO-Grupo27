@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include <fonts.h>
 #include <idtLoader.h>
 #include <lib.h>
@@ -58,12 +60,7 @@ void *initializeKernelBinary() {
   return getStackBase();
 }
 
-void test_proc(void) {
-  while (1){
-  sleep(200);
-  print("[DEBUG] test_proc: Starting test process\n");
-  }
-}
+
 // ===== PIPE DEMO =====
 static int atoi_simple(const char *s) {
   int v = 0; if (!s) return 0; while (*s >= '0' && *s <= '9') { v = v*10 + (*s - '0'); s++; } return v;
