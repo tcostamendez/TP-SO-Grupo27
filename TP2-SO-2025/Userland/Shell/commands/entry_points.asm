@@ -12,7 +12,8 @@ EXTERN _mem
 EXTERN _nice
 EXTERN _ps
 EXTERN _wc
-
+EXTERN _help
+EXTERN _filter
 SECTION .text
 
 ; Generic entry point wrapper macro
@@ -99,3 +100,17 @@ entry_wc:
     call _wc
     ret
 
+GLOBAL entry_help
+entry_help:
+    mov rdi,rcx
+    mov rsi, r8
+    call _help
+    ret
+
+
+GLOBAL entry_filter
+entry_filter:
+    mov rdi, rcx
+    mov rsi, r8
+    call _filter
+    ret

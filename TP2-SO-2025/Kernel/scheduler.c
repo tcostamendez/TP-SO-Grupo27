@@ -116,7 +116,7 @@ uint64_t schedule(uint64_t current_rsp) {
         else if (running_process->state == BLOCKED) {
             running_process = NULL;
         }
-        else if (running_process != idle_proc && running_process->state == RUNNING) {
+        else if (running_process->state == RUNNING) {
             running_process->quantum_remaining--;
             if (running_process->quantum_remaining > 0) {
                 return current_rsp; // Continuar con el mismo proceso

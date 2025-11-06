@@ -64,10 +64,3 @@ if [ $? -ne 0 ]; then
 fi
 
 echo -e "${GREEN}Compilation finished.${NC}"
-
-# Fix ownership and permissions for Image/ folder
-echo -e "${YELLOW}Fixing Image/ folder permissions...${NC}"
-sudo chown -R "$USER:$USER" Image
-find Image -type d -exec chmod 755 {} \;
-find Image -type f -exec chmod 644 {} \;
-echo -e "${GREEN}Permissions fixed.${NC}"

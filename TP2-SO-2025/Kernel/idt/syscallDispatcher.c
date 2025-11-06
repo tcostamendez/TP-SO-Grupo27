@@ -7,7 +7,8 @@
 #include <time.h>
 #include <video.h>
 #include <process.h>
-//#include "first_fit_mm.h"
+#include "memory_manager.h"
+#include "first_fit_mm.h"
 #include "buddy_system_mm.h"
 #include "fd.h"
 #include "pipe.h"
@@ -87,12 +88,14 @@ int32_t syscallDispatcher(Registers *registers) {
 
   case SYS_GET_CHARACTER_NO_DISPLAY:
     return sys_get_character_without_display();
-  
   case SYS_MALLOC:
       return (uint64_t) sys_malloc(registers->rdi);
   case SYS_FREE:
       sys_free((void*)registers->rdi);
       return 0;
+  case SYS_MM_STATS:
+      sys_get_memory_stats((int *)registers->rdi, (int *)registers->rsi, (int *)registers->rdx);
+      return 0;    
   case SYS_CREATE_PROCESS:
       return sys_create_process((int)registers->rdi, (char**)registers->rsi, (ProcessEntryPoint)registers->rdx, (int)registers->rcx, (int*)registers->r8, (int)registers->r9);
   case SYS_GET_PID:
@@ -317,6 +320,13 @@ void * sys_malloc(size_t size) {
 
 void sys_free(void* ap){
   mm_free(ap);
+}
+
+void sys_get_memory_stats(int * total, int * available, int * used){
+  MemoryStats aux = mm_get_stats();
+  *total = aux.total_memory;
+  *avaliable = aux.free_memory;
+  *used = aux.occupied_memory;
 }
 
 // ==================================================================

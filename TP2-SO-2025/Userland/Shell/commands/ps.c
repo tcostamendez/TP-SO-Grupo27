@@ -23,7 +23,7 @@ int _ps(int argc, char *argv[]) {
     // Print process info
     for (int i = 0; i < MAX_PROCESSES; i++) {
         // Only print active processes (pid > 0 and not terminated)
-        if (process_info[i].pid > 0 && process_info[i].state != TERMINATED) {
+        if(i == 0){
             // Convert state to string
             const char *state_str;
             switch (process_info[i].state) {
@@ -36,8 +36,35 @@ int _ps(int argc, char *argv[]) {
                 case BLOCKED:
                     state_str = "BLOCKED";
                     break;
-                case TERMINATED:
-                    state_str = "TERM";
+                default:
+                    state_str = "UNK";
+            }
+            
+            // Convert foreground/background
+            const char *fg_bg = (process_info[i].ground == 1) ? "FG" : "BG";
+            
+            printf(" %d   %d   %s %s %d %s\n",
+                   process_info[i].pid,
+                   process_info[i].ppid,
+                   process_info[i].name,
+                   state_str,
+                   process_info[i].priority,
+                   fg_bg);
+        }
+
+
+        if (process_info[i].pid > 0 && process_info[i].state != TERMINATED) {
+            // Convert state to string
+            const char *state_str;
+            switch (process_info[i].state) {
+                case READY:
+                    state_str = "READY";
+                    break;
+                case RUNNING:
+                    state_str = "RUNNING";
+                    break;
+                case BLOCKED:
+                    state_str = "BLOCKED";
                     break;
                 default:
                     state_str = "UNK";

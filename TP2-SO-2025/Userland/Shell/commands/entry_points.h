@@ -14,6 +14,7 @@ extern void entry_mem(void);
 extern void entry_nice(void);
 extern void entry_ps(void);
 extern void entry_wc(void);
-
+extern void entry_help(void);
+extern void entry_filter(void);
 #endif
 

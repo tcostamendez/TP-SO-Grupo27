@@ -39,30 +39,31 @@
 
 #define SYS_MALLOC                   32
 #define SYS_FREE                     33
+#define SYS_MM_STATS                 34
 
-#define SYS_CREATE_PROCESS           34
-#define SYS_GET_PID                  35
-#define SYS_KILL_PROCESS             36
-#define SYS_MODIFY_PRIORITY          37
-#define SYS_PS           38
-#define SYS_BLOCK_PROCESS            39
-#define SYS_YIELD                    40
-#define SYS_WAIT_PID                 41
-#define SYS_WAIT_FOR_CHILDREN        42
-#define SYS_GET_PROCESS_INFO         43
+#define SYS_CREATE_PROCESS           35
+#define SYS_GET_PID                  36
+#define SYS_KILL_PROCESS             37
+#define SYS_MODIFY_PRIORITY          38
+#define SYS_PS                       39
+#define SYS_BLOCK_PROCESS            40
+#define SYS_YIELD                    41
+#define SYS_WAIT_PID                 42
+#define SYS_WAIT_FOR_CHILDREN        43
+#define SYS_GET_PROCESS_INFO         44
 
-#define SYS_PIPE_OPEN                44
-#define SYS_PIPE_ATTACH              45
-#define SYS_PIPE_CLOSE               46
-#define SYS_SET_READ_TARGET          47
-#define SYS_SET_WRITE_TARGET         48
+#define SYS_PIPE_OPEN                45
+#define SYS_PIPE_ATTACH              46
+#define SYS_PIPE_CLOSE               47
+#define SYS_SET_READ_TARGET          48
+#define SYS_SET_WRITE_TARGET         49
 
-#define SYS_SEM_OPEN                 49
-#define SYS_SEM_CLOSE                50
-#define SYS_SEM_WAIT                 51
-#define SYS_SEM_POST                 52
+#define SYS_SEM_OPEN                 50
+#define SYS_SEM_CLOSE                51
+#define SYS_SEM_WAIT                 52
+#define SYS_SEM_POST                 53
 
-#define SYS_SHUTDOWN                 53
+#define SYS_SHUTDOWN                 54
 
 #endif
 

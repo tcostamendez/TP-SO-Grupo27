@@ -76,6 +76,7 @@ int32_t sys_get_character_without_display(void);
 // Memory manager syscalls prototypes
 void * sys_malloc(uint64_t size);
 void sys_free(void * ap);
+void sys_get_memory_stats(int * total, int * available, int * used);
 
 // Process management syscalls prototypes
 int sys_create_process(int argc, char** argv, ProcessEntryPoint entry_point, int priority, int targets[], int hasForeground);

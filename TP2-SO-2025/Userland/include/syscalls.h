@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "syscall_numbers.h"
+#include "stdlib.h"
 
 #define MAX_PROCESS_NAME 32
 
@@ -104,6 +105,12 @@ typedef enum {
     TERMINATED // Usaremos este estado para 'limpiar' procesos
 } ProcessState;
 
+typedef struct {
+    size_t total_memory;
+    size_t free_memory;
+    size_t occupied_memory;
+} MemoryStats;
+
 // Límite de procesos que podemos tener.
 #define MAX_PROCESSES 64
 #define MAX_CHILDREN 32
@@ -182,6 +189,8 @@ int32_t sys_get_character_without_display(void);
 void * sys_malloc(uint64_t size);
 
 void sys_free(void * ap);
+
+void sys_get
 
 // Process management syscalls (34-43)
 int sys_create_process(int argc, char** argv, void (*entry_point)(int, char**), int priority, int * targets, int hasForeground);
