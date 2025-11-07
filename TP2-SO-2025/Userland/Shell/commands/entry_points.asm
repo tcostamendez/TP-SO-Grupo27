@@ -14,6 +14,9 @@ EXTERN _ps
 EXTERN _wc
 EXTERN _help
 EXTERN _filter
+EXTERN _mvar
+EXTERN _mvar_writer
+EXTERN _mvar_reader
 SECTION .text
 
 ; Generic entry point wrapper macro
@@ -113,4 +116,28 @@ entry_filter:
     mov rdi, rcx
     mov rsi, r8
     call _filter
+    ret
+
+; MVAR main command
+GLOBAL entry_mvar
+entry_mvar:
+    mov rdi, rcx
+    mov rsi, r8
+    call _mvar
+    ret
+
+; MVAR writer child
+GLOBAL entry_mvar_writer
+entry_mvar_writer:
+    mov rdi, rcx
+    mov rsi, r8
+    call _mvar_writer
+    ret
+
+; MVAR reader child
+GLOBAL entry_mvar_reader
+entry_mvar_reader:
+    mov rdi, rcx
+    mov rsi, r8
+    call _mvar_reader
     ret

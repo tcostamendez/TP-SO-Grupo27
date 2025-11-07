@@ -16,5 +16,8 @@ extern void entry_ps(void);
 extern void entry_wc(void);
 extern void entry_help(void);
 extern void entry_filter(void);
+extern void entry_mvar(void);
+extern void entry_mvar_writer(void);
+extern void entry_mvar_reader(void);
 #endif
 

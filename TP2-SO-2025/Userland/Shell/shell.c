@@ -82,10 +82,14 @@ Command commands[] = {
      .function = (int (*)(int, char **))(uint64_t)entry_wc,
      .description = "Counts inputs's total lines",
      .isBuiltIn = 0},
-    {.name = "filter",
-     .function = (int (*)(int, char **))entry_filter,
-     .description = "Removes all vowels from input string",
-     .isBuiltIn = 0}};
+  {.name = "filter",
+   .function = (int (*)(int, char **))entry_filter,
+   .description = "Removes all vowels from input string",
+   .isBuiltIn = 0},
+  {.name = "mvar",
+   .function = (int (*)(int, char **))entry_mvar,
+   .description = "MVar demo: Usage mvar <writers> <readers>",
+   .isBuiltIn = 0}};
 
 const int commands_size = sizeof(commands) / sizeof(Command);
 

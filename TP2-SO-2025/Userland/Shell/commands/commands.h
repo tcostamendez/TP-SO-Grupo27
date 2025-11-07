@@ -12,6 +12,9 @@ int _kill(int, char **);
 int _loop(int, char **);
 int _man(int, char **);
 int _mem(int, char **);
+int _mvar(int, char **);          // MVar command (spawns readers/writers)
+int _mvar_writer(int, char **);   // child writer
+int _mvar_reader(int, char **);   // child reader
 int _nice(int, char **);
 int _orphan(int, char **);
 int _ps(int, char **);
