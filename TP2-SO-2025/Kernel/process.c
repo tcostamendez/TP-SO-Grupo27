@@ -17,8 +17,8 @@ extern void _force_scheduler_interrupt();
 extern void remove_process_from_scheduler(Process* p);
 extern Process* get_running_process();
 
-extern QueueADT ready_queue;
-extern QueueADT blocked_queue;
+extern ArrayADT process_priority_table;
+
 extern Process* running_process;
 
 // Tabla global de procesos - almacena punteros a todos los procesos
@@ -96,68 +96,6 @@ static void remove_from_process_table(int pid) {
     }
 }
 
-void process_terminator(void) {
-   
-    Process *cur = get_current_process();
-    if (cur == NULL) {
-        for(;;) _hlt();
-    }
-
-    int pid = cur->pid;
-    // ! ACA ESTA EL ERROR, SE METE EN UN DEADLOCK
-    /* Semaphore approach
-    char *pid_str = num_to_str((uint64_t)pid);
-    char *sem_name = NULL;
-    if (pid_str) {
-        int name_len = strlen("wait_") + strlen(pid_str) + 1;
-        sem_name = mm_alloc(name_len);
-        if (sem_name) {
-            my_strcpy(sem_name, "wait_");
-            catenate(sem_name, pid_str);
-        }
-    }*/ 
-
-    _cli();
-    
-    // Mark process as TERMINATED so waiting parents can detect it
-    cur->state = TERMINATED;
-    
-    queueRemove(ready_queue, &cur);
-    queueRemove(blocked_queue, &cur);
-    if (running_process == cur) {
-        running_process = NULL;
-    }
-    
-    _sti();
-    
-    if (cur) {
-        uint8_t r = cur->targetByFd[READ_FD];
-        uint8_t w = cur->targetByFd[WRITE_FD];
-        if (r != STDIN && r != STDOUT) {
-            removeAttached(r, pid);
-            closePipe(r);
-        }
-        if (w != STDIN && w != STDOUT && w != r) {
-            removeAttached(w, pid);
-            closePipe(w);
-        }
-    }
-    // ! ESTO ES CONTINUACION DEL ERROR
-    /*
-    if (sem_name) {
-        Sem s = semOpen(sem_name, 0);
-        if (s) {
-            semPost(s);
-            semClose(s);
-        }
-        mm_free(sem_name);
-    }
-    */
-    _force_scheduler_interrupt();
-    
-    for(;;) _hlt();
-}
-
 Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, int priority, int targets[], int hasForeground) {
     _cli();
     
@@ -206,12 +144,13 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
     }
     p->priority = priority;
     p->quantum_remaining = p->priority + 1;
+    p->wait_ticks = 0;                  // Inicializar contador de aging
 
     uint64_t stack_top = (uint64_t)p->stackBase + PROCESS_STACK_SIZE;
 
     p->argc = argc;
 
-	if (argc > 0) {
+	if (argc > 0 && argv != NULL) {
 		p->argv = (char **)mm_alloc(sizeof(char *) * p->argc);
 
 		if (p->argv == NULL) {
@@ -356,39 +295,22 @@ int kill_process(int pid) {
 
     _cli();
 
-    if (running == p) {
-        p->state = TERMINATED;
-        
-        queueRemove(ready_queue, &p);
-        queueRemove(blocked_queue, &p);
-        if (running_process == p) {
-            running_process = NULL;
-        }
-        
-        char *pid_str = num_to_str((uint64_t)pid);
-        if (pid_str) {
-            int name_len = strlen("wait_") + strlen(pid_str) + 1;
-            char *name = mm_alloc(name_len);
-            if (name) {
-                my_strcpy(name, "wait_");
-                catenate(name, pid_str);
-                Sem s = semOpen(name, 0);
-                if (s) {
-                    semPost(s);
-                    semClose(s);
-                }
-                mm_free(name);
-            }
-        }
-        
-        _sti();
-        _force_scheduler_interrupt();
-        
-        for(;;) _hlt();
-    }
-
     p->state = TERMINATED;
+    remove_process_from_scheduler(p);
     
+    // Close file descriptors
+    uint8_t r = p->targetByFd[READ_FD];
+    uint8_t w = p->targetByFd[WRITE_FD];
+    if (r != STDIN && r != STDOUT) {
+        removeAttached(r, pid);
+        closePipe(r);
+    }
+    if (w != STDIN && w != STDOUT && w != r) {
+        removeAttached(w, pid);
+        closePipe(w);
+    }
+    
+    // Signal any waiting parents via semaphore
     char *pid_str = num_to_str((uint64_t)pid);
     if (pid_str) {
         int name_len = strlen("wait_") + strlen(pid_str) + 1;
@@ -405,23 +327,19 @@ int kill_process(int pid) {
         }
     }
     
-    uint8_t r = p->targetByFd[READ_FD];
-    uint8_t w = p->targetByFd[WRITE_FD];
-    if (r != STDIN && r != STDOUT) {
-        removeAttached(r, pid);
-        closePipe(r);
-    }
-    if (w != STDIN && w != STDOUT && w != r) {
-        removeAttached(w, pid);
-        closePipe(w);
-    }
-    
     remove_from_process_table(pid);
 
     // Centralized cleanup: removes from scheduler and frees all memory
     free_process_resources(p, 1);
 
     _sti();
+    
+    // If killing the running process, force a context switch
+    if (running == p) {
+        _force_scheduler_interrupt();
+        for(;;) _hlt();
+    }
+    
     return 0;
 }
 
@@ -571,3 +489,63 @@ int get_process_info(ProcessInfo * info, int pid){
     return 1;
 }
 
+
+void process_terminator(void) {
+    Process *cur = get_current_process();
+    if (cur == NULL) {
+        for(;;) _hlt();
+    }
+
+    int pid = cur->pid;
+    // ! ACA ESTA EL ERROR, SE METE EN UN DEADLOCK
+    /* Semaphore approach
+    char *pid_str = num_to_str((uint64_t)pid);
+    char *sem_name = NULL;
+    if (pid_str) {
+        int name_len = strlen("wait_") + strlen(pid_str) + 1;
+        sem_name = mm_alloc(name_len);
+        if (sem_name) {
+            my_strcpy(sem_name, "wait_");
+            catenate(sem_name, pid_str);
+        }
+    }*/ 
+
+    _cli();
+    
+    // Mark process as TERMINATED so waiting parents can detect it
+    cur->state = TERMINATED;
+    
+    remove_process_from_scheduler(cur);
+    if (running_process == cur) {
+        running_process = NULL;
+    }
+    
+    _sti();
+    
+    if (cur) {
+        uint8_t r = cur->targetByFd[READ_FD];
+        uint8_t w = cur->targetByFd[WRITE_FD];
+        if (r != STDIN && r != STDOUT) {
+            removeAttached(r, pid);
+            closePipe(r);
+        }
+        if (w != STDIN && w != STDOUT && w != r) {
+            removeAttached(w, pid);
+            closePipe(w);
+        }
+    }
+    // ! ESTO ES CONTINUACION DEL ERROR
+    /*
+    if (sem_name) {
+        Sem s = semOpen(sem_name, 0);
+        if (s) {
+            semPost(s);
+            semClose(s);
+        }
+        mm_free(sem_name);
+    }
+    */
+    _force_scheduler_interrupt();
+    
+    for(;;) _hlt();
+}

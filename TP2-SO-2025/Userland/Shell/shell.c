@@ -303,7 +303,7 @@ int main() {
           int requestsForeground = 1;
           int pid = createProcess(
               parsedCommands[0].argc, (char **)parsedCommands[0].argv,
-              (void *)entry_point, 1, targets, requestsForeground);
+              (void *)entry_point, 2, targets, requestsForeground);
           if (pid > 0 && requestsForeground) {
             waitPid(pid);
           }
