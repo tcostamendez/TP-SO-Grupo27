@@ -33,17 +33,21 @@ int fd_read(int32_t fd, uint8_t *userBuff, int32_t count) {
         return -1;
     }
 
+    /* Validaciones básicas de los argumentos */
+    if (userBuff == NULL || count < 0) return -1;
+    if (fd < 0 || fd > ERR_FD) return -1;
+
     uint8_t target = proc->targetByFd[fd];
     if (fd == READ_FD && target == STDIN) {
         int32_t i = 0;
-        int8_t c;
+        int c;
         while (i < count && (c = getKeyboardCharacter(AWAIT_RETURN_KEY | SHOW_BUFFER_WHILE_TYPING)) != EOF) {
-            *(userBuff + i) = c;
+            *(userBuff + i) = (uint8_t)c;
             i++;
         }
         return i;
     }
-
+    // Leer desde pipe: si count > tamaño buffer interno, hacer lecturas parciales
     return readPipe(target, userBuff, (uint64_t)count);
 }
 
@@ -54,11 +58,15 @@ int fd_write(int32_t fd, const uint8_t *userBuff, int32_t count) {
         return -1;
     }
 
+    /* Validaciones básicas de los argumentos */
+    if (userBuff == NULL || count < 0) return -1;
+    if (fd < 0 || fd > ERR_FD) return -1;
+
     uint8_t target = proc->targetByFd[fd];
 
     if (fd == WRITE_FD && target == STDOUT) {
         return printToFd(STDOUT, (const char *)userBuff, count);
     }
-
+    // Escritura a pipe: bloqueo hasta escribir todos los bytes (writePipe ya bloquea si lleno)
     return writePipe(target, userBuff, (uint64_t)count);
 }

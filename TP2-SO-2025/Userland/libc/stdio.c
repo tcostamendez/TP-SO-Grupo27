@@ -212,10 +212,17 @@ int scanf(const char *format, ...) {
 }
 
 int getchar(void) {
-  signed char c[1];
-  while (sys_read(FD_STDIN, c, 1) == -1)
-    ;
-  return c[0];
+  unsigned char c;
+  int n;
+  // Intentar leer 1 byte. Si hay error transitorio (-1), reintentar.
+  // Si retorna 0, es EOF: devolver EOF.
+  while ((n = sys_read(FD_STDIN, &c, 1)) == -1) {
+    // busy-wait simple; en este SO no hay EAGAIN, reintentamos hasta que haya dato o EOF
+  }
+  if (n == 0) {
+    return EOF; // fin de stream (pipe cerrado y buffer vacío)
+  }
+  return (int)c;
 }
 
 void putchar(const char c) { sys_write(FD_STDOUT, &c, 1); };

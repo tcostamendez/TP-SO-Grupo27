@@ -33,10 +33,26 @@ int initSemQueue(void) {
 
 //! REVISAR ESTA FUNCION
 void freeSemQueue(void) {
-	if (sQueue == NULL || sQueue->sems == NULL) {
+	if (sQueue == NULL) {
 		return;
 	}
-	queueFree(sQueue->sems);
+	/* Proteger la operación de liberación global */
+	semLock(&sQueue->lock);
+	if (sQueue->sems != NULL) {
+		/* Vaciar y liberar cada semáforo dentro de la cola */
+		while (queueSize(sQueue->sems) > 0) {
+			Sem s = NULL;
+			if (dequeue(sQueue->sems, &s) != NULL && s != NULL) {
+				/* liberar las estructuras internas del semáforo */
+				if (s->blockedProcesses)
+					queueFree(s->blockedProcesses);
+				/* no debemos tocar s->lock después de mm_free, así que no hacemos semUnlock aquí */
+				mm_free(s);
+			}
+		}
+		queueFree(sQueue->sems);
+	}
+	semUnlock(&sQueue->lock);
 	mm_free(sQueue);
 	sQueue = NULL;
 }
@@ -48,7 +64,11 @@ Sem semOpen(const char *name, uint16_t value) {
     
     Sem newSem;
 
-    semLock(&sQueue->lock);
+	if (sQueue == NULL) {
+		return NULL;
+	}
+
+	semLock(&sQueue->lock);
 
     if (!queueIsEmpty(sQueue->sems)) {
         newSem = findSemByName(name);
@@ -86,37 +106,62 @@ Sem semOpen(const char *name, uint16_t value) {
 
 int semClose(Sem semToClose) {
 	int toReturn = -1;
-	if (validSem(semToClose)) {
-		semLock(&semToClose->lock);
-		semToClose->users--;
-		Sem aux = semToClose;
-		semLock(&sQueue->lock);
-		if (semToClose->users != 0) {
-			// Otros usuarios siguen usando el semáforo, no liberarlo
-			semUnlock(&semToClose->lock);
-			toReturn = 0;
-		} else {
-			// Último usuario, intentar remover de la cola global
-			if (queueRemove(sQueue->sems, &aux) != NULL) {
-				// Éxito: liberar todos los recursos
-				queueFree(semToClose->blockedProcesses);
-				mm_free(semToClose);
-				toReturn = 0;
-			} else {
-				// FALLO: rollback del decremento para mantener consistencia
-				semToClose->users++;
-				semUnlock(&semToClose->lock);
-				toReturn = -1;
-			}
-		}
-		semUnlock(&sQueue->lock);
+	if (sQueue == NULL) {
+		return -1;
 	}
-	return toReturn;
+	if (!validSem(semToClose)) {
+		return -1;
+	}
+
+	/* Para evitar deadlocks, adquirir primero sQueue->lock y luego el sem->lock */
+	semLock(&sQueue->lock);
+	semLock(&semToClose->lock);
+
+	/* Decrementar contador de usuarios */
+	semToClose->users--;
+
+	if (semToClose->users != 0) {
+		/* Otros usuarios siguen usando el semáforo, no liberarlo */
+		semUnlock(&semToClose->lock);
+		semUnlock(&sQueue->lock);
+		return 0;
+	}
+
+	/* Último usuario: intentar remover de la cola global */
+	Sem aux = semToClose;
+	if (queueRemove(sQueue->sems, &aux) == NULL) {
+		/* FALLO: rollback del decremento para mantener consistencia */
+		semToClose->users++;
+		semUnlock(&semToClose->lock);
+		semUnlock(&sQueue->lock);
+		return -1;
+	}
+
+	/* Fue removido exitosamente de la cola global. Mientras aún tenemos el sem->lock,
+	   podemos liberar sus estructuras internas de forma segura. */
+	if (semToClose->blockedProcesses) {
+		queueFree(semToClose->blockedProcesses);
+		semToClose->blockedProcesses = NULL;
+	}
+
+	/* Liberar el lock del semáforo antes de liberar la memoria */
+	semUnlock(&semToClose->lock);
+
+	/* Ya no formamos parte de la cola global; liberar la estructura */
+	mm_free(semToClose);
+
+	/* Finalmente liberar el lock global */
+	semUnlock(&sQueue->lock);
+
+	return 0;
 }
 
 
 int semPost(Sem semToPost) {
 	int toReturn = -1;
+	if (sQueue == NULL) {
+		return -1;
+	}
 	if (validSem(semToPost)) {
 		semLock(&semToPost->lock);
 		
@@ -148,6 +193,9 @@ int semPost(Sem semToPost) {
 int semWait(Sem semToWait) {
 	int toReturn = -1;
 	int blocked = 0;
+	if (sQueue == NULL) {
+		return -1;
+	}
 	if (validSem(semToWait)) {
 		semLock(&semToWait->lock);
 		
@@ -188,6 +236,9 @@ int semWait(Sem semToWait) {
 
 int semGetValue(Sem semToGet) {
 	int toReturn = -1;
+	if (sQueue == NULL) {
+		return -1;
+	}
 	if (validSem(semToGet)) {
 		semLock(&semToGet->lock);
 		toReturn = semToGet->value;
@@ -198,6 +249,9 @@ int semGetValue(Sem semToGet) {
 
 int semGetUsersCount(Sem semToGet) {
 	int toReturn = -1;
+	if (sQueue == NULL) {
+		return -1;
+	}
 	if (validSem(semToGet)) {
 		semLock(&semToGet->lock);
 		toReturn = semToGet->users;
@@ -208,6 +262,9 @@ int semGetUsersCount(Sem semToGet) {
 
 int semGetBlockedProcessesCount(Sem semToGet) {
 	int toReturn = -1;
+	if (sQueue == NULL) {
+		return -1;
+	}
 	if (validSem(semToGet)) {
 		semLock(&semToGet->lock);
 		toReturn = queueSize(semToGet->blockedProcesses);
@@ -220,10 +277,10 @@ int removeFromSemaphore(Sem s, int pid) {
 	if (s == NULL) {
 		return -1;
 	}
-    semLock(&s->lock);
-    int result = queueRemove(s->blockedProcesses, &pid) == NULL ? -1 : 1;
-    semUnlock(&s->lock);
-    return result;
+	semLock(&s->lock);
+	int result = queueRemove(s->blockedProcesses, &pid) == NULL ? -1 : 1;
+	semUnlock(&s->lock);
+	return result;
 }
 
 /**
@@ -262,7 +319,7 @@ static Sem findSemByName(const char *name) {
 
 static int validSem(Sem semToValid) {
 	int valid = 0;
-	if (semToValid != NULL) {
+	if (semToValid != NULL && sQueue != NULL) {
 		Sem aux = semToValid;
 		semLock(&sQueue->lock);
 		if (queueElementExists(sQueue->sems, &aux)) {
@@ -278,6 +335,10 @@ static int cmpPid(void *pid1, void *pid2) {
     return *((int *)pid1) - *((int *)pid2); 
 }
 
-static int cmpSem(void *psem1, void *psem2) { 
-    return *((Sem *)psem1) - *((Sem *)psem2); 
+static int cmpSem(void *psem1, void *psem2) {
+	Sem a = *((Sem *)psem1);
+	Sem b = *((Sem *)psem2);
+	if (a < b) return -1;
+	if (a > b) return 1;
+	return 0;
 }

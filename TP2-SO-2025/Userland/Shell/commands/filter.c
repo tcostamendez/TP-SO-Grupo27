@@ -27,14 +27,22 @@ int _filter(int argc, char *argv[]) {
 
     // Sin argumentos: lee de STDIN (hasta '\n' en TTY o hasta EOF si viene por pipe)
     int c;
+    int printed_any = 0;
     while ((c = getchar()) != EOF) {
         if (c == '\n') {
-            break;  // modo interactivo: corta en newline
+            // Tratamos newline como un carácter más del stream (se conserva)
+            putchar('\n');
+            printed_any = 1;
+            continue; // seguir leyendo el resto del stream (pipeline completo)
         }
         if (!IS_VOWEL(c)) {
             putchar(c);
+            printed_any = 1;
         }
     }
-    putchar('\n');
+    // Asegurar terminación con newline si no hubo ninguno en la entrada
+    if (!printed_any || (printed_any && c == EOF)) {
+        putchar('\n');
+    }
     return 0;
 }

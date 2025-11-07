@@ -229,6 +229,14 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
     p->targetByFd[WRITE_FD] = targets[1];
     p->targetByFd[ERR_FD] = targets[2];
 
+    // Adjuntar roles a pipes no estándar para mantener contadores consistentes
+    if (p->targetByFd[READ_FD] != STDIN && p->targetByFd[READ_FD] != STDOUT) {
+        attachReader(p->targetByFd[READ_FD]);
+    }
+    if (p->targetByFd[WRITE_FD] != STDIN && p->targetByFd[WRITE_FD] != STDOUT) {
+        attachWriter(p->targetByFd[WRITE_FD]);
+    }
+
     if(p->pid != 0){
         _cli();
         add_to_scheduler(p);
@@ -334,12 +342,14 @@ int kill_process(int pid) {
     uint8_t r = p->targetByFd[READ_FD];
     uint8_t w = p->targetByFd[WRITE_FD];
     if (r != STDIN && r != STDOUT) {
-        removeAttached(r, pid);
+        detachReader(r, pid);
         closePipe(r);
     }
-    if (w != STDIN && w != STDOUT && w != r) {
-        removeAttached(w, pid);
-        closePipe(w);
+    if (w != STDIN && w != STDOUT) {
+        detachWriter(w, pid);
+        if (w != r) {
+            closePipe(w);
+        }
     }
     
     // PASO 2: Señalizar a los procesos padres que esperan (sin locks)
@@ -528,12 +538,14 @@ void process_terminator(void) {
     uint8_t r = cur->targetByFd[READ_FD];
     uint8_t w = cur->targetByFd[WRITE_FD];
     if (r != STDIN && r != STDOUT) {
-        removeAttached(r, pid);
+        detachReader(r, pid);
         closePipe(r);
     }
-    if (w != STDIN && w != STDOUT && w != r) {
-        removeAttached(w, pid);
-        closePipe(w);
+    if (w != STDIN && w != STDOUT) {
+        detachWriter(w, pid);
+        if (w != r) {
+            closePipe(w);
+        }
     }
     
     // PASO 2: Señalizar la terminación al proceso padre VÍA SEMÁFORO

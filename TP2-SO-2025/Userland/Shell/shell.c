@@ -95,8 +95,7 @@ uint8_t command_history_last = 0;
 
 static uint64_t last_command_output = 0;
 
-static int parse_command(char *buffer, char *command,
-                         ParsedCommand *parsedCommand) {
+static int parse_command(char *buffer, char *command, ParsedCommand *parsedCommand) {
   int command_i = -1;
   char *tok = strtok(buffer, " ");
   if (tok == NULL) {
@@ -139,8 +138,6 @@ static int parse_command(char *buffer, char *command,
 
     if (parsedCommand->argv[parsedCommand->argc] == NULL) {
       perror("Memory allocation failed for command argument");
-      freeMemory(parsedCommand->name);
-
       for (int i = 1; i < parsedCommand->argc; i++) {
         freeMemory(parsedCommand->argv[i]);
       }
@@ -152,9 +149,7 @@ static int parse_command(char *buffer, char *command,
     parsedCommand->argc++;
   }
 
-  if (arg != NULL && strcmp(arg, "|") == 0) {
-    (void)strtok(NULL, " ");
-  }
+  // No avanzar un token extra: dejar strtok posicionado justo después de '|'
   parsedCommand->argv[parsedCommand->argc] = NULL;
 
   parsedCommand->isBuiltIn = commands[command_i].isBuiltIn;
@@ -165,9 +160,9 @@ static int parse_command(char *buffer, char *command,
 int main() {
   clearScreen();
 
-  // registerKey(KP_UP_KEY, printPreviousCommand);
-  // registerKey(KP_DOWN_KEY, printNextCommand);
-  // registerKey(BACKSPACE_KEY, deleteCharacter);
+  registerKey(KP_UP_KEY, printPreviousCommand);
+  registerKey(KP_DOWN_KEY, printNextCommand);
+  registerKey(BACKSPACE_KEY, deleteCharacter);
 
   buffer[0] = 0;
   buffer_dim = 0;
@@ -230,8 +225,6 @@ int main() {
         parsed_commands_dim += 5;
         parsedCommands = newParsedCommands;
       }
-      if (parsed == 2)
-        break;
     }
 
     // Check if user entered something but it wasn't a valid command
@@ -253,121 +246,69 @@ int main() {
       INC_MOD(command_history_last, HISTORY_SIZE);
       last_command_arrowed = command_history_last;
     }
-    // int pipes[parsed+1];
-    // for(int p=0; p!= parsed; p++){
-    //   if (parsedCommands[p].isBuiltIn) {
-    // 		// Built-in commands execute directly in the shell process
-    // 		parsedCommands[p].function(parsedCommands[p].argc,
-    // parsedCommands[p].argv); 	} else {
-    // 		// Non-built-in commands run as separate processes
-    // 		// Get the appropriate entry point wrapper based on command name
-    // 		void (*entry_point)(void) = NULL;
 
-    // 		for (int i = 0; i < commands_size; i++) {
-    // 			if (strcmp(parsedCommands[p].name, commands[i].name) ==
-    // 0) { 				entry_point = commands[i].function;
-    // break;
-    // 			}
-    // 		}
-
-    // 		if (entry_point != NULL) {
-    // 			int targets[3] = {0, 1, 2};  // stdin, stdout, stderr
-    // 			int requestsForeground = 1;
-    // 			int newPid = createProcess(parsedCommands[p].argc, (char
-    // **)parsedCommands[p].argv, (void *)entry_point, 1, targets,
-    // requestsForeground);
-
-    // 			if (newPid > 0 && requestsForeground) {
-    // 				// Wait for foreground process to finish before
-    // continuing 				waitPid(newPid);
-    // 			}
-    // 		}
-    // 	}
-    // }
-
-    if (parsed == 1) {
-      if (parsedCommands[0].isBuiltIn) {
-        parsedCommands[0].function(parsedCommands[0].argc,
-                                   parsedCommands[0].argv);
-      } else {
-        void (*entry_point)(int, char **) =
-            (void (*)(int, char **))parsedCommands[0].function;
-        // for (int i = 0; i < commands_size; i++) {
-        //   if (strcmp(parsedCommands[0].name, commands[i].name) == 0) {
-        //     entry_point = commands[i].function;
-        //     break;
-        //   }
-        //}
-        if (entry_point != NULL) {
-          int targets[3] = {0, 1, 2}; // STDIN, STDOUT, STDERR
-          int requestsForeground = 1;
-          int pid = createProcess(
-              parsedCommands[0].argc, (char **)parsedCommands[0].argv,
-              (void *)entry_point, 2, targets, requestsForeground);
-          if (pid > 0 && requestsForeground) {
+    if (parsed >= 1) {
+      // Nueva lógica: sólo soportar comandos simples o pipeline de EXACTAMENTE dos procesos
+      if (parsed == 1) {
+        // Comando único
+        if (parsedCommands[0].isBuiltIn) {
+          parsedCommands[0].function(parsedCommands[0].argc, parsedCommands[0].argv);
+        } else {
+          // Soporte '&' para background en comando único
+          int wantsBackground = 0;
+          if (parsedCommands[0].argc > 1) {
+            char *lastArg = parsedCommands[0].argv[parsedCommands[0].argc - 1];
+            if (lastArg && strcmp(lastArg, "&") == 0) {
+              wantsBackground = 1;
+              parsedCommands[0].argv[parsedCommands[0].argc - 1] = NULL;
+              parsedCommands[0].argc--;
+            }
+          }
+          int targets[3] = {0, 1, 2};
+          void (*entry_point)(int, char **) = (void (*)(int, char **))parsedCommands[0].function;
+          int pid = createProcess(parsedCommands[0].argc, (char **)parsedCommands[0].argv,
+                                  (void *)entry_point, 2, targets, !wantsBackground);
+          if (!wantsBackground && pid > 0) {
             waitPid(pid);
           }
         }
-      }
-    } else if (parsed == 2) {
-      // Pipelines no soportan built-ins (se ejecutan en el mismo proceso)
-      if (parsedCommands[0].isBuiltIn || parsedCommands[1].isBuiltIn) {
-        printf("Pipelines with built-in commands are not supported.\n");
-      } else {
-        int pipeId = pipeOpen();
-        if (pipeId < 0) {
-          perror("Failed to open pipe");
+      } else if (parsed == 2) {
+        // Pipeline de dos comandos
+        if (parsedCommands[0].isBuiltIn || parsedCommands[1].isBuiltIn) {
+          printf("Pipelines with built-in commands are not supported.\n");
         } else {
-          int pids[2] = {-1, -1};
-
-          // Comando izquierdo: STDOUT -> pipe, STDIN -> terminal
-          {
-            void (*entry_point)(int, char **) =
-                (void (*)(int, char **))parsedCommands[0].function;
-            // for (int i = 0; i < commands_size; i++) {
-            //   if (strcmp(parsedCommands[0].name, commands[i].name) == 0) {
-            //     entry_point = commands[i].function;
-            //     break;
-            //   }
-            // }
-            if (entry_point != NULL) {
-              int targets[3] = {0, pipeId, 2};
-              int requestsForeground = 1; // recibe teclado
-              pids[0] = createProcess(
-                  parsedCommands[0].argc, (char **)parsedCommands[0].argv,
-                  (void *)entry_point, 1, targets, requestsForeground);
+          int pipeId = pipeOpen();
+          if (pipeId < 0) {
+            perror("Failed to open pipe");
+          } else {
+            // No soportamos '&' dentro de pipelines por simplicidad: se ignora si aparece
+            for (int k = 0; k < 2; k++) {
+              if (parsedCommands[k].argc > 1) {
+                char *lastArg = parsedCommands[k].argv[parsedCommands[k].argc - 1];
+                if (lastArg && strcmp(lastArg, "&") == 0) {
+                  parsedCommands[k].argv[parsedCommands[k].argc - 1] = NULL;
+                  parsedCommands[k].argc--;
+                }
+              }
             }
+            int targetsLeft[3] = {0, pipeId, 2};    // help: STDOUT -> pipe
+            int targetsRight[3] = {pipeId, 1, 2};    // filter: STDIN <- pipe
+            void (*entry_left)(int, char **) = (void (*)(int, char **))parsedCommands[0].function;
+            void (*entry_right)(int, char **) = (void (*)(int, char **))parsedCommands[1].function;
+            int pidLeft = createProcess(parsedCommands[0].argc, (char **)parsedCommands[0].argv,
+                                        (void *)entry_left, 2, targetsLeft, 0); 
+            int pidRight = createProcess(parsedCommands[1].argc, (char **)parsedCommands[1].argv,
+                                         (void *)entry_right, 2, targetsRight, 1);
+            // Esperar ambos para mostrar salida filtrada completa antes de nuevo prompt
+            if (pidLeft > 0) waitPid(pidLeft);
+            if (pidRight > 0) waitPid(pidRight);
+            pipeClose(pipeId);
           }
-          // Comando derecho: STDIN <- pipe, STDOUT -> terminal
-          {
-            void (*entry_point)(int, char **) =
-                (void (*)(int, char **))parsedCommands[1].function;
-            // for (int i = 0; i < commands_size; i++) {
-            //   if (strcmp(parsedCommands[1].name, commands[i].name) == 0) {
-            //     entry_point = commands[i].function;
-            //     break;
-            //   }
-            // }
-            if (entry_point != NULL) {
-              int targets[3] = {pipeId, 1, 2};
-              int requestsForeground = 0; // corre en paralelo
-              pids[1] = createProcess(
-                  parsedCommands[1].argc, (char **)parsedCommands[1].argv,
-                  (void *)entry_point, 1, targets, requestsForeground);
-            }
-          }
-          for (int i = 0; i < 2; i++) {
-            if (pids[i] > 0) {
-              waitPid(pids[i]);
-            }
-          }
-          pipeClose(pipeId);
         }
+      } else { // parsed > 2
+        printf("Pipelines with more than 2 commands are not supported.\n");
       }
-    } else if (parsed > 2) {
-      printf("Pipelines with more than 2 commands are not supported yet.\n");
     }
-
     // Liberar argv alocados (argv[0] es literal de commands[])
     for (int p = 0; p < parsed; p++) {
       for (int i = 1; i < parsedCommands[p].argc; i++) {
@@ -379,7 +320,7 @@ int main() {
       parsedCommands[p].argc = 1;
       parsedCommands[p].argv[1] = NULL;
     }
-
+  
     buffer_dim = 0;
     buffer[0] = 0;
   }
@@ -392,7 +333,7 @@ static int printPreviousCommand(enum REGISTERABLE_KEYS scancode) {
 
   last_command_arrowed = SUB_MOD(last_command_arrowed, 1, HISTORY_SIZE);
   if (command_history[last_command_arrowed][0] != 0) {
-    fprintf(FD_STDIN, command_history[last_command_arrowed]);
+    printf("%s", command_history[last_command_arrowed]);
   }
   return 1;
 }
@@ -401,7 +342,7 @@ static int printNextCommand(enum REGISTERABLE_KEYS scancode) {
 
   last_command_arrowed = (last_command_arrowed + 1) % HISTORY_SIZE;
   if (command_history[last_command_arrowed][0] != 0) {
-    fprintf(FD_STDIN, command_history[last_command_arrowed]);
+    printf("%s", command_history[last_command_arrowed]);
   }
   return 1;
 }

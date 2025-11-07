@@ -10,10 +10,17 @@ int _wc(int argc, char *argv[]){
     }
     uint32_t lines = 0;
     int c;
-    while ((c = getchar()) != EOF && c != '\0') {
+    int saw_char = 0;
+    while ((c = getchar()) != EOF) {
+        saw_char = 1;
         if (c == '\n') {
             lines++;
         }
+    }
+    // Si hubo caracteres y el último no era newline, contar la última línea parcial (convención usual de wc)
+    if (saw_char && lines == 0) {
+        // Si no hubo newlines pero hubo datos, es 1 línea
+        lines = 1;
     }
     printf("Se registraron %d lineas por stdin\n", lines);
     return 0;

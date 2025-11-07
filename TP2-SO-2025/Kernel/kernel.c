@@ -107,6 +107,8 @@ int main() {
   mm_init(heapStart, heapSize);
   initSemQueue();
   initPipeStorage();
+  // Reservar IDs 0 y 1 para STDIN/STDOUT para evitar colisiones con pipes
+  setNextId(2);
   init_scheduler();
   
   Process* init = create_init();

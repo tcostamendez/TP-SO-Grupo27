@@ -41,4 +41,7 @@ void resetPipeStorage(void);
 
 void setNextId(uint8_t id);
 
+// Debug helper: imprime el estado interno del pipe (uso temporal para tracing)
+void debugPipe(uint8_t id);
+
 #endif

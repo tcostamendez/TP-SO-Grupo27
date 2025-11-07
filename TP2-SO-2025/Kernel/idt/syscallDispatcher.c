@@ -398,6 +398,8 @@ int sys_pipe_close(uint8_t id) { return closePipe(id); }
 
 static void detach_if_pipe(uint8_t id, int pid) {
   if (id != STDIN && id != STDOUT) {
+    /* By default removeAttached decrements attached; keep for generic detach
+       but when changing read/write targets we want to update role counters */
     removeAttached(id, pid);
   }
 }
@@ -408,10 +410,13 @@ int sys_set_read_target_sys(uint8_t id) {
     return -1;
   uint8_t old = p->targetByFd[READ_FD];
   // detach old if it was a pipe
-  detach_if_pipe(old, p->pid);
+  if (old != STDIN && old != STDOUT) {
+    /* old was a read target for this process */
+    detachReader(old, p->pid);
+  }
   // attach new if it is a pipe
   if (id != STDIN && id != STDOUT) {
-    if (attach(id) < 0)
+    if (attachReader(id) < 0)
       return -1;
   }
   return setReadTarget(p->targetByFd, id);
@@ -422,9 +427,12 @@ int sys_set_write_target_sys(uint8_t id) {
   if (!p)
     return -1;
   uint8_t old = p->targetByFd[WRITE_FD];
-  detach_if_pipe(old, p->pid);
+  if (old != STDIN && old != STDOUT) {
+    /* old was a write target for this process */
+    detachWriter(old, p->pid);
+  }
   if (id != STDIN && id != STDOUT) {
-    if (attach(id) < 0)
+    if (attachWriter(id) < 0)
       return -1;
   }
   return setWriteTarget(p->targetByFd, id);
