@@ -18,8 +18,8 @@ extern void remove_process_from_scheduler(Process* p);
 extern Process* get_running_process();
 
 extern ArrayADT process_priority_table;
-
 extern Process* running_process;
+extern Process* shell_proc;
 
 // Tabla global de procesos - almacena punteros a todos los procesos
 static Process* process_table[MAX_PROCESSES] = {NULL};
@@ -223,6 +223,13 @@ int get_parent_pid(Process * p){
 }
 
 void yield_cpu() {
+    Process* current = get_current_process();
+    if (current != NULL && current->state == RUNNING) {
+        _cli();
+        // Forzar el cambio de contexto poniendo quantum a 0
+        current->quantum_remaining = 0;
+        _sti();
+    }
     _force_scheduler_interrupt();
 }
 
@@ -286,6 +293,11 @@ void foreach_process(void (*callback)(Process* p, void* arg), void* arg) {
 }
 
 int kill_process(int pid) {
+    // No se puede matar al proceso idle (PID 0) ni al init (PID 1)
+    if (pid == 0 || pid == 1) {
+        return -1;
+    }
+    
     Process* p = get_process(pid);
     if (p == NULL) {
         return -1;
@@ -328,6 +340,11 @@ int kill_process(int pid) {
     }
     
     remove_from_process_table(pid);
+    
+    // Si se está eliminando la shell, limpiar el puntero global
+    if (shell_proc == p) {
+        shell_proc = NULL;
+    }
 
     // Centralized cleanup: removes from scheduler and frees all memory
     free_process_resources(p, 1);
@@ -336,7 +353,7 @@ int kill_process(int pid) {
     
     // If killing the running process, force a context switch
     if (running == p) {
-        _force_scheduler_interrupt();
+        yield_cpu();
         for(;;) _hlt();
     }
     
@@ -402,7 +419,7 @@ int wait_child(int child_pid) {
         print("[DEBUG] wait_child: Process ");
         printDec(child_pid);
         print(" still running, yielding...\n");
-        _force_scheduler_interrupt();
+        yield_cpu();
     }
     /*
     int r = semWait(s);
@@ -520,6 +537,11 @@ void process_terminator(void) {
         running_process = NULL;
     }
     
+    // Si se está terminando la shell, limpiar el puntero global
+    if (shell_proc == cur) {
+        shell_proc = NULL;
+    }
+    
     _sti();
     
     if (cur) {
@@ -545,7 +567,7 @@ void process_terminator(void) {
         mm_free(sem_name);
     }
     */
-    _force_scheduler_interrupt();
+    yield_cpu();
     
     for(;;) _hlt();
 }

@@ -11,6 +11,7 @@
 ArrayADT process_priority_table;
 Process* running_process = NULL;
 Process* idle_proc = NULL;
+Process* shell_proc = NULL;
 
 static volatile int scheduler_online = 0;   
 
@@ -327,6 +328,10 @@ Process* get_running_process() {
 
 Process* get_idle_process() {
     return idle_proc;
+}
+
+Process* get_shell_process() {
+    return shell_proc;
 }
 
 

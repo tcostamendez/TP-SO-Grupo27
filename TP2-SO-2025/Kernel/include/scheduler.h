@@ -16,6 +16,7 @@ typedef struct Process Process;
 extern ArrayADT process_priority_table;    // Array of 4 priority queues (priority 0-3)
 extern Process* running_process;
 extern Process* idle_proc;
+extern Process* shell_proc;
 
 /**
  * @brief Inicializa el scheduler.
@@ -61,6 +62,12 @@ Process* get_running_process();
  * @return Puntero al proceso idle.
  */
 Process* get_idle_process();
+
+/**
+ * @brief Obtiene el proceso shell.
+ * @return Puntero al proceso shell, o NULL si no existe.
+ */
+Process* get_shell_process();
 
 /**
  * @brief Desbloquea un proceso y lo mueve a la cola de listos.
