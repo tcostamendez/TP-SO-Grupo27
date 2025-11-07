@@ -66,10 +66,9 @@ void endless_loop() {
 }
 
 void endless_loop_print(uint64_t wait) {
-  int64_t pid = getMyPid();
+  uint32_t pid = getMyPid();
 
   while (1) {
-    // Modified from: printf("%d ", pid);
     printf("%d", pid);
     printf(" ");
     bussy_wait(wait);

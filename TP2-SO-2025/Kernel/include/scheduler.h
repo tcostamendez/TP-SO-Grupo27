@@ -3,15 +3,20 @@
 
 #include <stdint.h>
 #include "queue.h"
+#include "array.h"
 
 // Para evitar dependencias circulares
 typedef struct Process Process;
 
+// --- Aging Configuration ---
+#define AGING_THRESHOLD 50         // Ticks esperando antes de boost de prioridad
+#define AGING_BOOST 1               // Cuántos niveles de prioridad se boostan (máximo 3)
+
 // External declarations - defined in scheduler.c
-extern QueueADT ready_queue;
-extern QueueADT blocked_queue;
+extern ArrayADT process_priority_table;    // Array of 4 priority queues (priority 0-3)
 extern Process* running_process;
 extern Process* idle_proc;
+extern Process* shell_proc;
 
 /**
  * @brief Inicializa el scheduler.
@@ -26,8 +31,7 @@ void init_scheduler();
 void add_to_scheduler(Process *p);
 
 /**
- * @brief Remueve un proceso específico del scheduler (de cualquier cola).
- * Busca el proceso en ready_queue y blocked_queue y lo elimina.
+ * @brief Remueve un proceso específico del scheduler (de cualquier priority queue).
  * @param p Puntero al PCB del proceso a remover.
  */
 void remove_process_from_scheduler(Process* p);
@@ -60,25 +64,22 @@ Process* get_running_process();
 Process* get_idle_process();
 
 /**
- * @brief Cuenta cuántos procesos hay en la cola de listos.
- * @return Cantidad de procesos en ready_queue.
+ * @brief Obtiene el proceso shell.
+ * @return Puntero al proceso shell, o NULL si no existe.
  */
-int get_ready_process_count();
-
-/**
- * @brief Cuenta cuántos procesos hay en la cola de bloqueados.
- * @return Cantidad de procesos en blocked_queue.
- */
-int get_blocked_process_count();
+Process* get_shell_process();
 
 /**
  * @brief Desbloquea un proceso y lo mueve a la cola de listos.
+ * Cambia su estado a READY y lo agrega nuevamente a su priority queue.
  * @param p Puntero al proceso a desbloquear.
  */
 void unblock_process(Process* p);
 
 /**
- * @brief Bloquea un proceso y lo mueve a la cola de bloqueados.
+ * @brief Bloquea un proceso cambiando su estado a BLOCKED.
+ * Lo remueve de su priority queue y lo deja solo en la PCB table.
+ * Al desbloquear, debe ser agregado nuevamente a su priority queue.
  * @param p Puntero al proceso a bloquear.
  */
 void block_process(Process* p);

@@ -133,7 +133,7 @@ static int parse_command(char *buffer, char *command,
   parsedCommand->argv[0] = commands[command_i].name;
   parsedCommand->argc = 1;
 
-  while (arg != NULL && strcasecmp(arg, "|") &&
+  while (arg != NULL && strcasecmp(arg, "|") != 0 &&
          parsedCommand->argc < MAX_ARGUMENT_COUNT - 1) {
     parsedCommand->argv[parsedCommand->argc] = allocMemory(strlen(arg) + 1);
 
@@ -238,9 +238,11 @@ int main() {
     if (parsed == 0 && buffer_dim > 0) {
       // Extract the command name that was tried
       char invalid_cmd[MAX_ARGUMENT_SIZE] = {0};
-      strcpy(invalid_cmd, strtok(buffer_dim > 0 ? buffer : "", " "));
-
-      printf("Command '%s' not found\n", invalid_cmd);
+      char *cmd_tok = strtok(buffer, " ");
+      if (cmd_tok != NULL) {
+        strcpy(invalid_cmd, cmd_tok);
+        printf("Command '%s' not found\n", invalid_cmd);
+      }
       printf("For a list of valid commands type 'help'\n");
     }
 
@@ -301,7 +303,7 @@ int main() {
           int requestsForeground = 1;
           int pid = createProcess(
               parsedCommands[0].argc, (char **)parsedCommands[0].argv,
-              (void *)entry_point, 1, targets, requestsForeground);
+              (void *)entry_point, 2, targets, requestsForeground);
           if (pid > 0 && requestsForeground) {
             waitPid(pid);
           }

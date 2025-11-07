@@ -44,6 +44,7 @@ int32_t sys_fonts_increase_size(void);
 int32_t sys_fonts_set_size(uint8_t size);
 int32_t sys_clear_screen(void);
 int32_t sys_clear_screen_character(void);
+int32_t sys_clear_input_buffer(void);
 uint16_t sys_window_width(void);
 uint16_t sys_window_height(void);
 
@@ -90,6 +91,7 @@ void sys_yield(void);
 int sys_wait_pid(int pid);
 int sys_wait_for_children(void);
 int sys_get_process_info(ProcessInfo* info, int pid);
+int sys_ps(ProcessInfo *process_info);
 
 // Pipe syscall prototypes
 int sys_pipe_open(void);

@@ -23,7 +23,7 @@ NC='\033[0m'
 docker ps -a &> /dev/null
 
 if [ $? -ne 0 ]; then
-    echo -e "${RED}Docker is not running. Please start Docker and try again.${NC}"
+    echo -e "${RED} Docker is not running. Please start Docker and try again.${NC}"
     exit 1
 fi
 
@@ -64,3 +64,10 @@ if [ $? -ne 0 ]; then
 fi
 
 echo -e "${GREEN}Compilation finished.${NC}"
+
+# 2) Take ownership of the whole Image/ folder (safe & simple)
+sudo chown -R "$USER:$USER" Image
+
+# 3) Set sensible perms: files 644, dirs 755
+find Image -type d -exec chmod 755 {} \;
+find Image -type f -exec chmod 644 {} \;

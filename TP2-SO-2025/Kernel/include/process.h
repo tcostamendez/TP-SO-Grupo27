@@ -6,6 +6,7 @@
 #include "queue.h"
 #include "scheduler.h"
 #include "strings.h"
+#include "panic.h"
 
 // Definimos un tamaño de stack por defecto para cada proceso (ej: 8KB)
 // Lo tomamos de tu memory_manager.h (FIRST_FIT_MM_H)
@@ -22,6 +23,8 @@
 #define MIN_PRIORITY 0
 #define MAX_PRIORITY 3
 #define DEFAULT_PRIORITY 0
+
+#define DEFAULT_QUANTUM 1
 
 #define FOREGROUND 1
 #define BACKGROUND 0
@@ -61,8 +64,10 @@ typedef struct Process {
     ProcessEntryPoint rip;      // Puntero a la función a ejecutar
     
     // --- Scheduling ---
-    int priority;               // Prioridad del proceso (0-3, mayor = más prioridad)
+    int priority;               // Prioridad actual del proceso (0-3, mayor = más prioridad)
+    int original_priority;      // Prioridad original del proceso
     int quantum_remaining;      // Ticks restantes en el quantum actual
+    int wait_ticks;             // Ticks esperando en ready queue (para aging)
     
     // --- Estado de Ejecución ---
     int ground;                 // 1 si está en foreground, 0 si en background
@@ -203,4 +208,7 @@ int wait_all_children(void);
 
 int get_process_info(ProcessInfo * info, int pid);
 
+void reap_terminated_processes(void);
+
+void process_terminator(void);
 #endif // PROCESS_H

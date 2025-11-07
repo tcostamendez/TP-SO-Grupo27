@@ -5,7 +5,7 @@ int _echo(int argc, char *argv[]) {
         return -1;
     }
     for (int i = 1; i < argc; i++) {
-        printf(argv[i]);
+        printf("%s", argv[i]);
         if (i + 1 < argc) printf(" ");
     }
     printf("\n");

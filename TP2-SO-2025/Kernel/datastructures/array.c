@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "array.h"
 #include "memory_manager.h"
 #define BLOCK_SIZE 1024
@@ -57,8 +59,7 @@ ArrayADT arrayAdd(ArrayADT array, void *data) {
 }
 
 void *getElemByIndex(ArrayADT array, uint16_t index, void *buffer) {
-  if (array == NULL || array->base == NULL || index < 0 ||
-      index >= array->elemCount || buffer == NULL) {
+  if (array == NULL || array->base == NULL || index >= array->elemCount || buffer == NULL) {
     return NULL;
   }
 
@@ -68,8 +69,7 @@ void *getElemByIndex(ArrayADT array, uint16_t index, void *buffer) {
 }
 
 void *setElemByIndex(ArrayADT array, uint16_t index, void *data) {
-  if (array == NULL || array->base == NULL || index < 0 ||
-      index >= array->elemCount || data == NULL) {
+  if (array == NULL || array->base == NULL || index >= array->elemCount || data == NULL) {
     return NULL;
   }
 

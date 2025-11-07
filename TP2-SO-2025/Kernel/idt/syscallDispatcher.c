@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "buddy_system_mm.h"
 #include "fd.h"
 #include "first_fit_mm.h"
@@ -51,7 +53,6 @@ int32_t syscallDispatcher(Registers *registers) {
     return sys_clear_screen();
   case SYS_CLEAR_INPUT_BUFFER:
     return sys_clear_input_buffer();
-
   case SYS_HOUR:
     return sys_hour((int *)registers->rdi);
   case SYS_MINUTE:
@@ -346,7 +347,7 @@ int sys_create_process(int argc, char **argv, ProcessEntryPoint entryPoint,
   return get_pid(p);
 }
 
-int sys_get_pid() { return get_running_pid(); }
+int sys_get_pid(void) { return get_running_pid(); }
 
 int sys_kill(int pid) { return kill_process(pid); }
 
