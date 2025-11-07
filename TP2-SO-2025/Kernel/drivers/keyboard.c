@@ -5,6 +5,7 @@
 #include <interrupts.h>
 #include <keyboard.h>
 #include <stddef.h>
+#include "sem.h"
 
 #define BUFFER_SIZE 1024
 
@@ -34,6 +35,12 @@
 #define INC_MOD(x, m) ((x) = ((x) + 1) % (m))
 #define SUB_MOD(a, b, m) ((a) - (b) < 0 ? (m) - (b) + (a) : (a) - (b))
 #define DEC_MOD(x, m) ((x) = SUB_MOD(x, 1, m))
+
+#define BUFFER_SEM_NAME "buffer_sem"
+#define KEYBOARD_MUTEX_NAME "keyboard_mutex"
+
+static Sem buffer_sem = NULL;
+static Sem keyboard_mutex = NULL;
 
 static uint8_t SHIFT_KEY_PRESSED, CAPS_LOCK_KEY_PRESSED, CONTROL_KEY_PRESSED;
 static int8_t buffer[BUFFER_SIZE];
@@ -199,6 +206,11 @@ void addCharToBuffer(int8_t ascii, uint8_t showOutput) {
     INC_MOD(to_write, BUFFER_SIZE);
     if (showOutput)
       putChar(ascii);
+    
+    // Signal that a character was added (for each character, including TAB spaces)
+    if (keyboard_options & MODIFY_BUFFER) {
+      semPost(buffer_sem);
+    }
     return;
   }
 
@@ -219,23 +231,42 @@ uint16_t clearBuffer() {
   return aux;
 }
 
-// Halts until any key is pressed or \n is entered, depending on
+// Blocks until any key is pressed or \n is entered, depending on
 // keyboard_options (AWAIT_RETURN_KEY) This function always sets the
 // MODIFY_BUFFER option, so keys can be consumed
 int8_t getKeyboardCharacter(enum KEYBOARD_OPTIONS ops) {
   keyboard_options = ops | MODIFY_BUFFER;
 
-  while (to_write ==
-             to_read || // always get at least one char from the buffer if empty
-         ((keyboard_options &
-           AWAIT_RETURN_KEY) && // wait for \n or EOF to be entered by the user
-          !(buffer[SUB_MOD(to_write, 1, BUFFER_SIZE)] == NEW_LINE_CHAR ||
-            buffer[SUB_MOD(to_write, 1, BUFFER_SIZE)] == EOF)))
-    _hlt();
+  // Wait for data to be available in the buffer
+  while (1) {
+    // If buffer is empty, wait on semaphore
+    if (to_write == to_read) {
+      semWait(buffer_sem);
+      continue; // Check condition again after waking up
+    }
+    
+    // If AWAIT_RETURN_KEY is set, check if we have a newline or EOF
+    if (keyboard_options & AWAIT_RETURN_KEY) {
+      if (buffer[SUB_MOD(to_write, 1, BUFFER_SIZE)] == NEW_LINE_CHAR ||
+          buffer[SUB_MOD(to_write, 1, BUFFER_SIZE)] == EOF) {
+        break; // We have a complete line
+      }
+      semWait(buffer_sem);
+    } else {
+      break; // We have at least one character, that's enough
+    }
+  }
 
   keyboard_options = 0;
+  
+  // Use mutex to protect buffer access
+  semWait(keyboard_mutex);
+  
   int8_t aux = buffer[to_read];
   INC_MOD(to_read, BUFFER_SIZE);
+  
+  semPost(keyboard_mutex);
+  
   return aux;
 }
 
@@ -301,4 +332,13 @@ uint8_t keyboardHandler() {
   }
 
   return scancode;
+}
+
+void keyboard_sem_init(void) {
+  keyboard_mutex = semOpen(KEYBOARD_MUTEX_NAME, 1);
+  buffer_sem = semOpen(BUFFER_SEM_NAME, 0);
+
+  if (keyboard_mutex == NULL || buffer_sem == NULL) {
+    panic("Failed to initialize keyboard semaphores");
+  }
 }
