@@ -23,6 +23,8 @@
 #define MAX_PRIORITY 3
 #define DEFAULT_PRIORITY 0
 
+#define DEFAULT_QUANTUM 1
+
 #define FOREGROUND 1
 #define BACKGROUND 0
 
@@ -62,6 +64,7 @@ typedef struct Process {
     
     // --- Scheduling ---
     int priority;               // Prioridad actual del proceso (0-3, mayor = más prioridad)
+    int original_priority;      // Prioridad original del proceso
     int quantum_remaining;      // Ticks restantes en el quantum actual
     int wait_ticks;             // Ticks esperando en ready queue (para aging)
     

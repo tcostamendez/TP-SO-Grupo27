@@ -65,7 +65,7 @@ void create_shell(void) {
   char * argv[]= {"shell"};
   int argc = sizeof(argv) / sizeof(argv[0]);
   int targets []= {STDIN, STDOUT, ERR_FD};
-  shell_proc = create_process(argc, argv, shellModuleAddress, 0, targets, 1);
+  shell_proc = create_process(argc, argv, shellModuleAddress, MIN_PRIORITY, targets, 1);
 }
 
 // Función del proceso init que monitorea y recrea la shell si es necesario
@@ -86,8 +86,9 @@ void init_process(int argc, char **argv) {
 
 Process* create_init(void) {
   char * init_argv[] = {"init"};
+  int init_argc = sizeof(init_argv) / sizeof(init_argv[0]);
   int init_targets[] = {STDIN, STDOUT, ERR_FD};
-  return create_process(1, init_argv, init_process, MAX_PRIORITY, init_targets, 0);
+  return create_process(init_argc, init_argv, init_process, MIN_PRIORITY, init_targets, 0);
 }
 
 int main() {

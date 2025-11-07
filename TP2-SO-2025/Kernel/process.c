@@ -143,7 +143,8 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
         priority = DEFAULT_PRIORITY;
     }
     p->priority = priority;
-    p->quantum_remaining = p->priority + 1;
+    p->original_priority = priority;
+    p->quantum_remaining = DEFAULT_QUANTUM;
     p->wait_ticks = 0;                  // Inicializar contador de aging
 
     uint64_t stack_top = (uint64_t)p->stackBase + PROCESS_STACK_SIZE;
@@ -252,7 +253,8 @@ int set_priority(int pid, int new_priority) {
     
     _cli();
     p->priority = new_priority;
-    p->quantum_remaining = new_priority + 1;
+    p->original_priority = new_priority;
+    p->quantum_remaining = DEFAULT_QUANTUM;
     _sti();
     
     return 0;

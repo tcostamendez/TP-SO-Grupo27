@@ -219,8 +219,7 @@ void remove_process_from_scheduler(Process* p) {
  * 
  * Implementa Round Robin con prioridades:
  * - Busca procesos en orden de prioridad (3 → 2 → 1 → 0)
- * - Los procesos con mayor prioridad obtienen más tiempo de CPU (quantum más largo)
- * - Quantum = priority + 1 ticks
+
  * 
  * Chequeamos si hay procesos TERMINATED y los saltamos, puede haber alguno por race conditions
  */
@@ -247,7 +246,7 @@ uint64_t schedule(uint64_t current_rsp) {
                 return current_rsp; // Continuar con el mismo proceso
             }
             
-            running_process->quantum_remaining = running_process->priority + 1;
+            running_process->quantum_remaining = DEFAULT_QUANTUM;
             running_process->state = READY;
             add_to_scheduler(running_process);
         }
@@ -301,7 +300,7 @@ uint64_t schedule(uint64_t current_rsp) {
     
     
     next->state = RUNNING;
-    next->quantum_remaining = next->priority + 1;
+    next->quantum_remaining = DEFAULT_QUANTUM;
     running_process = next;
     
     // Resetear aging cuando el proceso se ejecuta
