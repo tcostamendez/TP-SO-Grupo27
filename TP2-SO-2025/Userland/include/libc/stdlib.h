@@ -10,6 +10,8 @@ void srand(unsigned int seed);
 
 int atoi(const char *str);
 
+void *memset(void *destination, int32_t c, uint64_t length);
+
 void *memcpy(void *destination, const void *source, uint64_t length);
 
 int get_free_bytes(void);

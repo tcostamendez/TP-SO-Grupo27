@@ -38,6 +38,7 @@ GLOBAL sys_kill_process
 GLOBAL sys_modify_priority
 GLOBAL sys_ps
 GLOBAL sys_block_process
+GLOBAL sys_unblock_process
 GLOBAL sys_yield
 GLOBAL sys_wait_pid
 GLOBAL sys_wait_for_children
@@ -124,7 +125,7 @@ GLOBAL sys_get_memory_stats
 
 %define SYS_SHUTDOWN                 54
 
-
+%define SYS_UNBLOCK_PROCESS          55
 
 section .text
 
@@ -180,6 +181,7 @@ sys_kill_process: sys_int80 SYS_KILL_PROCESS
 sys_modify_priority: sys_int80 SYS_MODIFY_PRIORITY
 sys_ps: sys_int80 SYS_PS
 sys_block_process: sys_int80 SYS_BLOCK_PROCESS
+sys_unblock_process: sys_int80 SYS_UNBLOCK_PROCESS
 sys_yield: sys_int80 SYS_YIELD
 sys_wait_pid: sys_int80 SYS_WAIT_PID
 sys_wait_for_children: sys_int80 SYS_WAIT_FOR_CHILDREN

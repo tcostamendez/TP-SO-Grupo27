@@ -63,6 +63,7 @@
 #define SYS_SEM_POST                 53
 
 #define SYS_SHUTDOWN                 54
+#define SYS_UNBLOCK_PROCESS          55
 
 #endif
 

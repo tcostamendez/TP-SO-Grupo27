@@ -85,7 +85,9 @@ void setProcessPriority(int pid, int priority) {
 
 int ps(ProcessInfo *process_info) { return sys_ps(process_info); }
 
-void blockProcess(int pid) { sys_block_process(pid); }
+int blockProcess(int pid) { return sys_block_process(pid); }
+
+int unblockProcess(int pid) { return sys_unblock_process(pid); }
 
 void yieldCPU(void) { sys_yield(); }
 

@@ -9,6 +9,10 @@ EXTERN _echo
 EXTERN _kill
 EXTERN _loop
 EXTERN _mem
+EXTERN _test_mm
+EXTERN _test_prio
+EXTERN _test_processes
+EXTERN _test_sync
 EXTERN _nice
 EXTERN _ps
 EXTERN _wc
@@ -75,6 +79,39 @@ entry_mem:
     mov rsi, r8         ; argv in rsi
     call _mem
     ret
+
+; TEST_MM entry point
+GLOBAL entry_test_mm
+entry_test_mm:
+    mov rdi, rcx        ; argc in rdi
+    mov rsi, r8         ; argv in rsi
+    call _test_mm
+    ret
+
+; TEST_PRIO entry point
+GLOBAL entry_test_prio
+entry_test_prio:
+    mov rdi, rcx        ; argc in rdi
+    mov rsi, r8         ; argv in rsi
+    call _test_prio
+    ret
+
+; TEST_PROCESSES entry point
+GLOBAL entry_test_processes
+entry_test_processes:
+    mov rdi, rcx        ; argc in rdi
+    mov rsi, r8         ; argv in rsi
+    call _test_processes
+    ret
+
+; TEST_SYNC entry point
+GLOBAL entry_test_sync
+entry_test_sync:
+    mov rdi, rcx        ; argc in rdi
+    mov rsi, r8         ; argv in rsi
+    call _test_sync
+    ret
+
 
 ; NICE entry point
 GLOBAL entry_nice

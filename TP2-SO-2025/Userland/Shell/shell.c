@@ -5,7 +5,6 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
-#include "test_util.h"
 #include <exceptions.h>
 #include <stddef.h>
 
@@ -53,10 +52,28 @@ Command commands[] = {
      .function = (int (*)(int, char **))_man,
      .description = "Prints the description of the provided command",
      .isBuiltIn = 1},
-    // {.name = "testmm",
-    //  .function = (int (*)(int, char**))run_mm_test,
-    //  .description = "Corre el test de stress del Memory Manager.\n\t\tUso:
-    //  testmm <bytes>", .isBuiltIn=0},
+    {.name = "test_mm",
+     .function = (int (*)(int, char**))entry_test_mm,
+     .description = "Corre el test de stress del Memory Manager.\n\t\t\tUso: test_mm <bytes>", 
+     .isBuiltIn=0},
+    {
+      .name = "test_prio",
+      .function = (int (*)(int, char**))entry_test_prio,
+      .description = "Corre el test de prioridades.\n\t\t\tUso: test_prio <prioridades>",
+      .isBuiltIn = 0
+    },
+    {
+      .name = "test_processes",
+      .function = (int (*)(int, char**))entry_test_processes,
+      .description = "Corre el test de procesos.\n\t\t\tUso: test_processes <procesos>",
+      .isBuiltIn = 0
+    },
+    {
+      .name = "test_sync",
+      .function = (int (*)(int, char**))entry_test_sync,
+      .description = "Corre el test de sincronizacion.\n\t\t\tUso: test_sync <sincronizaciones>",
+      .isBuiltIn = 0
+    },
     {.name = "ps",
      .function = (int (*)(int, char **))entry_ps,
      .description = "Lists all processes",
@@ -64,15 +81,15 @@ Command commands[] = {
     {.name = "loop",
      .function = (int (*)(int, char **))entry_loop,
      .description =
-         "Prints hello message every N seconds\n\t\tUso: loop <delay_seconds>",
+         "Prints hello message every N seconds\n\t\t\tUso: loop <delay_seconds>",
      .isBuiltIn = 0},
     {.name = "kill",
      .function = (int (*)(int, char **))entry_kill,
-     .description = "Kills a process by PID\n\t\tUso: kill <pid>",
+     .description = "Kills a process by PID\n\t\t\tUso: kill <pid>",
      .isBuiltIn = 0},
     {.name = "nice",
      .function = (int (*)(int, char **))entry_nice,
-     .description = "Changes process priority\n\t\tUso: nice <pid> <priority>",
+     .description = "Changes process priority\n\t\t\tUso: nice <pid> <priority>",
      .isBuiltIn = 0},
     {.name = "mem",
      .function = (int (*)(int, char **))entry_mem,
