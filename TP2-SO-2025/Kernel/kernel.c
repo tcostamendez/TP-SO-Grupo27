@@ -21,6 +21,7 @@
 #include "fd.h"
 #include "strings.h"
 #include "panic.h"
+#include "keyboard.h"
 
 extern void _sti(); // (De interrupts.asm) Habilita interrupciones
 extern void _hlt(); // (De interrupts.asm) Detiene la CPU hasta la próxima interrupción
@@ -108,6 +109,7 @@ int main() {
   initSemQueue();
   initPipeStorage();
   init_scheduler();
+  keyboard_sem_init();
   
   Process* init = create_init();
   if (init == NULL) {
