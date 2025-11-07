@@ -330,11 +330,8 @@ void unblock_process(Process* p) {
         return;
     }
     _cli();
-
-    // Cambiar estado y volver a agregar a su priority queue
     p->state = READY;
     add_to_scheduler(p);
-
     _sti();
 }
 
@@ -344,19 +341,14 @@ void block_process(Process* p) {
     }
     
     _cli();
-    
-    // Remover de priority queue
     remove_from_all_priority_queues(p);
-    
     p->state = BLOCKED;
-    
-    // Resetear aging cuando se bloquea
     reset_aging(p);
-
     _sti();
 
+    // NO poner running_process = NULL aquí
+    // El scheduler lo manejará cuando detecte que el proceso está BLOCKED
     if (running_process == p) {
-        running_process = NULL;
         extern void _force_scheduler_interrupt();
         _force_scheduler_interrupt();
     }
