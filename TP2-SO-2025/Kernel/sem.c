@@ -7,6 +7,7 @@
 
 extern void semLock(uint8_t *lock);
 extern void semUnlock(uint8_t *lock);
+extern void _force_scheduler_interrupt();
 
 static semQueue *sQueue = NULL;
 
@@ -118,10 +119,12 @@ int semPost(Sem semToPost) {
 	int toReturn = -1;
 	if (validSem(semToPost)) {
 		semLock(&semToPost->lock);
+		
 		if (queueSize(semToPost->blockedProcesses) != 0) {
 			// Hay procesos bloqueados esperando este semáforo
 			int pid;
 			if (dequeue(semToPost->blockedProcesses, &pid) != NULL) {
+				
 				// Obtener el proceso y desbloquearlo
 				Process *proc = get_process(pid);
 				if (proc != NULL) {
@@ -129,11 +132,9 @@ int semPost(Sem semToPost) {
 					toReturn = 0;
 				} else {
 					// El proceso fue eliminado mientras estaba bloqueado.
-					// Esto es una condición esperada, el semáforo "se consumió" igual.
 					toReturn = 0;
 				}
 			}
-			// Si dequeue() falla: race condition, retorna -1
 		} else {
 			// No hay procesos bloqueados, simplemente incrementar el contador
 			semToPost->value++;
@@ -149,9 +150,12 @@ int semWait(Sem semToWait) {
 	int blocked = 0;
 	if (validSem(semToWait)) {
 		semLock(&semToWait->lock);
+		
 		if (semToWait->value == 0) {
-            Process *current = get_current_process();
+			Process *current = get_current_process();
+			
             if (current == NULL) {
+                semUnlock(&semToWait->lock);
                 toReturn = -1;
             } else {
                 int pid = get_pid(current);
@@ -160,6 +164,10 @@ int semWait(Sem semToWait) {
                     semUnlock(&semToWait->lock);
                     toReturn = -1;
                 } else {
+                    // CRÍTICO: Liberar el lock ANTES de block_process()
+                    semUnlock(&semToWait->lock);
+                    __sync_synchronize(); // Memory barrier
+                    
                     block_process(current);
                     blocked = 1;
                     toReturn = 0;
@@ -168,9 +176,12 @@ int semWait(Sem semToWait) {
 		} else {
 			semToWait->value--;
 			toReturn = 0;
+			semUnlock(&semToWait->lock);
 		}
-		semUnlock(&semToWait->lock);
-		if (blocked) _force_scheduler_interrupt();
+		// El lock YA fue liberado en todos los casos antes de llegar aquí
+		if (blocked) {
+			_force_scheduler_interrupt();
+		}
 	}
 	return toReturn;
 }
