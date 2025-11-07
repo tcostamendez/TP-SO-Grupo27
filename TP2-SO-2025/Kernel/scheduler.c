@@ -22,15 +22,6 @@ static int compareProcesses(void *a, void *b) {
 	return procA->pid - procB->pid;
 }
 
-static void panic(const char *msg) {
-    _cli();
-    print("=== KERNEL PANIC ===\n");
-    print(msg);
-    for (;;) { 
-        _hlt(); 
-    }
-}
-
 /**
  * @brief Gets a queue from the process priority table by priority level.
  * @param priority Priority level (0-3).
@@ -335,7 +326,7 @@ Process* get_shell_process() {
 
 
 void unblock_process(Process* p) {
-    if (p == NULL || p == idle_proc || p->state != BLOCKED) {
+    if (p == NULL || p == idle_proc || p->pid == 1 || p->state != BLOCKED) {
         return;
     }
     _cli();
@@ -348,7 +339,7 @@ void unblock_process(Process* p) {
 }
 
 void block_process(Process* p) {
-    if (p == NULL || p == idle_proc || p->state == BLOCKED || p->state == TERMINATED) {
+    if (p == NULL || p == idle_proc || p->pid == 1 || p->state == BLOCKED || p->state == TERMINATED) {
         return;
     }
     

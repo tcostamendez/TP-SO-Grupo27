@@ -6,6 +6,7 @@
 #include "queue.h"
 #include "scheduler.h"
 #include "strings.h"
+#include "panic.h"
 
 // Definimos un tamaño de stack por defecto para cada proceso (ej: 8KB)
 // Lo tomamos de tu memory_manager.h (FIRST_FIT_MM_H)

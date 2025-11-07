@@ -310,7 +310,6 @@ int kill_process(int pid) {
     _cli();
 
     p->state = TERMINATED;
-    remove_process_from_scheduler(p);
     
     // Close file descriptors
     uint8_t r = p->targetByFd[READ_FD];
@@ -458,10 +457,8 @@ void reap_terminated_processes(void) {
     for (int i = 0; i < MAX_PROCESSES; ++i) {
         Process* p = get_process(i);
         if (p && p->state == TERMINATED) {
-            if (p != get_running_process()) {
-                // Centralized cleanup: removes from scheduler and frees all memory
-                free_process_resources(p, 0);
-            }
+            remove_from_process_table(p->pid);
+            free_process_resources(p, 0);
         }
     }
 }
@@ -512,7 +509,7 @@ int get_process_info(ProcessInfo * info, int pid){
 void process_terminator(void) {
     Process *cur = get_current_process();
     if (cur == NULL) {
-        for(;;) _hlt();
+        panic("process_terminator: Current process is NULL");
     }
 
     int pid = cur->pid;
