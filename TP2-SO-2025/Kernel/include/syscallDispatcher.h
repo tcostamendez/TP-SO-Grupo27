@@ -7,6 +7,7 @@
 #include "strings.h"
 #include "sem.h"
 #include "process.h"
+#include "mvar.h"
 
 
 typedef struct {

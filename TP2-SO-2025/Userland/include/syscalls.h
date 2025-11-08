@@ -221,4 +221,9 @@ int sys_sem_post(void *sem);
 // Shutdown syscall (53)
 void sys_shutdown(void);
 
+// MVar syscalls (54-57)
+int sys_mvar_init(int readers, int writers);
+int sys_mvar_put(char value);
+char sys_mvar_get(void);
+int sys_mvar_close(void);
 #endif

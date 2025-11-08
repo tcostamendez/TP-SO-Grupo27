@@ -105,7 +105,6 @@ Sem semOpen(const char *name, uint16_t value) {
 }
 
 int semClose(Sem semToClose) {
-	int toReturn = -1;
 	if (sQueue == NULL) {
 		return -1;
 	}

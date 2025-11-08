@@ -6,8 +6,6 @@
 #include <string.h>
 #include <stdint.h>
 
-#define NUM_ITERATIONS 10  // Number of times each writer/reader operates
-
 static void random_delay(void) {
 	unsigned int ms = (rand() % 200) + 10;  // [10..209] ms
 	sleep(ms);
