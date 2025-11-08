@@ -305,6 +305,13 @@ uint8_t keyboardHandler() {
     return scancode;
   }
 
+  if (CONTROL_KEY_PRESSED && makeCode(scancode) == D_KEY) {
+    if (to_write == to_read) { 
+      addCharToBuffer(EOF, 0); 
+    }
+    return EOF; 
+  }
+
   if ((keyboard_options & MODIFY_BUFFER) != 0) {
     int8_t c = scancodeMap[scancode][SHIFT_KEY_PRESSED];
 

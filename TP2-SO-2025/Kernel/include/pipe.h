@@ -10,6 +10,7 @@
 // Conventional std fds (used as special targets)
 #define STDIN  0
 #define STDOUT 1
+#define STDERR 2
 
 // Opaque handle
 typedef struct pipe * Pipe;

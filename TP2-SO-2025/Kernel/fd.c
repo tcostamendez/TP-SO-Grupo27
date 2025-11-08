@@ -64,8 +64,8 @@ int fd_write(int32_t fd, const uint8_t *userBuff, int32_t count) {
 
     uint8_t target = proc->targetByFd[fd];
 
-    if (fd == WRITE_FD && target == STDOUT) {
-        return printToFd(STDOUT, (const char *)userBuff, count);
+    if ((fd == WRITE_FD && target == STDOUT) || (fd == ERR_FD && target == STDERR) ){
+        return printToFd(target, (const char *)userBuff, count);
     }
     // Escritura a pipe: bloqueo hasta escribir todos los bytes (writePipe ya bloquea si lleno)
     return writePipe(target, userBuff, (uint64_t)count);
