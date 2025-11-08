@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define SECONDS_TO_TICKS 18
+#define SECONDS_TO_TICKS 1024
 
 void timer_handler();
 int ticks_elapsed();

@@ -106,4 +106,7 @@ int sys_sem_close(Sem sem);
 int sys_sem_wait(Sem sem);
 int sys_sem_post(Sem sem);
 
+// RTC frequency diagnostic syscall prototype
+int sys_get_rtc_frequency(void);
+
 #endif

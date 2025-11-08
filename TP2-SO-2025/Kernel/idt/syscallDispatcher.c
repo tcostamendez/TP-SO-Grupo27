@@ -19,7 +19,7 @@
 #ifndef SECONDS_TO_TICKS
 #include "time.h"
 #ifndef SECONDS_TO_TICKS
-#define SECONDS_TO_TICKS 18
+#define SECONDS_TO_TICKS 1024
 #endif
 #endif
 extern int64_t register_snapshot[18];
