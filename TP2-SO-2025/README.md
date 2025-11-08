@@ -11,21 +11,35 @@
 
 
 ## Estructura del Repositorio
-* /boot/ 
-* /kernel/ 
-- ├─ arch/ 
-- ├─ mm/ 
-- ├─ proc/ 
-- ├─ ipc/ 
-├─ sync/ 
-├─ drivers/ 
-└─ lib/ 
-/userland/ 
-/Image/
-Makefile 
-compile.sh
-run.sh 
-README.md 
+```text
+/
+├── Bootloader/ 
+├── Image/
+├── Kernel/
+│   ├── ASM/
+│   ├── Datastructures/
+│   ├── IDT/
+│   ├── Memory Managers/
+│   ├── Kernel.c
+│   ├── lib.c
+│   ├── mvar.c
+│   ├── pipe.c
+|   ├── process.c
+|   ├── scheduler.c
+|   ├── sem.c
+|   └── strings.c
+├── Toolchain/
+├── Userland
+│   ├── libc/
+│   ├── libsys/
+│   ├── Shell
+│       ├── commands/
+|       └── shell.c
+├── Makefile
+├── compile.sh
+├── run.sh
+└── README.md
+```
 
 ## Entorno de compilacion y ejecuccion:
 Es necesario compilar usando la imagen provista por la cátedra.
@@ -38,51 +52,127 @@ Requisitos locales
 
 Para compilar, simplemente ejectuar el comando
 ```sh
-./run.sh && ./compile.sh
+./compile.sh && ./run.sh
 ```
 ### Aclaraciones
 * Si es que se quiere usar el memory manager buddy, se debe incluir el argumento `buddy`
+```sh
+./compile.sh buddy && ./run.sh
+```
 * Todas las invocaciones se deben realizar desde el directorio raíz del repositorio.
 
 ## Comandos y tests (Nombres, utilidad y parametros)
 ### Utilidades
-* sh: Shell de suuario. Soporta `&` (Background) y `|` (Pipe). Soporta las señal `ctrl + c`
+* sh: Shell de usuario. Soporta `&` (Background) y `|` (Pipe). Soporta las señal `ctrl + c` para matar el proceso corriendo actualmente en foreground y `ctrl + d` para enviar el EOF.
 * help: Lista todos los comandos disponibles, incluyendo los tests
+* man `comando`: Muestra información acerca de un comando
+* echo `texto`: Imprime el texto proporcionado
+* clear: Limpia la pantalla
 
 ### Memoria
-* 
-* 
+* mem: Imprime el estado actual de la memoria (total, ocupada, libre)
 
 ### Procesos / Scheduling / Context Switching
-* ps: Lista todos los procesos, mostrando: nombre, PID, prioridad, foreground/background, estado, (Y UN PAR DE COSAS MAS)
+* ps: Lista todos los procesos, mostrando: nombre, PID, PPID, prioridad, foreground/background, estado (RUNNING, READY o BLOCKED)
+* loop `milliseconds`: Imprime un saludo con su PID cada N millisegundos
 * kill `PID`: Mata el proceso con PID = `PID` 
-* block `PID`: Bloquea el proceso con PID = `PID`
-* test_processes `MAX_PROC`: Crea/bloquea/desbloquea/mata procesos dummy aleatoriamente. El parametro representa la cantidad maxima de procesos soportados.
-* test_priority `TARGET`: Lanza 3 procesos que incrementan una variable desde 0. Primero con misma prioridad; luego con prioridades distintas para observar diferencias. El parametro representa el valor al que debe llegar la variable para que un proceso finalize. 
-
-### Syncronizacion
-* test_synchro `NUM_PROC, NUM_ITER`: Ejecuta incrementos/decrementos concurrentes sobre una variable global con semáforos; el resultado final debe ser 0.
-* test_no_synchro `NUM_PROC, NUM_ITER`: Igual que el anterior sin semáforos; el resultado varía entre ejecuciones debido a race conditions.
+* nice `PID PRIORITY`: Cambia la prioridad de un proceso dado su PID y la nueva prioridad
+* block `PID`: Bloquea o desbloquea el proceso con PID = `PID` 
 
 ### Comunicacion entre procesos (IPC)
-* cat: Copia `stdin` a `stodout`
-* wc: Cuenta lineas del input
+* cat: Copia `stdin` a `stdout`
+* wc: Cuenta líneas del input
 * filter: Filtra vocales del input
-* mvar `NUM_WRITERS, NUM_READERS`: Simula MVar (lectores/escritores múltiples) sobre una variable global. Cada escritor espera aleatoriamente, luego espera a que la variable esté vacía y escribe un valor único (p.ej. A, B, C). Cada lector espera aleatoriamente, luego espera a que haya valor, lo lee e imprime con un identificador (p.ej. color). El proceso principal finaliza tras crear lectores/escritores.
+* mvar `NUM_READERS NUM_WRITERS`: Simula MVar (lectores/escritores múltiples) sobre una variable global. Cada escritor espera aleatoriamente, luego espera a que la variable esté vacía y escribe un valor único (p.ej. A, B, C). Cada lector espera aleatoriamente, luego espera a que haya valor, lo lee e imprime con un identificador (p.ej. color). El proceso principal finaliza tras crear lectores/escritores.
 
-### Pipes y background
+### Tests
+* test_mm `bytes`: Ciclo infinito que pide y libera bloques de tamaño aleatorio, chequeando que no se solapen. El parámetro indica la cantidad máxima de memoria a utilizar en bytes.
+* test_processes `MAX_PROC`: Crea/bloquea/desbloquea/mata procesos dummy aleatoriamente. El parámetro representa la cantidad máxima de procesos a crear.
+* test_prio `TARGET`: Lanza 3 procesos que incrementan una variable desde 0. Primero con la misma prioridad y luego con prioridades distintas para observar diferencias. El parámetro representa el valor al que debe llegar la variable para que un proceso finalize.
+* test_sync `NUM_PROC NUM_ITER`: Ejecuta incrementos/decrementos concurrentes sobre una variable global con semáforos; el resultado final debe ser 0. Toma como parámetros la cantidad de procesos y la cantidad de incrementos/decrementos.
+* test_sync `NUM_PROC NUM_ITER` (modo no sincronizado): Igual que el anterior pero sin semáforos; el resultado varía entre ejecuciones debido a race conditions.
 
 
-## Ejemplos 
+## Ejemplos de Uso
 
+### Ejecución en Background
+Para ejecutar un proceso en background, agregar `&` al final del comando:
+```sh
+loop 1000 &
+loop 2000 &
+```
+Esto ejecutará dos procesos `loop` en background simultáneamente y se podra seguir interactuando con la shell.
+
+### Uso de Pipes
+Para conectar dos procesos mediante un pipe, usar el símbolo `|`:
+```sh
+cat | filter
+cat | wc
+help | filter
+```
+
+### Tests de Memoria
+```sh
+test_mm 100000
+```
+Ejecuta el test de stress del memory manager con 100KB de memoria.
+
+### Tests de Procesos y Scheduling
+```sh
+test_processes 10
+test_prio 100000
+```
+
+### Tests de Sincronización
+```sh
+test_sync 5 1000
+```
+Ejecuta 5 procesos que realizan 1000 incrementos/decrementos sincronizados.
+
+### MVar (Lectores/Escritores)
+```sh
+mvar 2 3
+```
+Crea 2 escritores y 3 lectores que operan sobre una variable compartida. 
+
+### Decisiones de Usabilidad
+
+#### Protección de Procesos Críticos
+Contamos con el proceso idle (PID = 0) y el proceso init (PID = 1). Consideramos estos procesos como críticos por lo cual **no se puede ni bloquear ni matar**. Esto garantiza la estabilidad del sistema.
+
+#### Proceso Init como Guardián del Sistema
+El proceso init actúa como un "watchdog" que monitorea la shell. Si la shell es matada o termina inesperadamente, **el proceso init la recrea automáticamente**, garantizando que siempre haya una interfaz de usuario disponible.
+
+#### Reparenting de Procesos Huérfanos
+Para evitar tener procesos huérfanos cuando su proceso padre termina o es matado, implementamos un mecanismo de **reparenting automático**: todos los hijos de un proceso que muere son reasignados al proceso init (PID = 1), que asume la responsabilidad de estos procesos.
+
+#### Limitación de Pipes
+El shell soporta **únicamente pipes de exactamente 2 procesos** (ejemplo: `cat | filter`). No se permite el encadenamiento de más de 2 comandos (ejemplo: `p1 | p2 | p3`). Esta decisión simplifica la implementación y cubre los casos de uso más comunes.
+
+#### Built-ins No Soportan Pipes
+Los comandos built-in (`man`, `exit`) **no pueden usarse en pipelines**. Esto se debe a que los built-ins se ejecutan en el contexto del shell y no como procesos separados, lo que los hace incompatibles con el mecanismo de pipes implementado.
+
+#### EOF Automático en Pipes
+Los pipes detectan **EOF automáticamente** cuando no quedan procesos escritores activos. Esto previene bloqueos indefinidos y permite que los readers finalicen correctamente cuando el writer termina.
+
+#### `ctrl + c` Solo Mata Procesos en Foreground
+La señal `ctrl + c` únicamente mata al proceso que está corriendo en foreground en ese momento. Los procesos en background **no son afectados** por esta señal. Dado que los procesos en background pueden ser matados o bloqueados manualmente desde la shell usando `kill` o `block`, no consideramos necesario tener una señal para interrumpirlos. Además, esto protege procesos en background de ser interrumpidos accidentalmente.
+
+#### Memory Managers Intercambiables
+Los dos memory managers implementados (First Fit y Buddy System) **comparten la misma interfaz**, permitiendo cambiar entre ellos en tiempo de compilación sin modificar el resto del código del kernel. Esto facilita la comparación de rendimiento entre algoritmos.
+
+#### Sincronización con WaitPid
+Cada proceso cuenta con un **semáforo nombrado único** que permite la sincronización entre padre e hijo. Cuando un padre ejecuta `waitPid()`, se bloquea en este semáforo hasta que el hijo termine, momento en el cual el hijo hace `post` sobre el semáforo antes de terminar.
 
 ## Limitaciones
-* Encadenamiento de pipes de 
-### Requerimientos faltantes
-Ninguno pq somos unos cracks -_-
+* **Encadenamiento de pipes**: Solo se soportan pipes de exactamente 2 procesos. No es posible encadenar más de 2 comandos (ej: `p1 | p2 | p3`).
+* **Built-ins en pipes**: Los comandos built-in no pueden ser usados en pipelines.
+* **Máximo de procesos**: La tabla de procesos tiene un tamaño fijo definido por `MAX_PROCESSES`.
 
+### Requerimientos faltantes
+Ninguno. Todos los requerimientos del enunciado fueron implementados exitosamente.
 
 ### Creditos / Citas / IA
 Este proyecto fue creado a partir del ultimo commit hecho al repositorio [TPE-ARQ-2024](https://github.com/itba-tpietravallo/TPE-ARQ-2024), el cual fue desarrollado por Tomas Pietravallo (tpietravallo@itba.edu.ar), Lucia Oliveto (loliveto@itba.edu.ar), y Maximo Wehncke (mwehncke@itba.edu.ar). 
 
-Este proyecto fue realizado con ayuda de Inteligencia Artificial. 
+Este proyecto fue realizado con la ayuda de Inteligencia Artificial. 
