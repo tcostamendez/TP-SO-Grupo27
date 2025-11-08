@@ -165,6 +165,7 @@ Los dos memory managers implementados (First Fit y Buddy System) **comparten la 
 Cada proceso cuenta con un **semáforo nombrado único** que permite la sincronización entre padre e hijo. Cuando un padre ejecuta `waitPid()`, se bloquea en este semáforo hasta que el hijo termine, momento en el cual el hijo hace `post` sobre el semáforo antes de terminar.
 
 ## Limitaciones
+* **Liberacion de memoria por procesos individuales**: Nuestro Kernel confia que todo proceso que solicita memoria se va a encargar de liberarla, dado que no contamos con un registro de las alocaciones de memoria por parte de cada proceso. Sabemos que esto puede provocar memory leaks.
 * **Encadenamiento de pipes**: Solo se soportan pipes de exactamente 2 procesos. No es posible encadenar más de 2 comandos (ej: `p1 | p2 | p3`).
 * **Built-ins en pipes**: Los comandos built-in no pueden ser usados en pipelines.
 * **Máximo de procesos**: La tabla de procesos tiene un tamaño fijo definido por `MAX_PROCESSES`.
