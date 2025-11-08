@@ -24,15 +24,16 @@ uint64_t _test_mm(uint64_t argc, char *argv[]) {
   if ((max_memory = satoi(argv[1])) <= 0) {
     return -1;
   }
-  printf("Empezando test_mm\n");
-  printf("max_memory: %d\n", max_memory);
+  printf("Starting Memory Manager Test\n");
+  printf("Max memory: %d\n", max_memory);
   int count = 0;
   while (1) {
     count++;
-    printf("Iteracion numero: %d\n", count);
+    printf("Iteration number: %d\n", count);
     rq = 0;
     total = 0;
 
+    printf("Requesting blocks...\n");
     // Request as many blocks as we can
     while (rq < MAX_BLOCKS && total < max_memory) {
       mm_rqs[rq].size = GetUniform(max_memory - total - 1) + 1;
@@ -43,13 +44,16 @@ uint64_t _test_mm(uint64_t argc, char *argv[]) {
         rq++;
       }
     }
-    printf("Total de bloques solicitados: %d\n", rq);
+    printf("Total blocks requested: %d\n", rq);
+
+    printf("Setting blocks...\n");
     // Set
     uint32_t i;
     for (i = 0; i < rq; i++)
       if (mm_rqs[i].address)
         memset(mm_rqs[i].address, i, mm_rqs[i].size);
-    printf("Seteando bloques\n");
+
+    printf("Checking blocks...\n");
     // Check
     for (i = 0; i < rq; i++)
       if (mm_rqs[i].address)
@@ -58,10 +62,10 @@ uint64_t _test_mm(uint64_t argc, char *argv[]) {
           return -1;
         }
 
+    printf("Freeing blocks...\n");
     // Free
     for (i = 0; i < rq; i++)
       if (mm_rqs[i].address)
         freeMemory(mm_rqs[i].address);
-    printf("Bloques liberados\n");
   }
 }

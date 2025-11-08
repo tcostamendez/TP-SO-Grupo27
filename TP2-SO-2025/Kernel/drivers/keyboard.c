@@ -6,7 +6,7 @@
 #include <keyboard.h>
 #include <stddef.h>
 #include "sem.h"
-
+#include "process.h"
 #define BUFFER_SIZE 1024
 
 #define BUFFER_IS_FULL ((to_write - to_read) % BUFFER_SIZE == BUFFER_SIZE - 1)
@@ -298,6 +298,12 @@ uint8_t keyboardHandler() {
 
   if (!(is_pressed && IS_KEYCODE(scancode)))
     return scancode; // ignore break or unsupported scancodes
+
+  // Detectar Ctrl+C para matar procesos en foreground
+  if (CONTROL_KEY_PRESSED && makeCode(scancode) == C_KEY) {
+    kill_foreground_processes();
+    return scancode;
+  }
 
   if ((keyboard_options & MODIFY_BUFFER) != 0) {
     int8_t c = scancodeMap[scancode][SHIFT_KEY_PRESSED];

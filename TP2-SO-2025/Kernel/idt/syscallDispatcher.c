@@ -361,7 +361,7 @@ int sys_ps(ProcessInfo *process_info) { return ps(process_info); }
 int sys_block_process(int pid) {
   Process *p = get_process(pid);
   if (p == NULL || p == idle_proc || p->state == TERMINATED) {
-    return;
+    return -1;
   }
 
   if (p->state == BLOCKED) {
@@ -369,6 +369,7 @@ int sys_block_process(int pid) {
   } else if (p->state == RUNNING || p->state == READY) {
     block_process(p);
   }
+  return 0;
 }
 
 
