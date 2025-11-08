@@ -3,6 +3,7 @@ GLOBAL _cli
 GLOBAL _sti
 GLOBAL _hlt
 GLOBAL _force_scheduler_interrupt
+GLOBAL soft_irq0
 
 GLOBAL picMasterMask
 GLOBAL picSlaveMask
@@ -248,6 +249,8 @@ _irq00Handler:
 ; Esta es la función que llama yield_cpu() y semWait()
 ; para forzar un context switch.
 _force_scheduler_interrupt:
+    ; Marcar que la próxima IRQ0 fue disparada por software
+    mov byte [soft_irq0], 1
     int 0x20    ; Dispara manualmente _irq00Handler
     ret
 ; --- FIN: NUEVA FUNCIÓN ---
@@ -357,6 +360,7 @@ section .bss
 	exception_register_snapshot resq 18
 	register_snapshot resq 18
 	register_snapshot_taken resb 1
+    soft_irq0 resb 1
 
 section .rodata
 	REGISTER_SNAPSHOT_KEY_SCANCODE equ 0x58 ; F12 KEY SCANCODE

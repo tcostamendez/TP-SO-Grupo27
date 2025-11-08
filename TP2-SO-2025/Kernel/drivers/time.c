@@ -5,10 +5,17 @@
 
 #include <cursor.h>
 #include <fonts.h>
+#include <stdint.h>
+
+extern uint8_t soft_irq0;
 
 static unsigned long ticks = 0;
 
 void timer_handler() {
+  if (soft_irq0) {
+    soft_irq0 = 0; 
+    return;
+  }
   ticks++;
   // toggleCursor();
 }

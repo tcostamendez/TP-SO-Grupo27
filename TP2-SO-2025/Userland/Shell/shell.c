@@ -302,11 +302,12 @@ int main() {
           if (pipeId < 0) {
             perror("Failed to open pipe");
           } else {
-            // No soportamos '&' dentro de pipelines por simplicidad: se ignora si aparece
+            int wantsBackground =0;
             for (int k = 0; k < 2; k++) {
               if (parsedCommands[k].argc > 1) {
                 char *lastArg = parsedCommands[k].argv[parsedCommands[k].argc - 1];
                 if (lastArg && strcmp(lastArg, "&") == 0) {
+                  wantsBackground = 1;
                   parsedCommands[k].argv[parsedCommands[k].argc - 1] = NULL;
                   parsedCommands[k].argc--;
                 }
@@ -319,10 +320,12 @@ int main() {
             int pidLeft = createProcess(parsedCommands[0].argc, (char **)parsedCommands[0].argv,
                                         (void *)entry_left, 2, targetsLeft, 0); 
             int pidRight = createProcess(parsedCommands[1].argc, (char **)parsedCommands[1].argv,
-                                         (void *)entry_right, 2, targetsRight, 1);
+                                         (void *)entry_right, 2, targetsRight, !wantsBackground);
             // Esperar ambos para mostrar salida filtrada completa antes de nuevo prompt
-            if (pidLeft > 0) waitPid(pidLeft);
-            if (pidRight > 0) waitPid(pidRight);
+            if(!wantsBackground && pidRight> 0 && pidLeft>0){
+              waitPid(pidLeft);
+              waitPid(pidRight);
+            }
             pipeClose(pipeId);
           }
         }
