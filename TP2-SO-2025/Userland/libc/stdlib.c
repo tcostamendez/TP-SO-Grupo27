@@ -14,6 +14,7 @@ int rand(void) { // RAND_MAX assumed to be 32767
 
 void srand(unsigned int seed) { next = seed; }
 
+
 int atoi(const char *str) {
   int result = 0;
   int sign = 1;
@@ -39,6 +40,54 @@ int atoi(const char *str) {
   }
 
   return sign * result;
+}
+
+char *itoa(int value, char *str, int base) {
+  if (str == NULL || base < 2 || base > 36) {
+    return NULL;
+  }
+
+  char *ptr = str;
+  char *ptr1 = str;
+  char tmp_char;
+  int tmp_value;
+
+  // Handle 0 explicitly
+  if (value == 0) {
+    *ptr++ = '0';
+    *ptr = '\0';
+    return str;
+  }
+
+  // Handle negative numbers for base 10
+  int is_negative = 0;
+  if (value < 0 && base == 10) {
+    is_negative = 1;
+    value = -value;
+  }
+
+  // Process individual digits
+  while (value != 0) {
+    tmp_value = value % base;
+    *ptr++ = (tmp_value < 10) ? (tmp_value + '0') : (tmp_value - 10 + 'a');
+    value /= base;
+  }
+
+  // Add negative sign for base 10
+  if (is_negative) {
+    *ptr++ = '-';
+  }
+
+  *ptr-- = '\0';
+
+  // Reverse the string
+  while (ptr1 < ptr) {
+    tmp_char = *ptr;
+    *ptr-- = *ptr1;
+    *ptr1++ = tmp_char;
+  }
+
+  return str;
 }
 
 void *memset(void *destination, int32_t c, uint64_t length) {

@@ -34,7 +34,6 @@ int32_t syscallDispatcher(Registers *registers) {
                     registers->rdx);
   case SYS_WRITE:
     return sys_write(registers->rdi, (char *)registers->rsi, registers->rdx);
-
   case SYS_START_BEEP:
     return sys_start_beep(registers->rdi);
   case SYS_STOP_BEEP:
@@ -149,6 +148,14 @@ int32_t syscallDispatcher(Registers *registers) {
     extern void outw(uint16_t port, uint16_t val);
     outw(0x604, 0x2000); // QEMU ACPI shutdown
     return 0;
+  case SYS_MVAR_INIT:
+    return sys_mvar_init((int)registers->rdi, (int)registers->rsi);
+  case SYS_MVAR_PUT:
+    return sys_mvar_put((char)registers->rdi);
+  case SYS_MVAR_GET:
+    return sys_mvar_get();
+  case SYS_MVAR_CLOSE:
+    return sys_mvar_close();
   default:
     return 0;
   }
@@ -454,3 +461,11 @@ int sys_sem_close(Sem sem) { return semClose(sem); }
 int sys_sem_wait(Sem sem) { return semWait(sem); }
 
 int sys_sem_post(Sem sem) { return semPost(sem); }
+
+// ==================================================================
+// MVar syscalls
+// ==================================================================
+int sys_mvar_init(int readers, int writers) { return init_mvar(readers, writers); }
+int sys_mvar_put(char value) { return put_mvar(value); }
+int sys_mvar_get(void) { return get_mvar(); }
+int sys_mvar_close(void) { return close_mvar(); }

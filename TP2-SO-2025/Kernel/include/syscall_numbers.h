@@ -66,5 +66,10 @@
 #define SYS_SHUTDOWN                 54
 #define SYS_UNBLOCK_PROCESS          55
 
+#define SYS_MVAR_INIT                 56
+#define SYS_MVAR_PUT                  57
+#define SYS_MVAR_GET                  58
+#define SYS_MVAR_CLOSE                59
+
 #endif
 

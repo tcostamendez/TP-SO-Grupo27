@@ -106,7 +106,11 @@ int sys_sem_close(Sem sem);
 int sys_sem_wait(Sem sem);
 int sys_sem_post(Sem sem);
 
-// RTC frequency diagnostic syscall prototype
-int sys_get_rtc_frequency(void);
+// MVar syscall prototypes
+int sys_mvar_init(int readers, int writers);
+int sys_mvar_put(char value);
+int sys_mvar_get(void);
+int sys_mvar_close(void);
+
 
 #endif
