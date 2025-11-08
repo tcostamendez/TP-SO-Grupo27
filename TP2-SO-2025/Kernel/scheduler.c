@@ -325,19 +325,20 @@ Process* get_shell_process() {
 }
 
 
-void unblock_process(Process* p) {
+int unblock_process(Process* p) {
     if (p == NULL || p == idle_proc || p->pid == 1 || p->state != BLOCKED) {
-        return;
+        return -1;
     }
     _cli();
     p->state = READY;
     add_to_scheduler(p);
     _sti();
+    return 0;
 }
 
-void block_process(Process* p) {
+int block_process(Process* p) {
     if (p == NULL || p == idle_proc || p->pid == 1 || p->state == BLOCKED || p->state == TERMINATED) {
-        return;
+        return -1;
     }
     
     _cli();
@@ -352,6 +353,8 @@ void block_process(Process* p) {
         extern void _force_scheduler_interrupt();
         _force_scheduler_interrupt();
     }
+
+    return 0;
 }
 
 int get_running_pid() {

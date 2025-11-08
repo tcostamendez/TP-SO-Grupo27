@@ -412,6 +412,24 @@ int get_ground(int pid) {
     return p->ground;
 }
 
+int kill_foreground_processes() {
+    // Obtener el proceso actualmente en ejecución
+    Process* current = get_current_process();
+    
+    if (current == NULL) {
+        return -1; // No hay proceso corriendo
+    }
+    
+    
+    // Verificar si el proceso actual está en foreground y no es idle o init
+    if (current->ground == FOREGROUND && current->pid != 0 && current->pid != 1) {
+        // Matar el proceso actual
+        return kill_process(current->pid);
+    }
+    
+    return 0; // No se mató ningún proceso (no estaba en foreground)
+}
+
 int wait_child(int child_pid) {
     // Verificar que el proceso hijo exista
     Process *child = get_process(child_pid);

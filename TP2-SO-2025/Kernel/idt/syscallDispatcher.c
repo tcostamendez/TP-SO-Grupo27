@@ -19,7 +19,7 @@
 #ifndef SECONDS_TO_TICKS
 #include "time.h"
 #ifndef SECONDS_TO_TICKS
-#define SECONDS_TO_TICKS 18
+#define SECONDS_TO_TICKS 1024
 #endif
 #endif
 extern int64_t register_snapshot[18];
@@ -113,8 +113,9 @@ int32_t syscallDispatcher(Registers *registers) {
   case SYS_PS:
     return sys_ps((ProcessInfo *)registers->rdi);
   case SYS_BLOCK_PROCESS:
-    sys_block_process((int)registers->rdi);
-    return 0;
+    return sys_block_process((int)registers->rdi);
+  case SYS_UNBLOCK_PROCESS:
+    return sys_unblock_process((int)registers->rdi);
   case SYS_YIELD:
     sys_yield();
     return 0;
@@ -357,10 +358,10 @@ void sys_modify_priority(int pid, int new_priority) {
 
 int sys_ps(ProcessInfo *process_info) { return ps(process_info); }
 
-void sys_block_process(int pid) {
+int sys_block_process(int pid) {
   Process *p = get_process(pid);
   if (p == NULL || p == idle_proc || p->state == TERMINATED) {
-    return;
+    return -1;
   }
 
   if (p->state == BLOCKED) {
@@ -368,13 +369,16 @@ void sys_block_process(int pid) {
   } else if (p->state == RUNNING || p->state == READY) {
     block_process(p);
   }
+  return 0;
 }
 
-void sys_unblock_process(int pid) {
+
+int sys_unblock_process(int pid) {
   Process *p = get_process(pid);
-  if (p != NULL) {
-    unblock_process(p);
+  if (p == NULL) {
+    return -1;
   }
+  return unblock_process(p);
 }
 
 void sys_yield() { yield_cpu(); }

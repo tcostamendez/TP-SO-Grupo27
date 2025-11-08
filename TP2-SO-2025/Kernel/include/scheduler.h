@@ -74,7 +74,7 @@ Process* get_shell_process();
  * Cambia su estado a READY y lo agrega nuevamente a su priority queue.
  * @param p Puntero al proceso a desbloquear.
  */
-void unblock_process(Process* p);
+int unblock_process(Process* p);
 
 /**
  * @brief Bloquea un proceso cambiando su estado a BLOCKED.
@@ -82,7 +82,7 @@ void unblock_process(Process* p);
  * Al desbloquear, debe ser agregado nuevamente a su priority queue.
  * @param p Puntero al proceso a bloquear.
  */
-void block_process(Process* p);
+int block_process(Process* p);
 
 int get_running_pid();
 

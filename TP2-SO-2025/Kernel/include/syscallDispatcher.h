@@ -85,8 +85,8 @@ int sys_get_pid(void);
 int sys_kill(int pid);
 void sys_modify_priority(int pid, int new_priority);
 void sys_print_processes(void);
-void sys_block_process(int pid);
-void sys_unblock_process(int pid);
+int sys_block_process(int pid);
+int sys_unblock_process(int pid);
 void sys_yield(void);
 int sys_wait_pid(int pid);
 int sys_wait_for_children(void);
@@ -105,5 +105,8 @@ Sem sys_sem_open(const char *name, uint16_t value);
 int sys_sem_close(Sem sem);
 int sys_sem_wait(Sem sem);
 int sys_sem_post(Sem sem);
+
+// RTC frequency diagnostic syscall prototype
+int sys_get_rtc_frequency(void);
 
 #endif

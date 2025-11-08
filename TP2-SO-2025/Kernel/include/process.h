@@ -202,6 +202,13 @@ int set_ground(int pid, int ground);
  */
 int get_ground(int pid);
 
+/**
+ * @brief Mata el proceso actualmente en ejecución si está en foreground.
+ * Esta función es utilizada cuando se presiona Ctrl+C.
+ * @return 0 si el proceso fue matado o no estaba en foreground, -1 en error.
+ */
+int kill_foreground_processes();
+
 int wait_child(int child_pid);
 
 int wait_all_children(void);

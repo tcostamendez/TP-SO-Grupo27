@@ -14,6 +14,6 @@ int _mem(int argc, char *argv[]) {
 
 	memoryStats(&total_bytes, &free_bytes, &used_bytes);
 
-	printf("Datos de memoria:\nTotal de bytes: %d\nBytes Disponibles: %d, Bytes usados: %d", total_bytes, free_bytes, used_bytes);
+	printf("Datos de memoria:\nTotal de bytes: %d\nBytes Disponibles: %d\nBytes usados: %d\n", total_bytes, free_bytes, used_bytes);
 	return 0;
 }
