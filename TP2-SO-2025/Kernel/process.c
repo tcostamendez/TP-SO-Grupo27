@@ -51,6 +51,42 @@ static char* build_wait_semaphore_name(int pid) {
 }
 
 /**
+ * @brief Re-parent all children of a dying process to the init process (PID 1).
+ * This prevents orphaned processes from having invalid ppid references.
+ * @param dying_pid PID of the process that is terminating.
+ */
+static void reparent_children(int dying_pid) {
+    Process* dying = get_process(dying_pid);
+    if (dying == NULL) {
+        return;
+    }
+    
+    Process* init = get_process(INIT_PID);
+    if (init == NULL) {
+        return; // No init process to reparent to
+    }
+    
+    // Iterate through the dying process's children array
+    for (int i = 0; i < dying->child_count; i++) {
+        int child_pid = dying->children[i];
+        Process* child = get_process(child_pid);
+        
+        if (child != NULL && child->state != TERMINATED) {
+            // Update the child's ppid to point to init
+            child->ppid = 1;
+            
+            // Add to init's children list if there's space
+            if (init->child_count < MAX_CHILDREN) {
+                init->children[init->child_count++] = child_pid;
+            }
+        }
+    }
+    
+    // Clear the dying process's children array
+    dying->child_count = 0;
+}
+
+/**
  * @brief Libera toda la memoria asociada a un proceso.
  * Centraliza toda la lógica de limpieza de procesos.
  * @param p Puntero al proceso a limpiar.
@@ -352,7 +388,10 @@ int kill_process(int pid) {
         }
     }
     
-    // PASO 2: Señalizar a los procesos padres que esperan (sin locks)
+    // PASO 2: Reparentar los hijos del proceso que va a morir
+    reparent_children(pid);
+    
+    // PASO 3: Señalizar a los procesos padres que esperan (sin locks)
     char *sem_name = build_wait_semaphore_name(pid);
     if (sem_name) {
         Sem s = semOpen(sem_name, 0);
@@ -363,7 +402,7 @@ int kill_process(int pid) {
         mm_free(sem_name);
     }
     
-    // PASO 3: Ahora sí, sección crítica con locks
+    // PASO 4: Ahora sí, sección crítica con locks
     _cli();
     
     p->state = TERMINATED;
@@ -380,7 +419,7 @@ int kill_process(int pid) {
 
     _sti();
     
-    // PASO 4: Si matamos el proceso actual, forzar context switch
+    // PASO 5: Si matamos el proceso actual, forzar context switch
     if (running == p) {
         yield_cpu();
         for(;;) _hlt();
@@ -566,7 +605,10 @@ void process_terminator(void) {
         }
     }
     
-    // PASO 2: Señalizar la terminación al proceso padre VÍA SEMÁFORO
+    // PASO 2: Reparentar los hijos del proceso que va a morir
+    reparent_children(pid);
+    
+    // PASO 3: Señalizar la terminación al proceso padre VÍA SEMÁFORO
     // Esto debe hacerse ANTES de adquirir locks críticos para evitar deadlock
     char *sem_name = build_wait_semaphore_name(pid);
     if (sem_name) {
@@ -579,7 +621,7 @@ void process_terminator(void) {
         mm_free(sem_name);
     }
     
-    // PASO 3: Ahora sí, adquirir locks y marcar como TERMINATED
+    // PASO 4: Ahora sí, adquirir locks y marcar como TERMINATED
     _cli();
     cur->state = TERMINATED;
     remove_process_from_scheduler(cur);
@@ -591,7 +633,7 @@ void process_terminator(void) {
     }
     _sti();
     
-    // PASO 4: Yield y halt - el proceso ya no debería ejecutarse más
+    // PASO 5: Yield y halt - el proceso ya no debería ejecutarse más
     yield_cpu();
     
     for(;;) _hlt();

@@ -26,6 +26,8 @@
 
 #define DEFAULT_QUANTUM 1
 
+#define INIT_PID 1
+
 #define FOREGROUND 1
 #define BACKGROUND 0
 
