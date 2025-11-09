@@ -10,6 +10,8 @@ static char buffer[64] = {0};
 
 static uint32_t uintToBase(uint64_t value, char *buffer, uint32_t base);
 static void printBase(int fd, int num, int base);
+static void printLongBase(int fd, int64_t num, int base);
+static void printUnsignedLongBase(int fd, uint64_t num, int base);
 // static void printFloat(int fd, float num);
 
 void puts(const char *str) {
@@ -47,6 +49,21 @@ void vfprintf(int fd, const char *format, va_list args) {
         break;
       case 'b':
         printBase(fd, va_arg(args, int), 2);
+        break;
+      case 'l':
+        // Check next character for ld or lu
+        i++;
+        if (format[i] == 'd') {
+          printLongBase(fd, va_arg(args, int64_t), 10);
+        } else if (format[i] == 'u') {
+          printUnsignedLongBase(fd, va_arg(args, uint64_t), 10);
+        } else if (format[i] == 'x') {
+          printUnsignedLongBase(fd, va_arg(args, uint64_t), 16);
+        } else {
+          // Invalid format, just print 'l'
+          sys_write(fd, "l", 1);
+          i--;
+        }
         break;
       // case 'f': printFloat(fd, va_arg(args, double)); break ;
       case 'c': {
@@ -257,8 +274,35 @@ static uint32_t uintToBase(uint64_t value, char *buffer, uint32_t base) {
 }
 
 static void printBase(int fd, int num, int base) {
-  if (num < 0)
-    fprintf(fd, "-");
+  uint64_t value;
+  if (num < 0) {
+    sys_write(fd, "-", 1);
+    value = (uint64_t)(-num); // Convert to positive
+  } else {
+    value = (uint64_t)num;
+  }
+  uintToBase(value, buffer, base);
+  sys_write(fd, buffer, strlen(buffer));
+}
+
+static void printLongBase(int fd, int64_t num, int base) {
+  uint64_t value;
+  if (num < 0) {
+    sys_write(fd, "-", 1);
+    // Handle INT64_MIN special case
+    if (num == -9223372036854775807LL - 1) {
+      value = 9223372036854775808ULL;
+    } else {
+      value = (uint64_t)(-num);
+    }
+  } else {
+    value = (uint64_t)num;
+  }
+  uintToBase(value, buffer, base);
+  sys_write(fd, buffer, strlen(buffer));
+}
+
+static void printUnsignedLongBase(int fd, uint64_t num, int base) {
   uintToBase(num, buffer, base);
-  fprintf(fd, buffer);
+  sys_write(fd, buffer, strlen(buffer));
 }

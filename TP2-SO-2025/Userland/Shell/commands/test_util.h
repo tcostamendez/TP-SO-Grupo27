@@ -6,14 +6,15 @@
 
 // Macro wrappers for test compatibility
 #define my_getpid()                  getMyPid()
-#define my_create_process(name, prio, argv) createProcess(sizeof(argv)/sizeof(*(argv)), argv, (void (*)(int, char**))name, prio, (int[]){0, 1, 2}, 0)
+#define my_create_process(fn, prio, argv) createProcess(sizeof(argv)/sizeof(*(argv)), argv, (void (*)(int, char**))fn, prio, (int[]){0, 1, 2}, 0)
 #define my_kill(pid)                 killProcess(pid)
 #define my_block(pid)                blockProcess(pid)
 #define my_unblock(pid)              unblockProcess(pid)
 #define my_nice(pid, prio)           setProcessPriority(pid, prio)
 #define my_yield()                   yieldCPU()
 #define my_wait(pid)                 waitPid(pid)
-#define my_sem_open(name, val)       semOpen(name, val)
+typedef void* sem_t;
+#define my_sem_open(name, val)       semOpen(name, val);
 #define my_sem_wait(sem)             semWait(sem)
 #define my_sem_post(sem)             semPost(sem)
 #define my_sem_close(sem)            semClose(sem)

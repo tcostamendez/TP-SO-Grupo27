@@ -59,7 +59,7 @@ Command commands[] = {
     {
       .name = "test_prio",
       .function = (int (*)(int, char**))entry_test_prio,
-      .description = "Corre el test de prioridades.\n\t\t\tUso: test_prio <prioridades>",
+      .description = "Corre el test de prioridades.\n\t\t\tUso: test_prio <prioridad>",
       .isBuiltIn = 0
     },
     {
@@ -71,7 +71,7 @@ Command commands[] = {
     {
       .name = "test_sync",
       .function = (int (*)(int, char**))entry_test_sync,
-      .description = "Corre el test de sincronizacion.\n\t\t\tUso: test_sync <sincronizaciones>",
+      .description = "Corre el test de sincronizacion.\n\t\t\tUso: test_sync <valor> <flag>",
       .isBuiltIn = 0
     },
     {.name = "ps",

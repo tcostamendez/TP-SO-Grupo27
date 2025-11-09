@@ -14,6 +14,7 @@ extern void entry_test_mm(void);
 extern void entry_test_prio(void);
 extern void entry_test_processes(void);
 extern void entry_test_sync(void);
+extern void entry_my_process_inc(void);
 extern void entry_mem(void);
 extern void entry_nice(void);
 extern void entry_ps(void);

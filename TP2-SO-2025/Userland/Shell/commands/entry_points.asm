@@ -13,6 +13,7 @@ EXTERN _test_mm
 EXTERN _test_prio
 EXTERN _test_processes
 EXTERN _test_sync
+EXTERN my_process_inc
 EXTERN _nice
 EXTERN _ps
 EXTERN _wc
@@ -116,6 +117,13 @@ entry_test_sync:
     call _test_sync
     ret
 
+; MY_PROCESS_INC entry point (for child processes)
+GLOBAL entry_my_process_inc
+entry_my_process_inc:
+    mov rdi, rcx        ; argc in rdi
+    mov rsi, r8         ; argv in rsi
+    call my_process_inc
+    ret
 
 ; NICE entry point
 GLOBAL entry_nice
