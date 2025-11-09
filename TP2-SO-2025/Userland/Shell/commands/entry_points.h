@@ -23,5 +23,6 @@ extern void entry_filter(void);
 extern void entry_mvar(void);
 extern void entry_mvar_writer(void);
 extern void entry_mvar_reader(void);
+extern void entry_font(void);
 #endif
 

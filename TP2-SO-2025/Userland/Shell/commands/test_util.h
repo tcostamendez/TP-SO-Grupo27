@@ -6,7 +6,7 @@
 
 // Macro wrappers for test compatibility
 #define my_getpid()                  getMyPid()
-#define my_create_process(name, prio, argv) createProcess(1, argv, (void (*)(int, char**))name, prio, (int[]){0, 1, 2}, 0)
+#define my_create_process(name, prio, argv) createProcess(sizeof(argv)/sizeof(*(argv)), argv, (void (*)(int, char**))name, prio, (int[]){0, 1, 2}, 0)
 #define my_kill(pid)                 killProcess(pid)
 #define my_block(pid)                blockProcess(pid)
 #define my_unblock(pid)              unblockProcess(pid)

@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
-#include "syscall.h"
+#include "syscalls.h"
 #include "test_util.h"
 
 // Random

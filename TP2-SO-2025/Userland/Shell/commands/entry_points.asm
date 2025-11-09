@@ -21,6 +21,7 @@ EXTERN _filter
 EXTERN _mvar
 EXTERN _mvar_writer
 EXTERN _mvar_reader
+EXTERN _font
 SECTION .text
 
 ; Generic entry point wrapper macro
@@ -178,3 +179,10 @@ entry_mvar_reader:
     mov rsi, r8
     call _mvar_reader
     ret
+
+GLOBAL entry_font
+entry_font:
+    mov rdi, rcx
+    mov rsi, r8
+    call _font
+    ret    

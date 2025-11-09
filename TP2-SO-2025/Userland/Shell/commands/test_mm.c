@@ -67,5 +67,7 @@ uint64_t _test_mm(uint64_t argc, char *argv[]) {
     for (i = 0; i < rq; i++)
       if (mm_rqs[i].address)
         freeMemory(mm_rqs[i].address);
+    // Report progress to the user after each iteration
+    printf("test_mm: iteration %d completed; requested_blocks=%d total_bytes=%u\n", count, rq, total);
   }
 }

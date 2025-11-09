@@ -106,7 +106,11 @@ Command commands[] = {
   {.name = "mvar",
    .function = (int (*)(int, char **))entry_mvar,
    .description = "MVar demo: Usage mvar <writers> <readers>",
-   .isBuiltIn = 0}};
+   .isBuiltIn = 0},
+  {.name = "font",
+	 .function = (int (*)(int, char **))(uint64_t)entry_font,
+   .description = "Increases or decreases the font size\n\t\t\t\tUse:\n\t\t\t\t\t  + " "font increase\n\t\t\t\t\t  + font decrease",
+	 .isBuiltIn = 0}};
 
 const int commands_size = sizeof(commands) / sizeof(Command);
 

@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
-#include "syscall.h"
+#include "syscalls.h"
 #include "test_util.h"
 
 #define SEM_ID "sem"
@@ -20,14 +20,31 @@ uint64_t my_process_inc(uint64_t argc, char *argv[]) {
   int8_t inc;
   int8_t use_sem;
 
-  if (argc != 3)
+  if(argv == NULL){
+    printf("argv == NULL!!!!\n");
+    return -1;
+  }
+  if(argv[0] == NULL){
+    printf("argv[0] == NULL");
+    return -1;
+  }
+  if(argv[0][0] == ""){
+    printf("argv[0] es el string vacio \n");
+    return -1;
+  }
+  if (argc != 2)
+    printf("argc: %d\n", argc);
+    printf("left the party\n");
     return -1;
 
   if ((n = satoi(argv[0])) <= 0)
+    printf("aaaa");
     return -1;
   if ((inc = satoi(argv[1])) == 0)
+    printf("bbbbb");
     return -1;
   if ((use_sem = satoi(argv[2])) < 0)
+    printf("cccc");
     return -1;
 
   if (use_sem)
@@ -46,26 +63,27 @@ uint64_t my_process_inc(uint64_t argc, char *argv[]) {
   }
 
   if (use_sem)
-    my_sem_close(SEM_ID);
+    my_sem_close(SEM_ID);  
 
+  printf("Done!\n");
   return 0;
 }
 
 uint64_t _test_sync(uint64_t argc, char *argv[]) { //{n, use_sem, 0}
   uint64_t pids[2 * TOTAL_PAIR_PROCESSES];
 
-  if (argc != 2)
+  if (argc != 3)
     return -1;
 
-  char *argvDec[] = {argv[0], "-1", argv[1], NULL};
-  char *argvInc[] = {argv[0], "1", argv[1], NULL};
+  char *argvDec[] = {argv[1], "-1", argv[2], NULL};
+  char *argvInc[] = {argv[1], "1", argv[2], NULL};
 
   global = 0;
 
   uint64_t i;
   for (i = 0; i < TOTAL_PAIR_PROCESSES; i++) {
-    pids[i] = my_create_process("my_process_inc", 3, argvDec);
-    pids[i + TOTAL_PAIR_PROCESSES] = my_create_process("my_process_inc", 3, argvInc);
+    pids[i] = my_create_process(my_process_inc, 3, argvDec);
+    pids[i + TOTAL_PAIR_PROCESSES] = my_create_process(my_process_inc, 3, argvInc);
   }
 
   for (i = 0; i < TOTAL_PAIR_PROCESSES; i++) {
