@@ -12,7 +12,6 @@ static uint32_t uintToBase(uint64_t value, char *buffer, uint32_t base);
 static void printBase(int fd, int num, int base);
 static void printLongBase(int fd, int64_t num, int base);
 static void printUnsignedLongBase(int fd, uint64_t num, int base);
-// static void printFloat(int fd, float num);
 
 void puts(const char *str) {
   printf(str);
@@ -25,13 +24,12 @@ void vfprintf(int fd, const char *format, va_list args) {
     switch (format[i]) {
     case '\e':
 #ifdef ANSI_4_BIT_COLOR_SUPPORT
-      sys_write(fd, &format[i], 0); // "writes" (ignored because of count=0) \e
-                                    // char to account for fd changes
+      sys_write(fd, &format[i], 0);  
       parseANSI(format, &i);
       break;
 #else
       while (format[i] != 'm')
-        i++; // ignore ANSI escape codes, assumes valid \e[X,Ym format
+        i++; 
       i++;
       break;
 #endif
@@ -51,7 +49,6 @@ void vfprintf(int fd, const char *format, va_list args) {
         printBase(fd, va_arg(args, int), 2);
         break;
       case 'l':
-        // Check next character for ld or lu
         i++;
         if (format[i] == 'd') {
           printLongBase(fd, va_arg(args, int64_t), 10);
@@ -60,12 +57,10 @@ void vfprintf(int fd, const char *format, va_list args) {
         } else if (format[i] == 'x') {
           printUnsignedLongBase(fd, va_arg(args, uint64_t), 16);
         } else {
-          // Invalid format, just print 'l'
           sys_write(fd, "l", 1);
           i--;
         }
         break;
-      // case 'f': printFloat(fd, va_arg(args, double)); break ;
       case 'c': {
         char c = (char)va_arg(args, int);
         sys_write(fd, &c, 1);
@@ -119,7 +114,7 @@ int vscanf(const char *format, va_list args) {
 
         if (c != '-' && (c < '0' || c > '9')) {
           while ((c = getchar()) != '\n')
-            ; // empty input buffer
+            ; 
           break;
         };
 
@@ -231,13 +226,10 @@ int scanf(const char *format, ...) {
 int getchar(void) {
   unsigned char c;
   int n;
-  // Intentar leer 1 byte. Si hay error transitorio (-1), reintentar.
-  // Si retorna 0, es EOF: devolver EOF.
   while ((n = sys_read(FD_STDIN, &c, 1)) == -1) {
-    // busy-wait simple; en este SO no hay EAGAIN, reintentamos hasta que haya dato o EOF
   }
   if (n == 0) {
-    return EOF; // fin de stream (pipe cerrado y buffer vacío)
+    return EOF; 
   }
   return (int)c;
 }
@@ -249,17 +241,14 @@ static uint32_t uintToBase(uint64_t value, char *buffer, uint32_t base) {
   char *p1, *p2;
   uint32_t digits = 0;
 
-  // Calculate characters for each digit
   do {
     uint32_t remainder = value % base;
     *p++ = (remainder < 10) ? remainder + '0' : remainder + 'A' - 10;
     digits++;
   } while (value /= base);
 
-  // Terminate string in buffer.
   *p = 0;
 
-  // Reverse string in buffer.
   p1 = buffer;
   p2 = p - 1;
   while (p1 < p2) {
@@ -277,7 +266,7 @@ static void printBase(int fd, int num, int base) {
   uint64_t value;
   if (num < 0) {
     sys_write(fd, "-", 1);
-    value = (uint64_t)(-num); // Convert to positive
+    value = (uint64_t)(-num); 
   } else {
     value = (uint64_t)num;
   }
@@ -289,7 +278,6 @@ static void printLongBase(int fd, int64_t num, int base) {
   uint64_t value;
   if (num < 0) {
     sys_write(fd, "-", 1);
-    // Handle INT64_MIN special case
     if (num == -9223372036854775807LL - 1) {
       value = 9223372036854775808ULL;
     } else {

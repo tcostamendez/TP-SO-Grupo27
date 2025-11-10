@@ -16,9 +16,6 @@ int _loop(int argc, char *argv[]) {
 	}
 
     int pid = getMyPid();
-
-    // Intentional infinite loop for demonstration purposes
-    //-V776 (PVS error)
     while (1) {
 		printf("Hello from PID: %d\n", pid);
 		sleep(milliseconds);

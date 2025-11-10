@@ -50,7 +50,6 @@ int sys_get_process_info(ProcessInfo* info, int pid);
 
 // Pipe helpers (userland wrappers)
 int pipeOpen(void);
-int pipeAttach(uint8_t id);
 int pipeClose(uint8_t id);
 int setReadTarget(uint8_t id);
 int setWriteTarget(uint8_t id);

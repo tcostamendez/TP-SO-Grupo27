@@ -7,7 +7,6 @@
 #include "interrupts.h"
 #include "process.h"
 
-// Global variable definitions
 ArrayADT process_priority_table;
 Process* running_process = NULL;
 Process* idle_proc = NULL;
@@ -65,7 +64,6 @@ static void remove_from_all_priority_queues(Process* p) {
         return;
     }
     
-    // Try to remove from the process's current priority queue
     QueueADT priority_queue = get_priority_queue(p->priority);
     if (priority_queue != NULL) {
         queueRemove(priority_queue, &p);
@@ -92,7 +90,6 @@ static void apply_aging(void) {
                 continue;
             }
             
-            // Incrementar contador de espera
             p->wait_ticks++;
             
             if (p->wait_ticks >= AGING_THRESHOLD) {
@@ -140,7 +137,6 @@ void init_scheduler() {
         panic("Failed to create process priority table");
     }
 
-    // Initialize 4 priority queues (one for each priority level 0-3)
     for (int priority = MIN_PRIORITY; priority <= MAX_PRIORITY; priority++) {
         QueueADT priority_queue = createQueue(compareProcesses, sizeof(Process*));
         if (priority_queue == NULL) {
@@ -219,7 +215,6 @@ uint64_t schedule(uint64_t current_rsp) {
         return current_rsp;
     }
 
-    // Aplicar aging a procesos que han esperado demasiado
     apply_aging();
 
     if (running_process) {
@@ -234,7 +229,7 @@ uint64_t schedule(uint64_t current_rsp) {
         else if (running_process->state == RUNNING) {
             running_process->quantum_remaining--;
             if (running_process->quantum_remaining > 0) {
-                return current_rsp; // Continuar con el mismo proceso
+                return current_rsp; 
             }
             
             running_process->quantum_remaining = DEFAULT_QUANTUM;
@@ -245,32 +240,27 @@ uint64_t schedule(uint64_t current_rsp) {
     
     Process* next = NULL;
 
-    // Search for next ready process in priority order (highest to lowest: 3, 2, 1, 0)
     for (int priority = MAX_PRIORITY; priority >= MIN_PRIORITY && next == NULL; priority--) {
         QueueADT priority_queue = get_priority_queue(priority);
         if (priority_queue == NULL || queueIsEmpty(priority_queue)) {
             continue;
         }
         
-        // Try to find a valid READY process in this priority queue
         while (!queueIsEmpty(priority_queue)) {
             if (dequeue(priority_queue, &next) == NULL) {
                 next = NULL;
                 break;
             }
             
-            // Skip TERMINATED processes
             if (next->state == TERMINATED) {
                 next = NULL;
                 continue; 
             }
             
-            // Found a valid READY process
             if (next != NULL && next->state == READY && next != idle_proc) { 
                 break;
             }
             
-            // If not READY, skip it (should not happen since BLOCKED are removed from queue)
             next = NULL;
         }
     }
@@ -294,7 +284,6 @@ uint64_t schedule(uint64_t current_rsp) {
     next->quantum_remaining = DEFAULT_QUANTUM;
     running_process = next;
     
-    // Resetear aging cuando el proceso se ejecuta
     reset_aging(next);
     
     if (next != idle_proc) {
@@ -347,8 +336,6 @@ int block_process(Process* p) {
     reset_aging(p);
     _sti();
 
-    // NO poner running_process = NULL aquí
-    // El scheduler lo manejará cuando detecte que el proceso está BLOCKED
     if (running_process == p) {
         extern void _force_scheduler_interrupt();
         _force_scheduler_interrupt();

@@ -185,18 +185,6 @@ static uint8_t isReleased(uint8_t scancode) { return scancode & 0x80; }
 
 static uint8_t isPressed(uint8_t scancode) { return !(isReleased(scancode)); }
 
-// static uint8_t isShift(uint8_t scancode){
-//     uint8_t aux = scancode & 0x7F;
-//     return aux == SHIFT_KEY_L || aux == SHIFT_KEY_R;
-// }
-
-// static uint8_t isCapsLock(uint8_t scancode){
-//     return (scancode & 0x7F) == CAPS_LOCK_KEY;
-// }
-
-// static uint8_t isControl(uint8_t scancode){
-//     return (scancode & 0x7F) == CONTROL_KEY_L;
-// }
 
 static uint8_t makeCode(uint8_t scancode) { return scancode & 0x7F; }
 
@@ -207,7 +195,6 @@ void addCharToBuffer(int8_t ascii, uint8_t showOutput) {
     if (showOutput)
       putChar(ascii);
     
-    // Signal that a character was added (for each character, including TAB spaces)
     if (keyboard_options & MODIFY_BUFFER) {
       semPost(buffer_sem);
     }
@@ -231,35 +218,28 @@ uint16_t clearBuffer() {
   return aux;
 }
 
-// Blocks until any key is pressed or \n is entered, depending on
-// keyboard_options (AWAIT_RETURN_KEY) This function always sets the
-// MODIFY_BUFFER option, so keys can be consumed
 int8_t getKeyboardCharacter(enum KEYBOARD_OPTIONS ops) {
   keyboard_options = ops | MODIFY_BUFFER;
 
-  // Wait for data to be available in the buffer
   while (1) {
-    // If buffer is empty, wait on semaphore
     if (to_write == to_read) {
       semWait(buffer_sem);
-      continue; // Check condition again after waking up
+      continue; 
     }
     
-    // If AWAIT_RETURN_KEY is set, check if we have a newline or EOF
     if (keyboard_options & AWAIT_RETURN_KEY) {
       if (buffer[SUB_MOD(to_write, 1, BUFFER_SIZE)] == NEW_LINE_CHAR ||
           buffer[SUB_MOD(to_write, 1, BUFFER_SIZE)] == EOF) {
-        break; // We have a complete line
+        break; 
       }
       semWait(buffer_sem);
     } else {
-      break; // We have at least one character, that's enough
+      break; 
     }
   }
 
   keyboard_options = 0;
   
-  // Use mutex to protect buffer access
   semWait(keyboard_mutex);
   
   int8_t aux = buffer[to_read];
@@ -276,8 +256,7 @@ uint8_t keyboardHandler() {
 
   if (BUFFER_IS_FULL) {
     to_read = to_write = 0;
-    return scancode; // do not write to buffer anymore, subsequent keys are not
-                     // processed into the buffer
+    return scancode; 
   }
 
   switch (makeCode(scancode)) {
@@ -297,9 +276,8 @@ uint8_t keyboardHandler() {
   }
 
   if (!(is_pressed && IS_KEYCODE(scancode)))
-    return scancode; // ignore break or unsupported scancodes
+    return scancode; 
 
-  // Detectar Ctrl+C para matar procesos en foreground
   if (CONTROL_KEY_PRESSED && makeCode(scancode) == C_KEY) {
     kill_foreground_processes();
     return scancode;
@@ -322,8 +300,6 @@ uint8_t keyboardHandler() {
     if (IS_PRINTABLE(scancode)) {
       if (c == RETURN_KEY) {
         c = NEW_LINE_CHAR;
-        // Handle \n on the keyboard interrupt handler, to avoid the possibility
-        // of triggering multiple \n inputs continously on the same sys_read
         if ((to_write != to_read) &&
             buffer[SUB_MOD(to_write, 1, BUFFER_SIZE)] == NEW_LINE_CHAR) {
           return scancode;
@@ -339,7 +315,6 @@ uint8_t keyboardHandler() {
     }
   }
 
-  // Call the registered function for the key, if any
   if (KeyFnMap[scancode].fn != 0) {
     KeyFnMap[scancode].fn(scancode);
   }

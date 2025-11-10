@@ -14,7 +14,6 @@ typedef struct List {
 } List;
 
 static inline void copyElementToBuffer(uint8_t *buffer, uint8_t *data, size_t size) {
-	// print("copyElementToBuffer: "); printHex((uint64_t) buffer); print(" "); printHex((uint64_t) data); print(" "); printDec(size); print(" - elem: "); printDec(*(int*)data); print("\n");
 	if (buffer == NULL || data == NULL) {
 		return;
 	}
@@ -45,7 +44,6 @@ ListADT listAdd(ListADT list, void *data) {
 	}
 
 	if (curr != NULL && list->cmp(curr->data, data) == 0) {
-		// Element already exists, do not add it again
 		return list;
 	}
 

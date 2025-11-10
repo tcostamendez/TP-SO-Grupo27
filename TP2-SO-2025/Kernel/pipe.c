@@ -71,21 +71,11 @@ int openPipe(void) {
 
     return pipe->id;
 }
-//no usar mas
-int attach(uint8_t id) {
-    Pipe pipe;
-    if (-1 == getValidPipe(id, &pipe)) {
-        return -1;
-    }
-    pipe->attached++;
-    return 0;
-}
-//usar estos
+
 int attachReader(uint8_t id) {
     Pipe p;
     if (-1 == getValidPipe(id, &p)) return -1;
     p->readers++;
-    /* Mantener attached consistente con endpoints totales */
     p->attached++;
     if (p->exp_readers > 0) p->exp_readers--;
     return 0;
@@ -95,7 +85,6 @@ int attachWriter(uint8_t id) {
     Pipe p;
     if (-1 == getValidPipe(id, &p)) return -1;
     p->writers++;
-    /* Mantener attached consistente con endpoints totales */
     p->attached++;
     if (p->exp_writers > 0) p->exp_writers--;
     return 0;
@@ -118,13 +107,11 @@ void detachReader(uint8_t id, int pid) {
         if (p->attached > 0) p->attached--;
     }
 
-    // Si ya no quedan readers, despertá a writers bloqueados
     if (p->readers == 0 && p->waitingToWrite) {
         wake_all(p->canWrite);
         p->waitingToWrite = 0;
     }
 
-    // Si no quedan endpoints y no se esperan más, borra pipe
     if (p->readers == 0 && p->writers == 0 && p->exp_readers == 0 && p->exp_writers == 0) {
         deletePipe(p);
     }
@@ -142,7 +129,6 @@ void detachWriter(uint8_t id, int pid) {
         if (p->attached > 0) p->attached--;
     }
 
-    // Si ya no quedan writers, despertá a readers bloqueados (para que vean EOF)
     if (p->writers == 0 && p->waitingToRead) {
         wake_all(p->canRead);
         p->waitingToRead = 0;
@@ -161,12 +147,9 @@ int readPipe(uint8_t id, uint8_t *buffer, uint64_t bytes) {
     }
 
     if (pipeToRead->idxToRead == pipeToRead->idxToWrite) {
-        /* Buffer vacío. Si no hay escritores actuales ni esperados, EOF. */
         if (pipeToRead->writers == 0 && pipeToRead->exp_writers == 0) {
-            /* No bloquear si ya no quedarán escritores: señal de EOF */
-            return 0; /* EOF */
+            return 0; 
         } else {
-            /* Aún hay (o se esperan) escritores: bloquear hasta que escriban */
             pipeToRead->waitingToRead = 1;
             if (-1 == semWait(pipeToRead->canRead)) {
                 panic("Pipe's sem didn't work.");
@@ -243,21 +226,6 @@ void unblockPipeReader(uint8_t id) {
     }
 }
 
-void removeAttached(uint8_t id, int pid) {
-    Pipe pipeToClose;
-
-    if (-1 == getValidPipe(id, &pipeToClose)) {
-        return;
-    }
-
-    removeFromSemaphore(pipeToClose->canRead, pid);
-    removeFromSemaphore(pipeToClose->canWrite, pid);
-
-    if (pipeToClose->attached > 0) {
-        pipeToClose->attached--;
-    }
-}
-
 int closePipe(uint8_t id) {
     Pipe pipeToClose;
 
@@ -312,18 +280,13 @@ static Pipe createPipe(void) {
     newPipe->waitingToRead = 0;
     newPipe->waitingToWrite = 0;
 
-    /* Inicializar contadores y expectativas */
     newPipe->attached = 0;
     newPipe->readers = 0;
     newPipe->writers = 0;
-    // Inicialmente esperamos que se conecte exactamente 1 reader y 1 writer
-    // para evitar que un reader que corre antes que el writer vea EOF prematuro
-    // (readPipe chequea writers==0 && exp_writers==0 para devolver EOF)
     newPipe->exp_readers = 1;
     newPipe->exp_writers = 1;
 
     char name[SEM_NAME_LONG];
-    // "semPipeXXR"
     buildSemName(newPipe->id, 'R', name);
     newPipe->canRead = semOpen(name, 0);
     if (newPipe->canRead == NULL) {
@@ -331,7 +294,6 @@ static Pipe createPipe(void) {
         return NULL;
     }
 
-    // "semPipeXXW"
     buildSemName(newPipe->id, 'W', name);
     newPipe->canWrite = semOpen(name, 0);
     if (newPipe->canWrite == NULL) {
@@ -359,12 +321,10 @@ static int getValidPipe(uint8_t id, Pipe *buffer) {
     if (buffer == NULL || pipeStorage == NULL) {
         return -1;
     }
-    /* IDs ya no se asumen iguales al índice: buscar linealmente */
     uint16_t size = arraySize(pipeStorage);
     for (uint16_t i = 0; i < size; i++) {
         Pipe tmp = NULL;
         if (getElemByIndex(pipeStorage, i, &tmp) == NULL) {
-            /* estructura dañada */
             panic("Invalid pipe array.");
             return -1;
         }
@@ -373,7 +333,7 @@ static int getValidPipe(uint8_t id, Pipe *buffer) {
             return 0;
         }
     }
-    return -1; /* no encontrado */
+    return -1; 
 }
 
 static int deletePipe(Pipe pipeToDelete) {
@@ -396,7 +356,7 @@ static int deletePipe(Pipe pipeToDelete) {
             return 0;
         }
     }
-    return -1; /* no estaba en almacenamiento */
+    return -1; 
 }
 
 static void freePipe(Pipe pipeToFree) {
@@ -407,5 +367,4 @@ static void freePipe(Pipe pipeToFree) {
     }
 }
 
-/* Debug helper (expuesto en pipe.h). No-op para evitar dependencias de salida en Kernel. */
 void debugPipe(uint8_t id) { (void)id; }

@@ -127,8 +127,6 @@ int32_t syscallDispatcher(Registers *registers) {
                                 (int)registers->rsi);
   case SYS_PIPE_OPEN:
     return sys_pipe_open();
-  case SYS_PIPE_ATTACH:
-    return sys_pipe_attach((uint8_t)registers->rdi);
   case SYS_PIPE_CLOSE:
     return sys_pipe_close((uint8_t)registers->rdi);
   case SYS_SET_READ_TARGET:
@@ -403,29 +401,17 @@ int sys_get_process_info(ProcessInfo *info, int pid) {
 // ==================================================================
 int sys_pipe_open(void) { return openPipe(); }
 
-int sys_pipe_attach(uint8_t id) { return attach(id); }
 
 int sys_pipe_close(uint8_t id) { return closePipe(id); }
-
-static void detach_if_pipe(uint8_t id, int pid) {
-  if (id != STDIN && id != STDOUT) {
-    /* By default removeAttached decrements attached; keep for generic detach
-       but when changing read/write targets we want to update role counters */
-    removeAttached(id, pid);
-  }
-}
 
 int sys_set_read_target_sys(uint8_t id) {
   Process *p = get_current_process();
   if (!p)
     return -1;
   uint8_t old = p->targetByFd[READ_FD];
-  // detach old if it was a pipe
   if (old != STDIN && old != STDOUT) {
-    /* old was a read target for this process */
     detachReader(old, p->pid);
   }
-  // attach new if it is a pipe
   if (id != STDIN && id != STDOUT) {
     if (attachReader(id) < 0)
       return -1;
@@ -439,7 +425,6 @@ int sys_set_write_target_sys(uint8_t id) {
     return -1;
   uint8_t old = p->targetByFd[WRITE_FD];
   if (old != STDIN && old != STDOUT) {
-    /* old was a write target for this process */
     detachWriter(old, p->pid);
   }
   if (id != STDIN && id != STDOUT) {

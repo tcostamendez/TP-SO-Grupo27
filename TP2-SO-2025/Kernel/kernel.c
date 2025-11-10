@@ -9,7 +9,6 @@
 #include <string.h>
 #include <syscallDispatcher.h>
 #include <video.h>
-#include <test.h>
 #include "memory_manager.h"
 #include "process.h"
 #include "scheduler.h"
@@ -23,8 +22,8 @@
 #include "panic.h"
 #include "keyboard.h"
 
-extern void _sti(); // (De interrupts.asm) Habilita interrupciones
-extern void _hlt(); // (De interrupts.asm) Detiene la CPU hasta la próxima interrupción
+extern void _sti();  
+extern void _hlt(); 
 extern void _force_scheduler_interrupt();
 
 extern Process* shell_proc;
@@ -34,7 +33,7 @@ extern uint8_t endOfKernelBinary;
 extern uint8_t endOfKernel;
 
 static const uint64_t PageSize = 0x1000;
-static void *const HEAP_END_ADDRESS = (void *)0x20000000;  //512mb
+static void *const HEAP_END_ADDRESS = (void *)0x20000000;  
 void *const shellModuleAddress = (void *)0x400000;
 
 typedef int (*EntryPoint)();
@@ -45,8 +44,8 @@ void clearBSS(void *bssAddress, uint64_t bssSize) {
 
 void *getStackBase() {
   return (void *)((uint64_t)&endOfKernel +
-                  PageSize * 8       // The size of the stack itself, 32KiB
-                  - sizeof(uint64_t) // Begin at the top of the stack
+                  PageSize * 8       
+                  - sizeof(uint64_t) 
   );
 }
 
@@ -69,18 +68,13 @@ void create_shell(void) {
   shell_proc = create_process(argc, argv, shellModuleAddress, MIN_PRIORITY, targets, 1);
 }
 
-// Función del proceso init que monitorea y recrea la shell si es necesario
 void init_process(int argc, char **argv) {    
     while (1) {
-        // Verificar si la shell existe y está viva usando el puntero global
         if (shell_proc == NULL || shell_proc->state == TERMINATED) {
-            // La shell no existe o fue eliminada, crear una nueva
             create_shell();
         }
         
-        // Ceder CPU y esperar un poco antes de verificar de nuevo
         yield_cpu();
-        // Pequeña espera para no saturar el CPU
         for (volatile int i = 0; i < 10000000; i++);
     }
 }
@@ -98,7 +92,7 @@ int main() {
 
   void *heapStartOriginal = (void *)((uint64_t)&endOfKernel + PageSize * 8);
   uint64_t base = ((uint64_t)heapStartOriginal + 0x1FFFFF) & ~((uint64_t)0x1FFFFF);
-  if (base < 0x600000) { // Nos aseguramos de saltar los módulos
+  if (base < 0x600000) { 
       base = 0x600000;
   }
   
@@ -108,7 +102,6 @@ int main() {
   mm_init(heapStart, heapSize);
   initSemQueue();
   initPipeStorage();
-  // Reservar IDs 0 y 1 para STDIN/STDOUT para evitar colisiones con pipes
   setNextId(2);
   init_scheduler();
   keyboard_sem_init();

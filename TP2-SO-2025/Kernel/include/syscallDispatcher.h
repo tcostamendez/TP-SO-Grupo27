@@ -31,11 +31,9 @@ typedef struct {
 
 int32_t syscallDispatcher(Registers * registers);
 
-// Linux syscall prototypes
 int32_t sys_write(int32_t fd, char * __user_buf, int32_t count);
 int32_t sys_read(int32_t fd, signed char * __user_buf, int32_t count);
 
-// Custom syscall prototypes
 int32_t sys_start_beep(uint32_t nFrequence);
 int32_t sys_stop_beep(void);
 int32_t sys_fonts_text_color(uint32_t color);
@@ -49,14 +47,12 @@ int32_t sys_clear_input_buffer(void);
 uint16_t sys_window_width(void);
 uint16_t sys_window_height(void);
 
-// Date syscall prototypes
 int32_t sys_hour(int * hour);
 int32_t sys_minute(int * minute);
 int32_t sys_second(int * second);
 
 
 int32_t sys_circle(uint32_t hexColor, uint64_t topLeftX, uint64_t topLeftY, uint64_t diameter);
-// Draw rectangle syscall prototype
 int32_t sys_rectangle(uint32_t color, uint64_t width_pixels, uint64_t height_pixels, uint64_t initial_pos_x, uint64_t initial_pos_y);
 int32_t sys_fill_video_memory(uint32_t hexColor);
 
@@ -96,7 +92,6 @@ int sys_ps(ProcessInfo *process_info);
 
 // Pipe syscall prototypes
 int sys_pipe_open(void);
-int sys_pipe_attach(uint8_t id);
 int sys_pipe_close(uint8_t id);
 int sys_set_read_target_sys(uint8_t id);
 int sys_set_write_target_sys(uint8_t id);

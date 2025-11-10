@@ -12,14 +12,10 @@ static size_t free_mem_size = 0;
 #define UNIT_SIZE sizeof(Header)
 
 void mm_init(void *base_address, size_t total_size) {
-  // total_mem_size = total_size;
-  // free_mem_size = total_size;
-
   Header *initial_block = (Header *)base_address;
   size_t units = total_size / UNIT_SIZE;
   initial_block->s.size = units;
 
-  // Bytes realmente usables por el allocador (múltiplo de UNIT_SIZE)
   size_t usable_bytes = units * UNIT_SIZE;
 
   total_mem_size = usable_bytes;
@@ -115,26 +111,4 @@ MemoryStats mm_get_stats() {
     stats.occupied_memory = 0;
   }
   return stats;
-}
-
-MemoryFreeListInfo mm_get_free_list_info() {
-  MemoryFreeListInfo info = {0, 0, (size_t)-1, 0};
-  if (freep == NULL) {
-    info.smallest_free_block = 0;
-    return info;
-  }
-  Header *p = freep;
-  do {
-    size_t block_bytes = p->s.size * UNIT_SIZE;
-    info.free_blocks++;
-    if (block_bytes > info.largest_free_block)
-      info.largest_free_block = block_bytes;
-    if (block_bytes < info.smallest_free_block)
-      info.smallest_free_block = block_bytes;
-    info.total_free_bytes += block_bytes;
-    p = p->s.ptr;
-  } while (p != freep);
-  if (info.free_blocks == 0)
-    info.smallest_free_block = 0;
-  return info;
 }

@@ -14,9 +14,9 @@ GLOBAL _irq80Handler
 
 GLOBAL _exceptionHandler00
 GLOBAL _exceptionHandler06
-GLOBAL _exceptionHandler08     ; <-- AÑADIR
-GLOBAL _exceptionHandler0D     ; <-- AÑADIR
-GLOBAL _exceptionHandler0E     ; <-- AÑADIR
+GLOBAL _exceptionHandler08     
+GLOBAL _exceptionHandler0D      
+GLOBAL _exceptionHandler0E    
 
 GLOBAL register_snapshot
 GLOBAL register_snapshot_taken
@@ -74,10 +74,9 @@ SECTION .text
 %macro irqHandlerMaster 1
 	pushState
 
-	mov rdi, %1 ; pass argument to irqDispatcher
+	mov rdi, %1 
 	call irqDispatcher
 
-	; signal pic EOI (End of Interrupt)
 	mov al, 20h
 	out 20h, al
 
@@ -85,13 +84,9 @@ SECTION .text
 	iretq
 %endmacro
 
-; --- INICIO: REEMPLAZAR MACROS POR ESTAS VERSIONES COMPLETAS ---
-
-; Macro para excepciones SIN código de error (ej: 0x0, 0x6)
 %macro exceptionHandler_no_err 1
     cli
     
-    ; Guardar TODOS los registros
     mov [exception_register_snapshot + 0x00], rax
     mov [exception_register_snapshot + 0x08], rbx
     mov [exception_register_snapshot + 0x10], rcx
@@ -109,15 +104,11 @@ SECTION .text
     mov [exception_register_snapshot + 0x70], r15
     mov [exception_register_snapshot + 0x78], rsp
 
-    ; Leer RIP y RFLAGS (sin código de error)
-    ; Stack: [RIP] [CS] [RFLAGS]
-    mov rax, [rsp + 0x00] ; RIP
+    mov rax, [rsp + 0x00] 
     mov [exception_register_snapshot + 0x80], rax
-    mov rax, [rsp + 0x10] ; RFLAGS
+    mov rax, [rsp + 0x10] 
     mov [exception_register_snapshot + 0x88], rax
     
-    ; Pila: HW (3 pushes) -> Desalineada (...x8)
-    ; 'call' (1 push) -> ALINEADA para C (...x0)
     mov rdi, %1
     mov rsi, exception_register_snapshot
     call exceptionDispatcher
@@ -127,11 +118,9 @@ SECTION .text
     jmp .hang_no_err
 %endmacro
 
-; Macro para excepciones CON código de error (ej: 0x8, 0xD, 0xE)
 %macro exceptionHandler_err 1
     cli
     
-    ; Guardar TODOS los registros
     mov [exception_register_snapshot + 0x00], rax
     mov [exception_register_snapshot + 0x08], rbx
     mov [exception_register_snapshot + 0x10], rcx
@@ -149,17 +138,10 @@ SECTION .text
     mov [exception_register_snapshot + 0x70], r15
     mov [exception_register_snapshot + 0x78], rsp
     
-    ; Leer RIP y RFLAGS (CON código de error)
-    ; Stack: [Error] [RIP] [CS] [RFLAGS]
-    mov rax, [rsp + 0x08] ; RIP (saltamos el error code)
+    mov rax, [rsp + 0x08] 
     mov [exception_register_snapshot + 0x80], rax
-    mov rax, [rsp + 0x18] ; RFLAGS (saltamos error, RIP, CS)
+    mov rax, [rsp + 0x18] 
     mov [exception_register_snapshot + 0x88], rax
-    
-    ; Pila: HW (4 pushes) -> Alineada (...x0)
-    ; 'call' (1 push) -> DESALINEADA para C
-    
-    ; --- FIX DE ALINEACIÓN ---
     sub rsp, 8
     
     mov rdi, %1
@@ -170,7 +152,6 @@ SECTION .text
     hlt
     jmp .hang_err
 %endmacro
-; --- FIN DEL REEMPLAZO ---
 
 _hlt:
 	sti
@@ -186,7 +167,7 @@ _sti:
 	ret
 
 picMasterMask:
-	push rbp     ; Stack frame
+	push rbp     
 	mov rbp, rsp
 	mov rax, rdi
 
@@ -208,66 +189,43 @@ picSlaveMask:
 	ret
 
 _load_idt_asm:
-    ; RDI (primer argumento) contiene el puntero a la estructura IDTR
     lidt [rdi]
     ret	
 
-; --- INICIO: CAMBIO CRÍTICO ---
 _irq00Handler:
-    ; 1. Guardar todos los registros del Proceso A
     pushState
-    ; Pila: HW(3) + pushState(15) = 18 pushes (ALINEADA, ...x0)
 
-    ; --- INICIO: CORRECCIÓN DE ALINEACIÓN ---
-    
-    ; 2. Llamar a irqDispatcher (alineado)
-    mov rdi, 0          ; Argumento 0 (IRQ 0)
+    mov rdi, 0 
     call irqDispatcher
     
-    ; 3. Llamar a nuestro scheduler en C (alineado)
-    ; Pasamos el RSP actual (que apunta a r15)
     mov rdi, rsp        
     call schedule
-    
-    ; 4. *** EL CAMBIO DE CONTEXTO ***
-    ; 'schedule' retorna en 'rax' el NUEVO RSP
-    mov rsp, rax        ; Cambiamos al stack del Proceso B
-                        ; (El 'sub rsp, 8' se descarta, lo cual es correcto)
+    mov rsp, rax  
 
-    ; 5. Enviar EOI (End of Interrupt) al PIC
     mov al, 20h
     out 20h, al
 
-    ; 6. Restaurar los registros del Proceso B
     popState
 
-    ; 7. Volver de la interrupción (ahora ejecutando Proceso B)
     iretq
-; --- FIN: CAMBIO CRÍTICO ---
 
-; --- INICIO: NUEVA FUNCIÓN (si no la tenías) ---
-; Esta es la función que llama yield_cpu() y semWait()
-; para forzar un context switch.
 _force_scheduler_interrupt:
-    ; Marcar que la próxima IRQ0 fue disparada por software
     mov byte [soft_irq0], 1
-    int 0x20    ; Dispara manualmente _irq00Handler
+    int 0x20    
     ret
-; --- FIN: NUEVA FUNCIÓN ---
 
-; Keyboard
 _irq01Handler:
 	pushfq
 	pushState
 
-	mov rdi, 1 ; pass argument to irqDispatcher
+	mov rdi, 1 
 	call irqDispatcher
 
-	cmp rax, REGISTER_SNAPSHOT_KEY_SCANCODE ; F12 KEY SCANCODE
+	cmp rax, REGISTER_SNAPSHOT_KEY_SCANCODE 
 	jne .skip
 
-	popState  ; restore register values
-	pushState ; preserve stack frame
+	popState  
+	pushState 
 
 	mov [register_snapshot + 0x08 * 0x00], rax
 	mov [register_snapshot + 0x08 * 0x01], rbx
@@ -285,76 +243,60 @@ _irq01Handler:
 	mov [register_snapshot + 0x08 * 0x0D], r14
 	mov [register_snapshot + 0x08 * 0x0E], r15
 
-	mov [register_snapshot + 0x08 * 0x0F], rsp ; rsp
+	mov [register_snapshot + 0x08 * 0x0F], rsp 
 
-	mov rax, [ rsp + 0x08 * 16 ] ; get the return address
-	mov [register_snapshot + 0x08 * 0x10], rax ; rip
+	mov rax, [ rsp + 0x08 * 16 ] 
+	mov [register_snapshot + 0x08 * 0x10], rax 
 
-	mov rax, [ rsp + 0x08 * 15 ] ; get the rflags
-	mov [register_snapshot + 0x08 * 0x11], rax ; rflags
+	mov rax, [ rsp + 0x08 * 15 ] 
+	mov [register_snapshot + 0x08 * 0x11], rax 
 
 	mov byte [register_snapshot_taken], 0x01
 
 	.skip:
-	; signal pic EOI (End of Interrupt)
 	mov al, 20h
 	out 20h, al
 
 	popState
-	add rsp, 0x08 ; remove rflags from the stack
+	add rsp, 0x08 
 
 	iretq
 
-; System Call
-; Not using the %irqHandlerMaster macro because it needs to pass the stack pointer to the syscall
 _irq80Handler:
     pushState
 
-    ; --- INICIO: CORRECCIÓN DE ALINEACIÓN ---
-    push rax            ; Pushes 1 más (total 19, desalineado)
-    ; --- FIN: CORRECCIÓN DE ALINEACIÓN ---
+    push rax             
 
     lea rdi, [rsp + 8]
     call syscallDispatcher
 
     mov rbx, rax
 
-    ; signal pic EOI (End of Interrupt)
     mov al, 20h
     out 20h, al
 
     mov rax, rbx
 
-    ; --- INICIO: CORRECCIÓN DE ALINEACIÓN ---
-    ; Devolvemos los 8 bytes que restamos
     add rsp, 8
-    ; --- FIN: CORRECCIÓN DE ALINEACIÓN ---
 
     popStateButRAX
-    add rsp, 8 ; skip the error code pushed by irqDispatcher
+    add rsp, 8 
     iretq
 
-; --- INICIO: CORRECCIÓN DE LLAMADAS ---
-; Zero Division Exception (SIN código de error)
 _exceptionHandler00:
     exceptionHandler_no_err 0
 
-; Invalid Opcode Exception (SIN código de error)
 _exceptionHandler06:
     exceptionHandler_no_err 6
 
-; Double Fault Exception (CON código de error)
 _exceptionHandler08:
     exceptionHandler_err 8
 
-; General Protection Fault Exception (CON código de error)
 _exceptionHandler0D:
     exceptionHandler_err 13
 
-; Page Fault Exception (CON código de error)
 _exceptionHandler0E:
     exceptionHandler_err 14
-; --- FIN: CORRECCIÓN DE LLAMADAS ---
 
 section .bss
 	exception_register_snapshot resq 18
@@ -363,5 +305,5 @@ section .bss
     soft_irq0 resb 1
 
 section .rodata
-	REGISTER_SNAPSHOT_KEY_SCANCODE equ 0x58 ; F12 KEY SCANCODE
-	USERLAND equ 0x400000 ; userland (shell module address)
+	REGISTER_SNAPSHOT_KEY_SCANCODE equ 0x58 
+	USERLAND equ 0x400000 

@@ -15,11 +15,6 @@
 static char buffer[MAX_BUFFER_SIZE];
 static int buffer_dim = 0;
 
-//static int printPreviousCommand(enum REGISTERABLE_KEYS scancode);
-//static int printNextCommand(enum REGISTERABLE_KEYS scancode);
-//static int deleteCharacter(enum REGISTERABLE_KEYS scancode);
-//static void emptyScreenBuffer(void);
-
 static uint8_t last_command_arrowed = 0;
 
 /* All available commands. Sorted alphabetically by their name */
@@ -185,15 +180,8 @@ static int parse_command(char *buffer, char *command, ParsedCommand *parsedComma
 int main() {
   clearScreen();
 
-  //registerKey(KP_UP_KEY, printPreviousCommand);
-  //registerKey(KP_DOWN_KEY, printNextCommand);
-  //registerKey(BACKSPACE_KEY, deleteCharacter);
-
   buffer[0] = 0;
   buffer_dim = 0;
-  //int firstPid = -1;
-  //int requestsFg = 0;
-  //int firstCommandRequestedFg = 0;
 
   char command[MAX_ARGUMENT_SIZE] = {0};
   uint16_t parsed_commands_dim = 5;
@@ -356,39 +344,6 @@ int main() {
   __builtin_unreachable();
   return 0;
 }
-
-// static int printPreviousCommand(enum REGISTERABLE_KEYS scancode) {
-
-//   last_command_arrowed = SUB_MOD(last_command_arrowed, 1, HISTORY_SIZE);
-//   if (command_history[last_command_arrowed][0] != 0) {
-//     printf("%s", command_history[last_command_arrowed]);
-//   }
-//   return 1;
-// }
-
-// static int printNextCommand(enum REGISTERABLE_KEYS scancode) {
-
-//   last_command_arrowed = (last_command_arrowed + 1) % HISTORY_SIZE;
-//   if (command_history[last_command_arrowed][0] != 0) {
-//     printf("%s", command_history[last_command_arrowed]);
-//   }
-//   return 1;
-// }
-
-// static int deleteCharacter(enum REGISTERABLE_KEYS scancode) {
-//   if (buffer_dim > 0) {
-//     // clearScreenCharacter();
-//     buffer_dim--;
-//   }
-//   return 1;
-// }
-
-// static void emptyScreenBuffer(void) {
-//   while (buffer_dim > 0) {
-//     // clearScreenCharacter();
-//     buffer_dim--;
-//   }
-// }
 
 int history(void) {
   uint8_t last = command_history_last;

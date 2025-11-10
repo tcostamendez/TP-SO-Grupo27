@@ -2,7 +2,7 @@
 #define PROCESS_H
 
 #include <stdint.h>
-#include <stddef.h> // Para size_t
+#include <stddef.h> 
 #include "queue.h"
 #include "scheduler.h"
 #include "strings.h"
@@ -12,14 +12,11 @@
 // Lo tomamos de tu memory_manager.h (FIRST_FIT_MM_H)
 #define PROCESS_STACK_SIZE (1024 * 8) 
 
-// Límite de procesos que podemos tener.
 #define MAX_PROCESSES 64
 #define MAX_CHILDREN 32
 
-// Nombre máximo para un proceso (debugging)
 #define MAX_PROCESS_NAME 32
 
-// Prioridades del proceso
 #define MIN_PRIORITY 0
 #define MAX_PRIORITY 3
 #define DEFAULT_PRIORITY 0
@@ -31,15 +28,13 @@
 #define FOREGROUND 1
 #define BACKGROUND 0
 
-// El entry point de un proceso.
 typedef void (*ProcessEntryPoint)(int argc, char**argv);
 
-// Enumeración de los estados de un proceso
 typedef enum {
     READY,
     RUNNING,
     BLOCKED,
-    TERMINATED // Usaremos este estado para 'limpiar' procesos
+    TERMINATED 
 } ProcessState;
 
 /**
@@ -47,40 +42,24 @@ typedef enum {
  * Esta estructura contiene toda la información de un proceso.
  */
 typedef struct Process {
-    // --- ... --- 
-    int pid;                    // Process ID
-    int ppid;                   // Parent Process ID
-    ProcessState state;         // Estado actual (READY, RUNNING, etc.)
-    
-    // --- ... ---
+    int pid;                    
+    int ppid;                 
+    ProcessState state;    
     int argc;
     char ** argv;
-
-    // --- Contexto de la CPU ---
     uint64_t rsp;
-
-    // --- Gestión de Memoria ---
-    void *stackBase;            // Puntero al inicio del stack (para mm_free())
+    void *stackBase;
+    ProcessEntryPoint rip;  
+    int priority;             
+    int original_priority;      
+    int quantum_remaining;    
+    int wait_ticks;             
     
-    // --- Info de Ejecución ---
-    ProcessEntryPoint rip;      // Puntero a la función a ejecutar
-    
-    // --- Scheduling ---
-    int priority;               // Prioridad actual del proceso (0-3, mayor = más prioridad)
-    int original_priority;      // Prioridad original del proceso
-    int quantum_remaining;      // Ticks restantes en el quantum actual
-    int wait_ticks;             // Ticks esperando en ready queue (para aging)
-    
-    // --- Estado de Ejecución ---
-    int ground;                 // 1 si está en foreground, 0 si en background
-    uint64_t rbp;               // Base pointer (para debugging/listing)
-    
-    // --- Targets de File descriptors ---
+    int ground;               
+    uint64_t rbp;             
     uint8_t targetByFd[3];
-
-    // (Más adelante podemos añadir FDs avanzados, semáforos, etc.)
-    int children[MAX_CHILDREN]; // IDs de los procesos hijos
-    int child_count;            // Número de hijos actuales
+    int children[MAX_CHILDREN];
+    int child_count;          
 } Process;
 
 typedef struct ProcessInfo {
@@ -96,8 +75,6 @@ typedef struct ProcessInfo {
     
     int ground; 
 } ProcessInfo;
-
-// --- Interfaz Pública de Gestión de Procesos ---
 
 /**
  * @brief Inicializa el Process Control Block (PCB) global.
@@ -220,4 +197,4 @@ int get_process_info(ProcessInfo * info, int pid);
 void reap_terminated_processes(void);
 
 void process_terminator(void);
-#endif // PROCESS_H
+#endif 

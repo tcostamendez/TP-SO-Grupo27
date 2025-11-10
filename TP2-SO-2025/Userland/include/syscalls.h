@@ -207,7 +207,6 @@ int sys_get_process_info(ProcessInfo* info, int pid);
 
 // Pipe syscalls (44-48)
 int sys_pipe_open(void);
-int sys_pipe_attach(uint8_t id);
 int sys_pipe_close(uint8_t id);
 int sys_set_read_target(uint8_t id);
 int sys_set_write_target(uint8_t id);

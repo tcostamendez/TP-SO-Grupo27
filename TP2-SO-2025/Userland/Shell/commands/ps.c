@@ -2,7 +2,6 @@
 #include "libsys/libsys.h"
 #include "stdio.h"
 
-// Helper function to count digits in a number
 static int count_digits(int num) {
     if (num == 0) return 1;
     int count = 0;
@@ -17,7 +16,6 @@ static int count_digits(int num) {
     return count;
 }
 
-// Helper function to print spaces
 static void print_spaces(int count) {
     for (int i = 0; i < count; i++) {
         printf(" ");

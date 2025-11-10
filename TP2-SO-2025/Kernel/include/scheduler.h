@@ -4,16 +4,11 @@
 #include <stdint.h>
 #include "queue.h"
 #include "array.h"
-
-// Para evitar dependencias circulares
 typedef struct Process Process;
 
-// --- Aging Configuration ---
-#define AGING_THRESHOLD 50         // Ticks esperando antes de boost de prioridad
-#define AGING_BOOST 1               // Cuántos niveles de prioridad se boostan (máximo 3)
-
-// External declarations - defined in scheduler.c
-extern ArrayADT process_priority_table;    // Array of 4 priority queues (priority 0-3)
+#define AGING_THRESHOLD 50        
+#define AGING_BOOST 1           
+extern ArrayADT process_priority_table;
 extern Process* running_process;
 extern Process* idle_proc;
 extern Process* shell_proc;

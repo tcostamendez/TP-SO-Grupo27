@@ -31,22 +31,17 @@ int initSemQueue(void) {
     return sQueue->sems == NULL ? -1 : 1;
 }
 
-//! REVISAR ESTA FUNCION
 void freeSemQueue(void) {
 	if (sQueue == NULL) {
 		return;
 	}
-	/* Proteger la operación de liberación global */
 	semLock(&sQueue->lock);
 	if (sQueue->sems != NULL) {
-		/* Vaciar y liberar cada semáforo dentro de la cola */
 		while (queueSize(sQueue->sems) > 0) {
 			Sem s = NULL;
 			if (dequeue(sQueue->sems, &s) != NULL && s != NULL) {
-				/* liberar las estructuras internas del semáforo */
 				if (s->blockedProcesses)
 					queueFree(s->blockedProcesses);
-				/* no debemos tocar s->lock después de mm_free, así que no hacemos semUnlock aquí */
 				mm_free(s);
 			}
 		}
@@ -112,44 +107,34 @@ int semClose(Sem semToClose) {
 		return -1;
 	}
 
-	/* Para evitar deadlocks, adquirir primero sQueue->lock y luego el sem->lock */
 	semLock(&sQueue->lock);
 	semLock(&semToClose->lock);
 
-	/* Decrementar contador de usuarios */
 	semToClose->users--;
 
 	if (semToClose->users != 0) {
-		/* Otros usuarios siguen usando el semáforo, no liberarlo */
 		semUnlock(&semToClose->lock);
 		semUnlock(&sQueue->lock);
 		return 0;
 	}
 
-	/* Último usuario: intentar remover de la cola global */
 	Sem aux = semToClose;
 	if (queueRemove(sQueue->sems, &aux) == NULL) {
-		/* FALLO: rollback del decremento para mantener consistencia */
 		semToClose->users++;
 		semUnlock(&semToClose->lock);
 		semUnlock(&sQueue->lock);
 		return -1;
 	}
 
-	/* Fue removido exitosamente de la cola global. Mientras aún tenemos el sem->lock,
-	   podemos liberar sus estructuras internas de forma segura. */
 	if (semToClose->blockedProcesses) {
 		queueFree(semToClose->blockedProcesses);
 		semToClose->blockedProcesses = NULL;
 	}
 
-	/* Liberar el lock del semáforo antes de liberar la memoria */
 	semUnlock(&semToClose->lock);
 
-	/* Ya no formamos parte de la cola global; liberar la estructura */
 	mm_free(semToClose);
 
-	/* Finalmente liberar el lock global */
 	semUnlock(&sQueue->lock);
 
 	return 0;
@@ -165,22 +150,17 @@ int semPost(Sem semToPost) {
 		semLock(&semToPost->lock);
 		
 		if (queueSize(semToPost->blockedProcesses) != 0) {
-			// Hay procesos bloqueados esperando este semáforo
 			int pid;
 			if (dequeue(semToPost->blockedProcesses, &pid) != NULL) {
-				
-				// Obtener el proceso y desbloquearlo
 				Process *proc = get_process(pid);
 				if (proc != NULL) {
 					unblock_process(proc);
 					toReturn = 0;
 				} else {
-					// El proceso fue eliminado mientras estaba bloqueado.
 					toReturn = 0;
 				}
 			}
 		} else {
-			// No hay procesos bloqueados, simplemente incrementar el contador
 			semToPost->value++;
 			toReturn = 0;
 		}
@@ -211,9 +191,8 @@ int semWait(Sem semToWait) {
                     semUnlock(&semToWait->lock);
                     toReturn = -1;
                 } else {
-                    // CRÍTICO: Liberar el lock ANTES de block_process()
                     semUnlock(&semToWait->lock);
-                    __sync_synchronize(); // Memory barrier
+                    __sync_synchronize(); 
                     
                     block_process(current);
                     blocked = 1;
@@ -225,7 +204,6 @@ int semWait(Sem semToWait) {
 			toReturn = 0;
 			semUnlock(&semToWait->lock);
 		}
-		// El lock YA fue liberado en todos los casos antes de llegar aquí
 		if (blocked) {
 			_force_scheduler_interrupt();
 		}
@@ -297,9 +275,8 @@ static Sem findSemByName(const char *name) {
 	
 	int found = 0;
 	int size = queueSize(sQueue->sems);
-	sem *current = NULL;  // Inicializar explícitamente para evitar variable no inicializada
+	sem *current = NULL;  
 	
-	// Early return: si la cola está vacía, retornar inmediatamente
 	if (size == 0) {
 		return NULL;
 	}
@@ -307,7 +284,6 @@ static Sem findSemByName(const char *name) {
 	queueBeginCyclicIter(sQueue->sems);
 	for (int i = 0; i < size && !found; i++) {
 		queueNextCyclicIter(sQueue->sems, &current);
-		// Validación defensiva: verificar que current no sea NULL antes de acceder
 		if (current != NULL && my_strcmp(current->name, name) == 0) {
 			found = 1;
 		}

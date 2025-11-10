@@ -66,23 +66,19 @@ static void reparent_children(int dying_pid) {
         return; // No init process to reparent to
     }
     
-    // Iterate through the dying process's children array
     for (int i = 0; i < dying->child_count; i++) {
         int child_pid = dying->children[i];
         Process* child = get_process(child_pid);
         
         if (child != NULL && child->state != TERMINATED) {
-            // Update the child's ppid to point to init
             child->ppid = 1;
             
-            // Add to init's children list if there's space
             if (init->child_count < MAX_CHILDREN) {
                 init->children[init->child_count++] = child_pid;
             }
         }
     }
-    
-    // Clear the dying process's children array
+
     dying->child_count = 0;
 }
 
@@ -96,8 +92,6 @@ static void free_process_resources(Process* p, int remove_from_scheduler) {
     if (p == NULL) {
         return;
     }
-    
-    // Liberar argv y sus elementos
     if (p->argv != NULL) {
         for (int i = 0; i < p->argc; i++) {
             if (p->argv[i] != NULL) {
@@ -107,17 +101,14 @@ static void free_process_resources(Process* p, int remove_from_scheduler) {
         mm_free(p->argv);
     }
     
-    // Liberar stack
     if (p->stackBase != NULL) {
         mm_free(p->stackBase);
     }
-    
-    // Remover del scheduler si es necesario
+
     if (remove_from_scheduler) {
         remove_process_from_scheduler(p);
     }
     
-    // Liberar la estructura del proceso
     mm_free(p);
 }
 
@@ -207,7 +198,7 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
     p->priority = priority;
     p->original_priority = priority;
     p->quantum_remaining = DEFAULT_QUANTUM;
-    p->wait_ticks = 0;                  // Inicializar contador de aging
+    p->wait_ticks = 0;                 
 
     uint64_t stack_top = (uint64_t)p->stackBase + PROCESS_STACK_SIZE;
 
@@ -251,11 +242,9 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
         return NULL;
     }
 
-    // Crear semáforo para sincronización con wait_child (solo para procesos no-idle)
     if(p->pid != 0){
         char *sem_name = build_wait_semaphore_name(p->pid);
         if (sem_name) {
-            // Crear semáforo con valor 0 (bloqueado hasta que el proceso termine)
             semOpen(sem_name, 0);
             mm_free(sem_name);
         }
@@ -265,7 +254,6 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
     p->targetByFd[WRITE_FD] = targets[1];
     p->targetByFd[ERR_FD] = targets[2];
 
-    // Adjuntar roles a pipes no estándar para mantener contadores consistentes
     if (p->targetByFd[READ_FD] != STDIN && p->targetByFd[READ_FD] != STDOUT) {
         attachReader(p->targetByFd[READ_FD]);
     }
@@ -294,7 +282,6 @@ void yield_cpu() {
     Process* current = get_current_process();
     if (current != NULL && current->state == RUNNING) {
         _cli();
-        // Forzar el cambio de contexto poniendo quantum a 0
         current->quantum_remaining = 0;
         _sti();
     }
@@ -362,7 +349,6 @@ void foreach_process(void (*callback)(Process* p, void* arg), void* arg) {
 }
 
 int kill_process(int pid) {
-    // No se puede matar al proceso idle (PID 0) ni al init (PID 1)
     if (pid == 0 || pid == 1) {
         return -1;
     }
@@ -374,7 +360,6 @@ int kill_process(int pid) {
     
     Process* running = get_running_process();
     
-    // PASO 1: Cerrar file descriptors ANTES de locks críticos
     uint8_t r = p->targetByFd[READ_FD];
     uint8_t w = p->targetByFd[WRITE_FD];
     if (r != STDIN && r != STDOUT) {
@@ -388,38 +373,27 @@ int kill_process(int pid) {
         }
     }
     
-    // PASO 2: Reparentar los hijos del proceso que va a morir
     reparent_children(pid);
     
-    // PASO 3: Señalizar a los procesos padres que esperan (sin locks)
     char *sem_name = build_wait_semaphore_name(pid);
     if (sem_name) {
         Sem s = semOpen(sem_name, 0);
         if (s) {
-            semPost(s);  // Despertar al padre que está esperando
+            semPost(s);
             semClose(s);
         }
         mm_free(sem_name);
     }
-    
-    // PASO 4: Ahora sí, sección crítica con locks
+
     _cli();
-    
     p->state = TERMINATED;
-    
     remove_from_process_table(pid);
-    
-    // Si se está eliminando la shell, limpiar el puntero global
     if (shell_proc == p) {
         shell_proc = NULL;
     }
-
-    // Centralized cleanup: removes from scheduler and frees all memory
     free_process_resources(p, 1);
-
     _sti();
     
-    // PASO 5: Si matamos el proceso actual, forzar context switch
     if (running == p) {
         yield_cpu();
         for(;;) _hlt();
@@ -452,61 +426,52 @@ int get_ground(int pid) {
 }
 
 int kill_foreground_processes() {
-    // Obtener el proceso actualmente en ejecución
     Process* current = get_current_process();
     
     if (current == NULL) {
-        return -1; // No hay proceso corriendo
+        return -1;
     }
     
-    
-    // Verificar si el proceso actual está en foreground y no es idle o init
     if (current->ground == FOREGROUND && current->pid != 0 && current->pid != 1) {
-        // Matar el proceso actual
         return kill_process(current->pid);
     }
     
-    return 0; // No se mató ningún proceso (no estaba en foreground)
+    return 0;
 }
 
 int wait_child(int child_pid) {
-    // Verificar que el proceso hijo exista
+
     Process *child = get_process(child_pid);
     if (child == NULL) {
-        return -1; // El hijo ya terminó o no existe
+        return -1;
     }
     
-    // Construir el nombre del semáforo para este proceso hijo
     char *sem_name = build_wait_semaphore_name(child_pid);
     if (!sem_name) {
         return -1;
     }
     
-    // Abrir el semáforo (ya fue creado en create_process)
     Sem s = semOpen(sem_name, 0);
     if (s == NULL) {
         mm_free(sem_name);
         return -1;
     }
     
-    // Esperar a que el hijo señalice su terminación
-    // semWait bloqueará hasta que el hijo haga semPost
     int result = semWait(s);
     
-    // Cerrar el semáforo
     semClose(s);
     mm_free(sem_name);
+
+    reap_terminated_processes();
     
     if (result != 0) {
         return -1;
     }
     
-    // Remover el hijo de la lista de children del padre
     Process *cur = get_current_process();
     if (cur) {
         for (int i = 0; i < cur->child_count; ++i) {
             if (cur->children[i] == child_pid) {
-                // Shift remaining children
                 for (int j = i; j < cur->child_count - 1; ++j) {
                     cur->children[j] = cur->children[j + 1];
                 }
@@ -545,7 +510,6 @@ int ps(ProcessInfo* process_info) {
         return -1;
     }
 
-    // Lleno el array con la información de los procesos
     for (int i = 0; i < MAX_PROCESSES; i++) {
         Process* p = process_table[i];
         if (p != NULL && p->state != TERMINATED) {
@@ -590,8 +554,6 @@ void process_terminator(void) {
     }
 
     int pid = cur->pid;
-    
-    // PASO 1: Cerrar los file descriptors PRIMERO (sin locks críticos)
     uint8_t r = cur->targetByFd[READ_FD];
     uint8_t w = cur->targetByFd[WRITE_FD];
     if (r != STDIN && r != STDOUT) {
@@ -605,14 +567,10 @@ void process_terminator(void) {
         }
     }
     
-    // PASO 2: Reparentar los hijos del proceso que va a morir
     reparent_children(pid);
-    
-    // PASO 3: Señalizar la terminación al proceso padre VÍA SEMÁFORO
-    // Esto debe hacerse ANTES de adquirir locks críticos para evitar deadlock
+
     char *sem_name = build_wait_semaphore_name(pid);
     if (sem_name) {
-        // Abrir el semáforo y hacer post para despertar al padre
         Sem s = semOpen(sem_name, 0);
         if (s) {
             semPost(s);
@@ -620,8 +578,7 @@ void process_terminator(void) {
         }
         mm_free(sem_name);
     }
-    
-    // PASO 4: Ahora sí, adquirir locks y marcar como TERMINATED
+
     _cli();
     cur->state = TERMINATED;
     remove_process_from_scheduler(cur);
@@ -633,7 +590,6 @@ void process_terminator(void) {
     }
     _sti();
     
-    // PASO 5: Yield y halt - el proceso ya no debería ejecutarse más
     yield_cpu();
     
     for(;;) _hlt();

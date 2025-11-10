@@ -20,6 +20,6 @@ int _man(int argc, char *argv[]) {
 		}
 	}
 
-	printf("Command not found\n");
+	perror("Command not found\n");
 	return 1;
 }

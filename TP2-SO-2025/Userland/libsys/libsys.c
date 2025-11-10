@@ -104,8 +104,6 @@ int getProcessInfo(ProcessInfo *info, int pid) {
 // ==========================
 int pipeOpen(void) { return sys_pipe_open(); }
 
-int pipeAttach(uint8_t id) { return sys_pipe_attach(id); }
-
 int pipeClose(uint8_t id) { return sys_pipe_close(id); }
 
 int setReadTarget(uint8_t id) { return sys_set_read_target(id); }

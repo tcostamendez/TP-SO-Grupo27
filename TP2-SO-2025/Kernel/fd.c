@@ -33,7 +33,6 @@ int fd_read(int32_t fd, uint8_t *userBuff, int32_t count) {
         return -1;
     }
 
-    /* Validaciones básicas de los argumentos */
     if (userBuff == NULL || count < 0) return -1;
     if (fd < 0 || fd > ERR_FD) return -1;
 
@@ -47,7 +46,6 @@ int fd_read(int32_t fd, uint8_t *userBuff, int32_t count) {
         }
         return i;
     }
-    // Leer desde pipe: si count > tamaño buffer interno, hacer lecturas parciales
     return readPipe(target, userBuff, (uint64_t)count);
 }
 
@@ -58,7 +56,6 @@ int fd_write(int32_t fd, const uint8_t *userBuff, int32_t count) {
         return -1;
     }
 
-    /* Validaciones básicas de los argumentos */
     if (userBuff == NULL || count < 0) return -1;
     if (fd < 0 || fd > ERR_FD) return -1;
 
@@ -67,6 +64,5 @@ int fd_write(int32_t fd, const uint8_t *userBuff, int32_t count) {
     if ((fd == WRITE_FD && target == STDOUT) || (fd == ERR_FD && target == STDERR) ){
         return printToFd(target, (const char *)userBuff, count);
     }
-    // Escritura a pipe: bloqueo hasta escribir todos los bytes (writePipe ya bloquea si lleno)
     return writePipe(target, userBuff, (uint64_t)count);
 }

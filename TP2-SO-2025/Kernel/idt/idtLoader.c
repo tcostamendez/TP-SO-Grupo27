@@ -19,30 +19,23 @@ typedef struct {
   uint32_t other_zero; // reserved
 } DESCR_INT;
 
-// --- INICIO DE CAMBIOS ---
 
-// Estructura para el registro IDTR
 typedef struct {
   uint16_t limit;
   uint64_t base;
 } IDTR;
 
-// ¡NO APUNTAR A CERO!
-// Declaramos la IDT como un array estático (256 entradas).
-// Esto la ubicará de forma segura en la sección .bss
 static DESCR_INT idt[256];
 
-// Declaramos la estructura para el IDTR
 static IDTR idtr;
 
-// Lee el registro CS actual
 static inline uint16_t get_cs(void) {
   uint16_t cs;
   __asm__ volatile("mov %%cs, %0" : "=r"(cs));
   return cs;
 }
 
-#pragma pack(pop) // restore previous alignment
+#pragma pack(pop) 
 
 static void setup_IDT_entry(int index, uint64_t offset, uint16_t cs_selector);
 
@@ -52,18 +45,16 @@ void load_idt() {
   idtr.limit = sizeof(idt) - 1;
   idtr.base = (uint64_t)&idt;
 
-  // Obtenemos el selector de código (CS) actual
   uint16_t kernel_cs = get_cs();
 
-  // Load exception handlers
   setup_IDT_entry(0x00, (uint64_t)&_exceptionHandler00, kernel_cs);
   setup_IDT_entry(0x06, (uint64_t)&_exceptionHandler06, kernel_cs);
   setup_IDT_entry(0x08, (uint64_t)&_exceptionHandler08,
-                  kernel_cs); // <-- AÑADIR
+                  kernel_cs); 
   setup_IDT_entry(0x0D, (uint64_t)&_exceptionHandler0D,
-                  kernel_cs); // <-- AÑADIR
+                  kernel_cs); 
   setup_IDT_entry(0x0E, (uint64_t)&_exceptionHandler0E,
-                  kernel_cs); // <-- AÑADIR
+                  kernel_cs);
 
   // Load ISRs
   // https://wiki.osdev.org/Interrupts#General_IBM-PC_Compatible_Interrupt_Information

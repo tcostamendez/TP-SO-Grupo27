@@ -35,7 +35,6 @@ void mm_init(void *base_address, size_t total_size) {
 
   buddy_lists[max_k] = initial_block;
 
-  // Bytes totales realmente manejados por el buddy
   total_managed_bytes = ((size_t)1ULL << max_k) * (size_t)MIN_BLOCK_SIZE;
 }
 

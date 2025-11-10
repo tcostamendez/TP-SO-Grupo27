@@ -45,7 +45,8 @@ GLOBAL sys_wait_for_children
 GLOBAL sys_get_process_info
 
 GLOBAL sys_pipe_open
-GLOBAL sys_pipe_attach
+;GLOBAL sys_pipe_attach
+
 GLOBAL sys_pipe_close
 GLOBAL sys_set_read_target
 GLOBAL sys_set_write_target
@@ -197,7 +198,6 @@ sys_yield: sys_int80 SYS_YIELD
 sys_wait_pid: sys_int80 SYS_WAIT_PID
 sys_wait_for_children: sys_int80 SYS_WAIT_FOR_CHILDREN
 sys_pipe_open:        sys_int80 SYS_PIPE_OPEN
-sys_pipe_attach:      sys_int80 SYS_PIPE_ATTACH
 sys_pipe_close:       sys_int80 SYS_PIPE_CLOSE
 sys_set_read_target:  sys_int80 SYS_SET_READ_TARGET
 sys_set_write_target: sys_int80 SYS_SET_WRITE_TARGET
