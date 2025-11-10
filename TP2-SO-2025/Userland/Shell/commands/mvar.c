@@ -31,8 +31,8 @@ static int mvarInit(int readers, int writers) {
         return -1;
     }
 
-    // Initialize shared value to 0
-    sys_set_mvar_value(0);
+	// Initialize shared value to 0 (use libsys wrapper)
+	setMVarValue(0);
 
     // Initialize empty semaphore with 1: MVar starts empty
     mvar->empty = semOpen(MVAR_SEM_EMPTY_NAME, 1);
@@ -64,8 +64,8 @@ static int mvarPut(char value) {
         return -1;
     }
     
-    // Write the value to shared kernel storage
-    sys_set_mvar_value(value);
+	// Write the value to shared kernel storage via libsys wrapper
+	setMVarValue(value);
     
     // Signal that MVar now has data
     if (semPost(mvar->full) < 0) {
@@ -85,9 +85,9 @@ static char mvarGet(void) {
         return 0;
     }
     
-    // Read the value from shared kernel storage
-    char value = sys_get_mvar_value();
-    sys_set_mvar_value(0);
+	// Read the value from shared kernel storage via libsys wrapper
+	char value = getMVarValue();
+	setMVarValue(0);
     
     // Signal that MVar is now empty
     if (semPost(mvar->empty) < 0) {

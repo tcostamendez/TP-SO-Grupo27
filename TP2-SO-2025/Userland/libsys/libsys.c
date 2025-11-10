@@ -124,3 +124,8 @@ int semWait(sem_t s) { return sys_sem_wait(s); }
 int semPost(sem_t s) { return sys_sem_post(s); }
 
 void shutdown(void) { sys_shutdown(); }
+
+/* MVar value wrappers (kernel provides a minimal shared MVar value API) */
+void setMVarValue(char value) { sys_set_mvar_value(value); }
+
+char getMVarValue(void) { return sys_get_mvar_value(); }

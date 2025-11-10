@@ -61,6 +61,10 @@ int   semClose(sem_t s);
 int   semWait(sem_t s);
 int   semPost(sem_t s);
 
+// Minimal MVar value helpers (thin wrappers around kernel syscalls)
+void setMVarValue(char value);
+char getMVarValue(void);
+
 // Shutdown helper
 void shutdown(void);
 #endif

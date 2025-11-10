@@ -54,11 +54,11 @@ int _ps(int argc, char *argv[]) {
 
     // Print header
     printf("\e[0;32mPID");
-    print_spaces(max_pid_width - 3 + 2);
+    print_spaces(max_pid_width -1);
     printf("PPID");
-    print_spaces(max_ppid_width - 4 + 2);
+    print_spaces(max_ppid_width -2);
     printf("Name");
-    print_spaces(max_name_width - 4 + 2);
+    print_spaces(max_name_width -2);
     printf("State      Priority  FG/BG\n\e[0m");
     
     // Print separator line
