@@ -6,8 +6,8 @@
 | Name                   | Legajo     | Email                      |
 |------------------------|------------|----------------------------|
 | Pablo Gorostiaga       | 65148      | pgorostiaga@itba.edu.ar    |
-| Santiago Rapan         | .....      | srapan@itba.edu.ar         |
-| Tomas Costa Menendez   | .....      | @itba.edu.ar   | 
+| Santiago Rapan         | 65510      | srapan@itba.edu.ar         |
+| Tomas Costa Menendez   | 65625      | tcostamenendez@itba.edu.ar | 
 
 
 ## Estructura del Repositorio
@@ -115,25 +115,26 @@ help | filter
 ```sh
 test_mm 100000
 ```
-Ejecuta el test de stress del memory manager con 100KB de memoria.
+Ejecuta el test de stress del memory manager con 100000 bytes de memoria.
 
 ### Tests de Procesos y Scheduling
 ```sh
 test_processes 10
-test_prio 100000
+test_prio 3
 ```
 
 ### Tests de Sincronización
 ```sh
-test_sync 5 1000
+test_sync 100 0
+test_sync 500 1
 ```
-Ejecuta 5 procesos que realizan 1000 incrementos/decrementos sincronizados.
+Ejecuta procesos que realizan 100 y 500 incrementos/decrementos no syncronizados y syncronizados respectivamente.
 
 ### MVar (Lectores/Escritores)
 ```sh
 mvar 2 3
 ```
-Crea 2 escritores y 3 lectores que operan sobre una variable compartida. 
+Crea 2 lectores y 3 escritores que operan sobre una variable compartida. 
 
 ### Decisiones de Usabilidad
 
@@ -164,20 +165,19 @@ Los dos memory managers implementados (First Fit y Buddy System) **comparten la 
 #### Sincronización con WaitPid
 Cada proceso cuenta con un **semáforo nombrado único** que permite la sincronización entre padre e hijo. Cuando un padre ejecuta `waitPid()`, se bloquea en este semáforo hasta que el hijo termine, momento en el cual el hijo hace `post` sobre el semáforo antes de terminar.
 
-
 ### API de MVar
 Decidimos implementar el comando MVar completamente desde Userland, a execpcion de dos syscalls para poder acceder al valor de la variable compartida utilizada por los procesos. Tenemos en cuenta que esto se podria haber generalizado y podriamos haber implementado una API de memoria compartida, sin embargo consideramos que esto extiende los requisitos de la materia. 
 
 ## Limitaciones
-* **Liberacion de memoria por procesos individuales**: Nuestro Kernel confia que todo proceso que solicita memoria se va a encargar de liberarla, dado que no contamos con un registro de las alocaciones de memoria por parte de cada proceso. Sabemos que esto puede provocar memory leaks.
+* **Liberacion de memoria por procesos individuales**: Nuestro Kernel confia que todo proceso que solicita memoria se va a encargar de liberarla, dado que no contamos con un registro de las alocaciones de memoria por parte de cada proceso. Sabemos que esto genera memory leaks, por ejemplo en el caso del `test_mm`, dado que cuando se mata este proceso suele estar la memoria reservada pero no se llega a liberar, por lo que la cantidad de bytes pasados como parametros van a quedar desreferenciados. 
 * **Encadenamiento de pipes**: Solo se soportan pipes de exactamente 2 procesos. No es posible encadenar más de 2 comandos (ej: `p1 | p2 | p3`).
 * **Built-ins en pipes**: Los comandos built-in no pueden ser usados en pipelines.
-* **Máximo de procesos**: La tabla de procesos tiene un tamaño fijo definido por `MAX_PROCESSES`.
+* **Máximo de procesos e hijos**: La tabla de procesos tiene un tamaño fijo definido por `MAX_PROCESSES` y ademas cada proceso tiene un maximo numero de hijos definido por `MAX_CHILDREN`.
 
 ### Requerimientos faltantes
 Ninguno. Todos los requerimientos del enunciado fueron implementados exitosamente.
 
 ### Creditos / Citas / IA
-Este proyecto fue creado a partir del ultimo commit hecho al repositorio [TPE-ARQ-2024](https://github.com/itba-tpietravallo/TPE-ARQ-2024), el cual fue desarrollado por Tomas Pietravallo (tpietravallo@itba.edu.ar), Lucia Oliveto (loliveto@itba.edu.ar), y Maximo Wehncke (mwehncke@itba.edu.ar). 
+Este proyecto fue creado a partir del ultimo commit hecho al repositorio [TPE-ARQ-2024](https://github.com/itba-tpietravallo/TPE-ARQ-2024), el cual fue desarrollado por Tomas Pietravallo (tpietravallo@itba.edu.ar), Lucia Oliveto (loliveto@itba.edu.ar), y Maximo Wehncke (mwehncke@itba.edu.ar). Un sitio el cual fue utilizado para el desarrollo de este proyecto fue [Wiki OS Dev](https://wiki.osdev.org/Expanded_Main_Page). 
 
 Este proyecto fue realizado con la ayuda de Inteligencia Artificial. 
