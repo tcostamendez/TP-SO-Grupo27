@@ -58,10 +58,8 @@ GLOBAL sys_sem_post
 GLOBAL sys_shutdown
 GLOBAL sys_get_memory_stats
 
-GLOBAL sys_mvar_init
-GLOBAL sys_mvar_put
-GLOBAL sys_mvar_get
-GLOBAL sys_mvar_close
+GLOBAL sys_set_mvar_value
+GLOBAL sys_get_mvar_value
 
 ; Syscall number definitions for NASM
 ; Keep synchronized with syscall_numbers.h
@@ -133,10 +131,9 @@ GLOBAL sys_mvar_close
 
 %define SYS_UNBLOCK_PROCESS          55
 
-%define SYS_MVAR_INIT                 56
-%define SYS_MVAR_PUT                  57
-%define SYS_MVAR_GET                  58
-%define SYS_MVAR_CLOSE                59
+; Shared MVar value storage (minimal kernel support for userland MVar)
+%define SYS_SET_MVAR_VALUE           56
+%define SYS_GET_MVAR_VALUE           57
 
 section .text
 
@@ -210,7 +207,5 @@ sys_shutdown:         sys_int80 SYS_SHUTDOWN
 
 sys_get_memory_stats: sys_int80 SYS_GET_MEMORY_STATS
 
-sys_mvar_init: sys_int80 SYS_MVAR_INIT
-sys_mvar_put: sys_int80 SYS_MVAR_PUT
-sys_mvar_get: sys_int80 SYS_MVAR_GET
-sys_mvar_close: sys_int80 SYS_MVAR_CLOSE
+sys_set_mvar_value: sys_int80 SYS_SET_MVAR_VALUE
+sys_get_mvar_value: sys_int80 SYS_GET_MVAR_VALUE

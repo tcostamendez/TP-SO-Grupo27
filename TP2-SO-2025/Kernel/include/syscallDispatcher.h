@@ -7,7 +7,7 @@
 #include "strings.h"
 #include "sem.h"
 #include "process.h"
-#include "mvar.h"
+#include "shared_mvar.h"
 
 
 typedef struct {
@@ -107,11 +107,8 @@ int sys_sem_close(Sem sem);
 int sys_sem_wait(Sem sem);
 int sys_sem_post(Sem sem);
 
-// MVar syscall prototypes
-int sys_mvar_init(int readers, int writers);
-int sys_mvar_put(char value);
-int sys_mvar_get(void);
-int sys_mvar_close(void);
-
+// Shared MVar value storage (minimal kernel support)
+void sys_set_mvar_value(char value);
+char sys_get_mvar_value(void);
 
 #endif
