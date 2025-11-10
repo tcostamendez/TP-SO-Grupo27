@@ -1,4 +1,4 @@
----
+
 Language:        Cpp
 BasedOnStyle:  Google
 UseTab: Always
@@ -8,4 +8,3 @@ PenaltyBreakOpenParenthesis: 1
 ReflowComments: false
 IndentWidth: 4
 TabWidth: 4
-...
