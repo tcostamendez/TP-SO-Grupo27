@@ -112,12 +112,12 @@ void addCharToBuffer(int8_t ascii, uint8_t showOutput);
  * @brief Clear the keyboard input buffer.
  * @return Number of characters cleared.
  */
-uint16_t clearBuffer();
+uint16_t clearBuffer(void);
 /**
  * @brief Keyboard IRQ handler (reads scancode and updates buffer/state).
  * @return 1 if handled, 0 otherwise.
  */
-uint8_t keyboardHandler();
+uint8_t keyboardHandler(void);
 
 // All special keys *EXCEPT* for TAB and RETURN can be registered
 // Printable keys, including tab (`\t`) and return (`\n`) can be obtained via `getKeyboardCharacter` (`getchar`/`sys_read`)

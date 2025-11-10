@@ -280,7 +280,7 @@ int get_parent_pid(Process * p){
     return p->ppid;
 }
 
-void yield_cpu() {
+void yield_cpu(void) {
     Process* current = get_current_process();
     if (current != NULL && current->state == RUNNING) {
         _cli();
@@ -540,7 +540,7 @@ int ps(ProcessInfo* process_info) {
 }
 
 int get_process_info(ProcessInfo * info, int pid){
-    if(info == NULL || pid >= MAX_PROCESSES || process_table[pid] != NULL){
+    if(info == NULL || pid >= MAX_PROCESSES || process_table[pid] == NULL){
          return -1;
     }
     info->pid = process_table[pid]->pid;

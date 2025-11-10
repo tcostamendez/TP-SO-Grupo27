@@ -45,7 +45,7 @@ int scanf(const char * format, ...);
 /**
  * @brief Read a character from STDIN.
  */
-int getchar();
+int getchar(void);
 /**
  * @brief Write a character to STDOUT.
  */

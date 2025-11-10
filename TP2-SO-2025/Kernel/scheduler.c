@@ -131,7 +131,7 @@ void idleProcess(){
     }
 }
 
-void init_scheduler() {
+void init_scheduler(void) {
     process_priority_table = createArray(sizeof(QueueADT));
     if(process_priority_table == NULL){
         panic("Failed to create process priority table");

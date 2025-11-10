@@ -38,7 +38,7 @@ int32_t printToFd(int32_t fd, const char * string, int32_t count);
 /**
  * @brief Advance to a new line.
  */
-void newLine();
+void newLine(void);
 /**
  * @brief Print an unsigned integer in decimal.
  */
@@ -67,7 +67,7 @@ void hideCursor(void);
 /**
  * @brief Move cursor one position back.
  */
-void retractPosition();
+void retractPosition(void);
 /**
  * @brief Clear the previous character (backspace effect).
  */

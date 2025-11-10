@@ -200,7 +200,7 @@ void clear(void) {
   yBufferPosition = 0;
 }
 
-void retractPosition() {
+void retractPosition(void) {
   uint16_t window_width = getWindowWidth();
 
   if (xBufferPosition == 0) {

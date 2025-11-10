@@ -9,6 +9,6 @@
 /**
  * @brief Load and activate the Interrupt Descriptor Table (IDT).
  */
-void load_idt();
+void load_idt(void);
 
 #endif

@@ -211,7 +211,7 @@ void addCharToBuffer(int8_t ascii, uint8_t showOutput) {
                0);
 }
 
-uint16_t clearBuffer() {
+uint16_t clearBuffer(void) {
   uint16_t aux = SUB_MOD(to_write, to_read, BUFFER_SIZE);
   if (aux == 0)
     return 0;
@@ -252,7 +252,7 @@ int8_t getKeyboardCharacter(enum KEYBOARD_OPTIONS ops) {
   return aux;
 }
 
-uint8_t keyboardHandler() {
+uint8_t keyboardHandler(void) {
   uint8_t scancode = getKeyboardBuffer();
   uint8_t is_pressed = isPressed(scancode);
 

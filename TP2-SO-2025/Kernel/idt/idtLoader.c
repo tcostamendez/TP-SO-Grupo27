@@ -39,7 +39,7 @@ static inline uint16_t get_cs(void) {
 
 static void setup_IDT_entry(int index, uint64_t offset, uint16_t cs_selector);
 
-void load_idt() {
+void load_idt(void) {
   _cli();
 
   idtr.limit = sizeof(idt) - 1;

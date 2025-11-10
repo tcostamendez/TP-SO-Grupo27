@@ -17,7 +17,7 @@ extern Process* shell_proc;
  * @brief Initialize the scheduler.
  * For Round Robin with priorities, initializes ready queues and state.
  */
-void init_scheduler();
+void init_scheduler(void);
 
 /**
  * @brief Add a process to the scheduler READY queue.

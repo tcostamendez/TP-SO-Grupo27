@@ -11,7 +11,7 @@ extern uint8_t soft_irq0;
 
 static unsigned long ticks = 0;
 
-void timer_handler() {
+void timer_handler(void) {
   if (soft_irq0) {
     soft_irq0 = 0; 
     return;
@@ -20,9 +20,9 @@ void timer_handler() {
   // toggleCursor();
 }
 
-int ticks_elapsed() { return ticks; }
+int ticks_elapsed(void) { return ticks; }
 
-int seconds_elapsed() { return ticks / SECONDS_TO_TICKS; }
+int seconds_elapsed(void) { return ticks / SECONDS_TO_TICKS; }
 
 void sleepTicks(uint64_t sleep_t) {
   unsigned long start = ticks;

@@ -8,17 +8,17 @@
 /**
  * @brief Timer interrupt handler (irq0).
  */
-void timer_handler();
+void timer_handler(void);
 /**
  * @brief Get ticks elapsed since boot.
  * @return Number of timer ticks.
  */
-int ticks_elapsed();
+int ticks_elapsed(void);
 /**
  * @brief Get seconds elapsed since boot.
  * @return Seconds since boot.
  */
-int seconds_elapsed();
+int seconds_elapsed(void);
 /**
  * @brief Busy-wait sleep for a number of seconds.
  * @param seconds Seconds to sleep.
