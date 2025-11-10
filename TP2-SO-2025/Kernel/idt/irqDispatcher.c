@@ -10,15 +10,15 @@ static uint8_t int_21(void);
 static uint8_t (*interruptions[])(void) = {int_20, int_21};
 
 uint8_t irqDispatcher(uint64_t irq) {
-  if (irq < 2) {
-    return interruptions[irq]();
-  }
-  return 0;
+	if (irq < 2) {
+		return interruptions[irq]();
+	}
+	return 0;
 }
 
 static uint8_t int_20(void) {
-  timer_handler();
-  return 0;
+	timer_handler();
+	return 0;
 }
 
 static uint8_t int_21(void) { return keyboardHandler(); }

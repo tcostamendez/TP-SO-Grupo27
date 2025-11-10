@@ -24,10 +24,10 @@ same IO port, sequentially – a word transfer will not work).
 */
 
 void play_sound(uint32_t nFrequence) {
-  uint32_t div = 1193180 / nFrequence;
+	uint32_t div = 1193180 / nFrequence;
 
-  setPITMode(0xb6);
-  setPITFrequency(div);
+	setPITMode(0xb6);
+	setPITFrequency(div);
 
-  setSpeaker(SPEAKER_ON);
+	setSpeaker(SPEAKER_ON);
 }
