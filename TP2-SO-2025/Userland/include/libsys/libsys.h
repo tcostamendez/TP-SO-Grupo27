@@ -61,12 +61,6 @@ int   semClose(sem_t s);
 int   semWait(sem_t s);
 int   semPost(sem_t s);
 
-// MVar helpers
-int mvarInit(int readers, int writers);
-int mvarPut(char value);
-char mvarGet(void);
-int mvarClose(void);
-
 // Shutdown helper
 void shutdown(void);
 #endif

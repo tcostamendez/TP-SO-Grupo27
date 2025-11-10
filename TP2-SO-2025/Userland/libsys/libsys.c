@@ -123,12 +123,4 @@ int semWait(sem_t s) { return sys_sem_wait(s); }
 
 int semPost(sem_t s) { return sys_sem_post(s); }
 
-// ==========================
-// MVar wrappers
-// ==========================
-int mvarInit(int readers, int writers) { return sys_mvar_init(readers, writers); }
-int mvarPut(char value) { return sys_mvar_put(value); }
-char mvarGet(void) { return (char)sys_mvar_get(); }
-int mvarClose(void) { return sys_mvar_close(); }
-
 void shutdown(void) { sys_shutdown(); }
