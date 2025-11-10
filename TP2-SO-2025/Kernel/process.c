@@ -510,6 +510,11 @@ int ps(ProcessInfo* process_info) {
         return -1;
     }
 
+    // Initialize all slots with sentinel value (-1) to distinguish from pid 0 (idle process)
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        process_info[i].pid = -1;
+    }
+
     for (int i = 0; i < MAX_PROCESSES; i++) {
         Process* p = process_table[i];
         if (p != NULL && p->state != TERMINATED) {

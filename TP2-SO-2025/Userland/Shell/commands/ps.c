@@ -41,6 +41,7 @@ int _ps(int argc, char *argv[]) {
     int max_name_width = 4; // At least "Name"
     
     for (int i = 0; i < MAX_PROCESSES; i++) {
+        // pid == -1 means uninitialized slot, skip it
         if (process_info[i].pid >= 0 && process_info[i].state != TERMINATED) {
             int pid_width = count_digits(process_info[i].pid);
             int ppid_width = count_digits(process_info[i].ppid);
@@ -69,7 +70,9 @@ int _ps(int argc, char *argv[]) {
 
     // Print process info
     for (int i = 0; i < MAX_PROCESSES; i++) {
-        if (process_info[i].pid > 0 && process_info[i].state != TERMINATED) {
+        // pid == -1 means uninitialized slot, skip it
+        // pid >= 0 includes the idle process (pid = 0)
+        if (process_info[i].pid >= 0 && process_info[i].state != TERMINATED) {
             // Convert state to string
             const char *state_str;
             switch (process_info[i].state) {

@@ -344,15 +344,3 @@ int main() {
   __builtin_unreachable();
   return 0;
 }
-
-int history(void) {
-  uint8_t last = command_history_last;
-  DEC_MOD(last, HISTORY_SIZE);
-  uint8_t i = 0;
-  while (i < HISTORY_SIZE && command_history[last][0] != 0) {
-    printf("%d. %s\n", i, command_history[last]);
-    DEC_MOD(last, HISTORY_SIZE);
-    i++;
-  }
-  return 0;
-}
