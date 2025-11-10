@@ -14,8 +14,8 @@ static void printLongBase(int fd, int64_t num, int base);
 static void printUnsignedLongBase(int fd, uint64_t num, int base);
 
 void puts(const char *str) {
-  printf(str);
-  printf("\n");
+  /* Avoid passing user data as format string */
+  printf("%s\n", str);
 }
 
 void vfprintf(int fd, const char *format, va_list args) {
@@ -67,7 +67,11 @@ void vfprintf(int fd, const char *format, va_list args) {
         break;
       }
       case 's':
-        fprintf(fd, va_arg(args, char *));
+        {
+          char *s = va_arg(args, char *);
+          if (s)
+            sys_write(fd, s, strlen(s));
+        }
         break;
       case '%':
         sys_write(fd, "%", 1);

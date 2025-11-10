@@ -14,7 +14,7 @@
 #define IS_ALPHA(c) ('a' <= (c) && (c) <= 'z')
 #define TO_UPPER(c) (IS_ALPHA(c) ? ((c) - 'a' + 'A') : (c))
 
-#define IS_KEYCODE(c) (c >= ESCAPE_KEY && c <= F12_KEY)
+#define IS_KEYCODE(c) (((c) >= ESCAPE_KEY) && ((c) <= F12_KEY))
 #define IS_PRINTABLE(c)                                                              \
   (IS_KEYCODE((c)) &&                                                                \
    (((c) >= 0x02 && (c) <= 0x0D) || /* 1,2,3,4,5,6,7,8,9,0,-,= */                    \
@@ -151,7 +151,7 @@ static const uint8_t scancodeMap[][2] = {
     /* 0x58 */ {F12_KEY, F12_KEY},
 };
 
-void restoreKeyFnMapNonKernel(SpecialKeyHandler *map) {
+void restoreKeyFnMapNonKernel(const SpecialKeyHandler *map) {
   for (uint8_t i = ESCAPE_KEY; i < F12_KEY; i++) {
     if (KeyFnMap[i].registered_from_kernel == 0) {
       KeyFnMap[i].fn = map[i];
@@ -171,8 +171,7 @@ void clearKeyFnMapNonKernel(SpecialKeyHandler *map) {
 uint8_t registerSpecialKey(enum KEYS scancode, SpecialKeyHandler fn,
                            uint8_t registeredFromKernel) {
   if (IS_KEYCODE(scancode) &&
-      ((registeredFromKernel != 0 ||
-        (registeredFromKernel == 0 && KeyFnMap[scancode].fn == NULL)))) {
+      ((registeredFromKernel != 0 || KeyFnMap[scancode].fn == NULL))) {
     KeyFnMap[scancode].fn = fn;
     KeyFnMap[scancode].registered_from_kernel = registeredFromKernel;
     return 1;
@@ -271,8 +270,6 @@ uint8_t keyboardHandler() {
     if (is_pressed)
       CAPS_LOCK_KEY_PRESSED = !CAPS_LOCK_KEY_PRESSED;
     break;
-
-    return scancode;
   }
 
   if (!(is_pressed && IS_KEYCODE(scancode)))

@@ -13,10 +13,6 @@ struct ArrayCDT {
 };
 
 ArrayADT createArray(uint64_t sizeOfElem) {
-  if (sizeOfElem <= 0) {
-    return NULL;
-  }
-
   ArrayADT newArray = mm_alloc(sizeof(struct ArrayCDT));
   if (newArray == NULL) {
     return NULL;

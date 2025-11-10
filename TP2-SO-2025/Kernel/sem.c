@@ -7,7 +7,7 @@
 
 extern void semLock(uint8_t *lock);
 extern void semUnlock(uint8_t *lock);
-extern void _force_scheduler_interrupt();
+extern void _force_scheduler_interrupt(void);
 
 static semQueue *sQueue = NULL;
 

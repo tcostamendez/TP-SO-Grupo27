@@ -104,8 +104,8 @@ void fillVideoMemory(uint32_t hexColor) {
 
   uint8_t b = (hexColor) & 0xFF, g = (hexColor >> 8) & 0xFF,
           r = (hexColor >> 16) & 0xFF;
-  uint64_t yoffset;
   for (uint16_t y = 0; y < height; y++) {
+    uint64_t yoffset;
     yoffset = (y * VBE_mode_info->pitch);
     for (uint16_t x = 0; x < width; x++) {
       uint64_t offset = (x * ((VBE_mode_info->bpp) >> 3)) + yoffset;

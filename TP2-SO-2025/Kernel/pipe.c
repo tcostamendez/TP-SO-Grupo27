@@ -302,7 +302,7 @@ static Pipe createPipe(void) {
         return NULL;
     }
 
-    newPipe->attached = 0;
+    
 
     nextId++;
 

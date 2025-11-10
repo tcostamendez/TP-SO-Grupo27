@@ -100,7 +100,7 @@ Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, in
  * @brief Obtiene el PID del proceso que se está ejecutando.
  * @return PID del proceso 'RUNNING'.
  */
-int get_pid();
+int get_pid(Process* p);
 
 /**
  * @brief Cede voluntariamente la CPU al scheduler.
@@ -191,8 +191,6 @@ int kill_foreground_processes();
 int wait_child(int child_pid);
 
 int wait_all_children(void);
-
-int get_process_info(ProcessInfo * info, int pid);
 
 void reap_terminated_processes(void);
 

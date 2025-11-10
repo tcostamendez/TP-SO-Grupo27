@@ -50,7 +50,6 @@
 #define SYS_YIELD                    41
 #define SYS_WAIT_PID                 42
 #define SYS_WAIT_FOR_CHILDREN        43
-#define SYS_GET_PROCESS_INFO         44
 
 #define SYS_PIPE_OPEN                45
 #define SYS_PIPE_ATTACH              46

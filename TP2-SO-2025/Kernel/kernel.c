@@ -57,7 +57,6 @@ void *initializeKernelBinary() {
   loadModules(&endOfKernelBinary, moduleAddresses);
 
   clearBSS(&bss, &endOfKernel - &bss);
-
   return getStackBase();
 }
 

@@ -46,7 +46,6 @@ int unblockProcess(int pid);
 void yieldCPU(void);
 int waitPid(int pid);
 int waitForChildren(void);
-int sys_get_process_info(ProcessInfo* info, int pid);
 
 // Pipe helpers (userland wrappers)
 int pipeOpen(void);

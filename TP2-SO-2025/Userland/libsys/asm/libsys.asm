@@ -42,7 +42,6 @@ GLOBAL sys_unblock_process
 GLOBAL sys_yield
 GLOBAL sys_wait_pid
 GLOBAL sys_wait_for_children
-GLOBAL sys_get_process_info
 
 GLOBAL sys_pipe_open
 GLOBAL sys_pipe_close
@@ -118,7 +117,6 @@ GLOBAL sys_get_mvar_value
 %define SYS_YIELD                    41
 %define SYS_WAIT_PID                 42
 %define SYS_WAIT_FOR_CHILDREN        43
-%define SYS_GET_PROCESS_INFO         44
 
 %define SYS_PIPE_OPEN                45
 %define SYS_PIPE_ATTACH              46
@@ -208,7 +206,6 @@ sys_sem_open:         sys_int80 SYS_SEM_OPEN
 sys_sem_close:        sys_int80 SYS_SEM_CLOSE
 sys_sem_wait:         sys_int80 SYS_SEM_WAIT
 sys_sem_post:         sys_int80 SYS_SEM_POST
-sys_get_process_info: sys_int80 SYS_GET_PROCESS_INFO
 sys_shutdown:         sys_int80 SYS_SHUTDOWN
 
 sys_get_memory_stats: sys_int80 SYS_GET_MEMORY_STATS

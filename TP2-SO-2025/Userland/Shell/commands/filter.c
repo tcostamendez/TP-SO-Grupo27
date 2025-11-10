@@ -1,9 +1,6 @@
 #include <stdio.h>
 #include "../shell.h"
 
-#include <stdio.h>
-#include "../shell.h"
-
 #define IS_VOWEL(c) ((c) == 'a' || (c) == 'e' || (c) == 'i' || (c) == 'o' || (c) == 'u' || \
                      (c) == 'A' || (c) == 'E' || (c) == 'I' || (c) == 'O' || (c) == 'U')
 
@@ -25,18 +22,23 @@ int _filter(int argc, char *argv[]) {
     }
     int c;
     int printed_any = 0;
+    int last_was_newline = 0;
     while ((c = getchar()) != EOF) {
         if (c == '\n') {
             putchar('\n');
             printed_any = 1;
+            last_was_newline = 1;
             continue;
         }
+        last_was_newline = 0;
         if (!IS_VOWEL(c)) {
             putchar(c);
             printed_any = 1;
         }
     }
-    if (!printed_any || (printed_any && c == EOF)) {
+    /* If nothing was printed, or the last character wasn't a newline,
+       emit a newline to keep output tidy. */
+    if (!printed_any || !last_was_newline) {
         putchar('\n');
     }
     return 0;

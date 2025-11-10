@@ -120,9 +120,6 @@ int32_t syscallDispatcher(Registers *registers) {
     return sys_wait_pid((int)registers->rdi);
   case SYS_WAIT_FOR_CHILDREN:
     return sys_wait_for_children();
-  case SYS_GET_PROCESS_INFO:
-    return sys_get_process_info((ProcessInfo *)registers->rdi,
-                                (int)registers->rsi);
   case SYS_PIPE_OPEN:
     return sys_pipe_open();
   case SYS_PIPE_CLOSE:
@@ -387,9 +384,6 @@ int sys_wait_pid(int pid) { return wait_child(pid); }
 
 int sys_wait_for_children() { return wait_all_children(); }
 
-int sys_get_process_info(ProcessInfo *info, int pid) {
-  return get_process_info(info, pid);
-}
 
 // ==================================================================
 // Pipe syscalls

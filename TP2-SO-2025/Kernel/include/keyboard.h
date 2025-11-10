@@ -110,7 +110,7 @@ uint8_t keyboardHandler();
 // Printable keys, including tab (`\t`) and return (`\n`) can be obtained via `getKeyboardCharacter` (`getchar`/`sys_read`)
 uint8_t registerSpecialKey(enum KEYS scancode, SpecialKeyHandler fn, uint8_t registeredFromKernel);
 void clearKeyFnMapNonKernel(SpecialKeyHandler * map);
-void restoreKeyFnMapNonKernel(SpecialKeyHandler * map);
+void restoreKeyFnMapNonKernel(const SpecialKeyHandler * map);
 
 void keyboard_sem_init(void);
 #endif

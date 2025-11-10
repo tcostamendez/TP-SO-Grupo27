@@ -27,7 +27,8 @@ uint64_t my_process_inc(uint64_t argc, char *argv[]) {
   uint64_t i;
 
   if (argc != 4) {
-    printf("argc: %d (expected 4)\n", argc);
+    /* argc is a 64-bit value; cast to int for the project's printf */
+    printf("argc: %d (expected 4)\n", (int)argc);
     return -1;
   }
 
@@ -58,9 +59,10 @@ uint64_t my_process_inc(uint64_t argc, char *argv[]) {
     if (use_sem) {
       my_sem_wait(sem);
     }
-    printf("Global before: %ld\nSoy: %d\n", global, my_getpid());
+    /* Print using %d and cast to int to match available printf support */
+    printf("Global before: %d\nSoy: %d\n", (int)global, (int)my_getpid());
     slowInc(&global, inc);
-    printf("Global after: %ld\nSoy: %d\n", global, my_getpid());
+    printf("Global after: %d\nSoy: %d\n", (int)global, (int)my_getpid());
     if (use_sem) {
       my_sem_post(sem);
     }
@@ -116,7 +118,8 @@ uint64_t _test_sync(uint64_t argc, char *argv[]) { //{process_name, value, use_s
     my_wait(pids[i + TOTAL_PAIR_PROCESSES]);
   }
 
-  printf("Final value: %d\n", global);
+  /* Final value may be signed 64-bit; print as int for this printf implementation */
+  printf("Final value: %d\n", (int)global);
 
   return 0;
 }

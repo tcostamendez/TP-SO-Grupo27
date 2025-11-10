@@ -95,9 +95,6 @@ int waitPid(int pid) { return sys_wait_pid(pid); }
 
 int waitForChildren(void) { return sys_wait_for_children(); }
 
-int getProcessInfo(ProcessInfo *info, int pid) {
-  return sys_get_process_info(info, pid);
-}
 
 // ==========================
 // Pipe wrappers

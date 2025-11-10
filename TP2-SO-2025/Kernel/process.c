@@ -13,9 +13,9 @@
 
 
 extern uint64_t stackInit(uint64_t stack_top, ProcessEntryPoint rip, void (*terminator)(), int argc, char*argv[]);
-extern void _force_scheduler_interrupt();
+extern void _force_scheduler_interrupt(void);
 extern void remove_process_from_scheduler(Process* p);
-extern Process* get_running_process();
+extern Process* get_running_process(void);
 
 extern ArrayADT process_priority_table;
 extern Process* running_process;
@@ -516,16 +516,17 @@ int ps(ProcessInfo* process_info) {
     }
 
     for (int i = 0; i < MAX_PROCESSES; i++) {
-        Process* p = process_table[i];
-        if (p != NULL && p->state != TERMINATED) {
-            process_info[i].pid = p->pid;
-            process_info[i].ppid = p->ppid;
-            process_info[i].state = p->state;
-            process_info[i].rsp = p->rsp;
-            process_info[i].stackBase = p->stackBase;
-            process_info[i].priority = p->priority;
-            process_info[i].ground = p->ground;
-            
+        if (process_table[i] != NULL) {
+            Process* p = process_table[i];
+            if (p != NULL && p->state != TERMINATED) {
+                process_info[i].pid = p->pid;
+                process_info[i].ppid = p->ppid;
+                process_info[i].state = p->state;
+                process_info[i].rsp = p->rsp;
+                process_info[i].stackBase = p->stackBase;
+                process_info[i].priority = p->priority;
+                process_info[i].ground = p->ground;
+            }
             if (p->argc > 0 && p->argv != NULL && p->argv[0] != NULL) {
                 my_strcpy(process_info[i].name, p->argv[0]);
             } else {
@@ -533,22 +534,9 @@ int ps(ProcessInfo* process_info) {
             }
         }
     }
+        
+    
     return 0;
-}
-
-int get_process_info(ProcessInfo * info, int pid){
-    if(info == NULL || pid >= MAX_PROCESSES || process_table[pid] != NULL){
-         return -1;
-    }
-    info->pid = process_table[pid]->pid;
-    info->ppid = process_table[pid]->ppid;
-    info->state = process_table[pid]->state;
-    info->rsp = process_table[pid]->rsp;
-    info->stackBase = process_table[pid]->stackBase;
-    info->priority = process_table[pid]->priority;
-    info->ground = process_table[pid]->ground;
-
-    return 1;
 }
 
 

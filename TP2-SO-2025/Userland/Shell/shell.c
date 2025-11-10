@@ -198,14 +198,17 @@ int main() {
 
     signed char c;
 
-    while (buffer_dim < MAX_BUFFER_SIZE && (c = getchar()) != '\n') {
+    /* Reserve one byte for the terminating NUL. Prevent writing at index
+       MAX_BUFFER_SIZE which is out-of-bounds for arrays of size MAX_BUFFER_SIZE. */
+    while (buffer_dim < (MAX_BUFFER_SIZE - 1) && (c = getchar()) != '\n') {
       command_history_buffer[buffer_dim] = c;
       buffer[buffer_dim++] = c;
     }
 
+    /* Ensure NUL termination */
     buffer[buffer_dim] = 0;
 
-    if (buffer_dim == MAX_BUFFER_SIZE) {
+    if (buffer_dim >= (MAX_BUFFER_SIZE - 1)) {
       perror("\e[0;31mShell buffer overflow\e[0m\n");
       buffer[0] = buffer_dim = 0;
       while (c != '\n')

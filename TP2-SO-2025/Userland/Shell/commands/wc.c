@@ -22,6 +22,7 @@ int _wc(int argc, char *argv[]){
         // Si no hubo newlines pero hubo datos, es 1 línea
         lines = 1;
     }
-    printf("Se registraron %d lineas por stdin\n", lines);
+    /* lines is unsigned; cast to int for project's printf */
+    printf("Se registraron %d lineas por stdin\n", (int)lines);
     return 0;
 }

@@ -87,7 +87,6 @@ int sys_unblock_process(int pid);
 void sys_yield(void);
 int sys_wait_pid(int pid);
 int sys_wait_for_children(void);
-int sys_get_process_info(ProcessInfo* info, int pid);
 int sys_ps(ProcessInfo *process_info);
 
 // Pipe syscall prototypes
