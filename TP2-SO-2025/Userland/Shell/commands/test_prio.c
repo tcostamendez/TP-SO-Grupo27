@@ -11,7 +11,11 @@
 
 int64_t prio[TOTAL_PROCESSES] = {LOWEST, MEDIUM, HIGHEST};
 
-uint64_t max_value = 2^64 -1;
+/* Use the canonical constant for maximum uint64_t value. The original
+ * expression used `2^64 -1` which is parsed as (2 ^ 64) - 1 (bitwise XOR)
+ * and triggers a warning; also shifting by 64 is undefined. Prefer the
+ * macro from <stdint.h> or the bitwise inversion idiom. */
+uint64_t max_value = UINT64_MAX;
 
 void zero_to_max() {
   uint64_t value = 0;

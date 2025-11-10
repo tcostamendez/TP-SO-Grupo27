@@ -97,7 +97,10 @@ static char mvarGet(void) {
     return value;
 }
 
-static int mvarClose(void) {
+/* mvarClose is intentionally unused in the parent (children keep running).
+ * Mark it unused to avoid compiler warnings while keeping the helper
+ * available for future cleanup or tests. */
+static int __attribute__((unused)) mvarClose(void) {
     if (mvar == NULL) {
         return -1;
     }

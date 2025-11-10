@@ -51,7 +51,6 @@ docker exec -it "$CONTAINER_NAME" make clean -C /root/ && \
 docker exec -it "$CONTAINER_NAME" make all -C /root/Toolchain && \
 docker exec -it "$CONTAINER_NAME" bash -c "echo '--- CONTENIDO DEL MAKEFILE EN DOCKER ---'; cat /root/Kernel/Makefile; echo '--- FIN DEL MAKEFILE ---'" && \
 
-# --- ¡ESTA ES LA LÍNEA MODIFICADA! ---
 # Pasamos la variable MM=${MEM_MANAGER_ARG} al comando 'make' principal.
 # El makefile de la raíz (el que llama a cd Kernel; make all) pasará esta
 # variable al sub-make.
@@ -64,10 +63,3 @@ if [ $? -ne 0 ]; then
 fi
 
 echo -e "${GREEN}Compilation finished.${NC}"
-
-# 2) Take ownership of the whole Image/ folder (safe & simple)
-sudo chown -R "$USER:$USER" Image
-
-# 3) Set sensible perms: files 644, dirs 755
-find Image -type d -exec chmod 755 {} \;
-find Image -type f -exec chmod 644 {} \;
