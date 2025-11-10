@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include <stdio.h>
 #include <string.h>
 #include <syscalls.h>
@@ -14,8 +16,8 @@ static void printLongBase(int fd, int64_t num, int base);
 static void printUnsignedLongBase(int fd, uint64_t num, int base);
 
 void puts(const char *str) {
-  /* Avoid passing user data as format string */
-  printf("%s\n", str);
+  printf(str);
+  printf("\n");
 }
 
 void vfprintf(int fd, const char *format, va_list args) {
@@ -67,11 +69,7 @@ void vfprintf(int fd, const char *format, va_list args) {
         break;
       }
       case 's':
-        {
-          char *s = va_arg(args, char *);
-          if (s)
-            sys_write(fd, s, strlen(s));
-        }
+        fprintf(fd, va_arg(args, char *));
         break;
       case '%':
         sys_write(fd, "%", 1);

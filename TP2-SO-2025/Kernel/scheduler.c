@@ -71,9 +71,9 @@ static void remove_from_all_priority_queues(Process* p) {
 }
 
 /**
- * @brief Aplicar aging a procesos que han esperado demasiado tiempo.
- * Incrementa el wait_ticks de todos los procesos en READY.
- * Si un proceso alcanza AGING_THRESHOLD, se boosteaa su prioridad.
+ * @brief Apply aging to processes that have waited too long.
+ * Increments wait_ticks for all READY processes.
+ * If a process reaches AGING_THRESHOLD, boost its priority.
  */
 static void apply_aging(void) {
     for (int priority = MIN_PRIORITY; priority <= MAX_PRIORITY - AGING_BOOST; priority++) {
@@ -82,7 +82,7 @@ static void apply_aging(void) {
             continue;
         }
         
-        // Iterar sobre los procesos en esta cola de prioridad
+        // Iterate over processes in this priority queue
         queueBeginCyclicIter(priority_queue);
         Process* p = NULL;
         while (queueNextCyclicIter(priority_queue, &p) != NULL && p != NULL) {
@@ -113,8 +113,8 @@ static void apply_aging(void) {
 }
 
 /**
- * @brief Resetea el contador de aging cuando un proceso se ejecuta.
- * También restaura la prioridad original si fue boosteada.
+ * @brief Reset aging counters when a process runs.
+ * Also restores original priority if it was boosted.
  */
 static void reset_aging(Process* p) {
     if (p == NULL || p == idle_proc) {
@@ -161,9 +161,9 @@ void init_scheduler() {
 }
 
 /**
- * @brief Añade un proceso al scheduler (priority queue).
- * Agrega el proceso a la cola de prioridad correspondiente.
- * Esta función es llamada por create_process() y unblock_process().
+ * @brief Add a process to the scheduler (priority queue).
+ * Enqueues the process into its corresponding priority queue.
+ * Called by create_process() and unblock_process().
  */
 void add_to_scheduler(Process *p) {
     if (p == NULL || p == idle_proc) {
@@ -180,8 +180,8 @@ void add_to_scheduler(Process *p) {
 }
 
 /**
- * @brief Remueve un proceso específico de todas las colas del scheduler.
- * @param p Proceso a remover.
+ * @brief Remove a specific process from all scheduler queues.
+ * @param p Process to remove.
  */
 void remove_process_from_scheduler(Process* p) {
     if (p == NULL || p == idle_proc) {
@@ -200,15 +200,13 @@ void remove_process_from_scheduler(Process* p) {
 }
 
 /**
- * @brief El corazón del scheduler con soporte a prioridades.
- * Es llamado ÚNICAMENTE por el handler de interrupción (ASM).
- * (Las interrupciones ya están deshabilitadas en este punto).
- * 
- * Implementa Round Robin con prioridades:
- * - Busca procesos en orden de prioridad (3 → 2 → 1 → 0)
-
- * 
- * Chequeamos si hay procesos TERMINATED y los saltamos, puede haber alguno por race conditions
+ * @brief Core scheduler logic with priority support.
+ * Called ONLY by the interrupt handler (ASM) with interrupts disabled.
+ *
+ * Implements Round Robin with priorities:
+ * - Searches processes in priority order (3 → 2 → 1 → 0)
+ *
+ * Skips processes in TERMINATED state to avoid races.
  */
 uint64_t schedule(uint64_t current_rsp) {
     if (!scheduler_online) {

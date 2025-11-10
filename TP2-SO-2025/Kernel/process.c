@@ -1,5 +1,7 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "process.h"
 #include "scheduler.h"      
 #include "memory_manager.h" 
@@ -13,22 +15,22 @@
 
 
 extern uint64_t stackInit(uint64_t stack_top, ProcessEntryPoint rip, void (*terminator)(), int argc, char*argv[]);
-extern void _force_scheduler_interrupt(void);
+extern void _force_scheduler_interrupt();
 extern void remove_process_from_scheduler(Process* p);
-extern Process* get_running_process(void);
+extern Process* get_running_process();
 
 extern ArrayADT process_priority_table;
 extern Process* running_process;
 extern Process* shell_proc;
 
-// Tabla global de procesos - almacena punteros a todos los procesos
+// Global process table - stores pointers to all processes
 static Process* process_table[MAX_PROCESSES] = {NULL};
 
 /**
- * @brief Construye el nombre del semáforo para sincronización de wait.
- * @param pid PID del proceso.
- * @return Nombre del semáforo asignado dinámicamente, o NULL si falla.
- *         El caller debe liberar la memoria con mm_free().
+ * @brief Build the semaphore name used to synchronize wait() on a PID.
+ * @param pid PID of the process.
+ * @return Dynamically allocated semaphore name, or NULL on failure.
+ *         Caller must free it with mm_free().
  */
 static char* build_wait_semaphore_name(int pid) {
     if (pid < 0 || pid >= MAX_PROCESSES) {
@@ -83,10 +85,10 @@ static void reparent_children(int dying_pid) {
 }
 
 /**
- * @brief Libera toda la memoria asociada a un proceso.
- * Centraliza toda la lógica de limpieza de procesos.
- * @param p Puntero al proceso a limpiar.
- * @param remove_from_scheduler  Booleano para indicar si el proceso debe ser removido del scheduler.
+ * @brief Free all memory and resources associated with a process.
+ * Centralizes process teardown and cleanup logic.
+ * @param p Process to clean up.
+ * @param remove_from_scheduler Whether the process must be removed from scheduler.
  */
 static void free_process_resources(Process* p, int remove_from_scheduler) {
     if (p == NULL) {
@@ -113,9 +115,9 @@ static void free_process_resources(Process* p, int remove_from_scheduler) {
 }
 
 /**
- * @brief Asigna un PID iterando a través de la tabla de procesos.
- * Busca un slot que esté desocupado (NULL) o que contenga un proceso terminado.
- * @return PID asignado (0-MAX_PROCESSES-1), o -1 si la tabla está llena.
+ * @brief Assign a PID by scanning the process table.
+ * Finds an empty slot (NULL) or one with a TERMINATED process.
+ * @return Assigned PID [0..MAX_PROCESSES-1], or -1 if the table is full.
  */
 static int assign_pid() {
     for (int i = 0; i < MAX_PROCESSES; i++) {
@@ -123,13 +125,13 @@ static int assign_pid() {
             return i;
         }
     }
-    return -1; // Tabla llena
+    return -1; // Table full
 }
 
 /**
- * @brief Agrega un proceso a la tabla global de procesos.
- * @param p Puntero al proceso.
- * @return 0 en éxito, -1 si la tabla está llena.
+ * @brief Add a process into the global process table.
+ * @param p Process pointer.
+ * @return 0 on success, -1 if the table is full.
  */
 static int add_to_process_table(Process* p) {
     if (p == NULL || p->pid < 0 || p->pid >= MAX_PROCESSES) {
@@ -140,8 +142,8 @@ static int add_to_process_table(Process* p) {
 }
 
 /**
- * @brief Remueve un proceso de la tabla global.
- * @param pid PID del proceso a remover.
+ * @brief Remove a process from the global table.
+ * @param pid PID of the process to remove.
  */
 static void remove_from_process_table(int pid) {
     if (pid >= 0 && pid < MAX_PROCESSES) {
@@ -516,17 +518,17 @@ int ps(ProcessInfo* process_info) {
     }
 
     for (int i = 0; i < MAX_PROCESSES; i++) {
-        if (process_table[i] != NULL) {
-            Process* p = process_table[i];
-            if (p != NULL && p->state != TERMINATED) {
-                process_info[i].pid = p->pid;
-                process_info[i].ppid = p->ppid;
-                process_info[i].state = p->state;
-                process_info[i].rsp = p->rsp;
-                process_info[i].stackBase = p->stackBase;
-                process_info[i].priority = p->priority;
-                process_info[i].ground = p->ground;
-            }
+        Process* p = process_table[i];
+        
+        if (p != NULL && p->state != TERMINATED) {
+            process_info[i].pid = p->pid;
+            process_info[i].ppid = p->ppid;
+            process_info[i].state = p->state;
+            process_info[i].rsp = p->rsp;
+            process_info[i].stackBase = p->stackBase;
+            process_info[i].priority = p->priority;
+            process_info[i].ground = p->ground;
+            
             if (p->argc > 0 && p->argv != NULL && p->argv[0] != NULL) {
                 my_strcpy(process_info[i].name, p->argv[0]);
             } else {
@@ -534,9 +536,22 @@ int ps(ProcessInfo* process_info) {
             }
         }
     }
-        
-    
     return 0;
+}
+
+int get_process_info(ProcessInfo * info, int pid){
+    if(info == NULL || pid >= MAX_PROCESSES || process_table[pid] != NULL){
+         return -1;
+    }
+    info->pid = process_table[pid]->pid;
+    info->ppid = process_table[pid]->ppid;
+    info->state = process_table[pid]->state;
+    info->rsp = process_table[pid]->rsp;
+    info->stackBase = process_table[pid]->stackBase;
+    info->priority = process_table[pid]->priority;
+    info->ground = process_table[pid]->ground;
+
+    return 1;
 }
 
 

@@ -8,8 +8,7 @@
 #include "strings.h"
 #include "panic.h"
 
-// Definimos un tamaño de stack por defecto para cada proceso (ej: 8KB)
-// Lo tomamos de tu memory_manager.h (FIRST_FIT_MM_H)
+// Default per-process stack size (8 KiB)
 #define PROCESS_STACK_SIZE (1024 * 8) 
 
 #define MAX_PROCESSES 64
@@ -39,7 +38,7 @@ typedef enum {
 
 /**
  * @brief Process Control Block (PCB)
- * Esta estructura contiene toda la información de un proceso.
+ * Holds all per-process state needed by the kernel scheduler and services.
  */
 typedef struct Process {
     int pid;                    
@@ -77,122 +76,149 @@ typedef struct ProcessInfo {
 } ProcessInfo;
 
 /**
- * @brief Inicializa el Process Control Block (PCB) global.
- * Debe llamarse una sola vez al inicio del kernel.
+ * @brief Initialize global PCB/process subsystem.
+ * Must be called once during kernel initialization.
  */
-void init_pcb();
+void init_pcb(void);
 
 /**
- * @brief Crea un nuevo proceso.
- * * 1. Pide memoria para el stack (usando tu mm_alloc).
- * 2. Pide memoria para la estructura Process.
- * 3. Prepara el "stack falso" inicial (llamando a stackInit en ASM).
- * 4. Lo añade al scheduler.
+ * @brief Create a new process.
+ * 1) Allocates a stack (via mm_alloc).
+ * 2) Allocates and initializes a Process structure.
+ * 3) Builds the initial fake stack (stackInit in ASM).
+ * 4) Enqueues the process into the scheduler.
  *
- * @param name Nombre del proceso.
- * @param entry_point Puntero a la función que debe ejecutar.
- * @param priority Prioridad del proceso (0-3).
- * @return El PID del nuevo proceso, o -1 si hay error.
+ * @param argc Argument count for the entry point.
+ * @param argv Argument vector for the entry point. Strings are copied.
+ * @param entry_point Function to run as process entry.
+ * @param priority Initial process priority [MIN_PRIORITY..MAX_PRIORITY].
+ * @param targets I/O targets by FD index (READ_FD, WRITE_FD, ERR_FD).
+ * @param hasForeground Non-zero for foreground, zero for background.
+ * @return Pointer to the created Process, or NULL on error.
  */
 Process* create_process(int argc, char** argv, ProcessEntryPoint entry_point, int priority, int targets[], int hasForeground);
 
 /**
- * @brief Obtiene el PID del proceso que se está ejecutando.
- * @return PID del proceso 'RUNNING'.
+ * @brief Get a process PID from its descriptor.
+ * @param p Process pointer.
+ * @return PID of the process.
  */
 int get_pid(Process* p);
 
 /**
- * @brief Cede voluntariamente la CPU al scheduler.
- * Llama a la interrupción del timer por software.
+ * @brief Voluntarily yield the CPU.
+ * Triggers a scheduler interrupt.
  */
-void yield_cpu();
+void yield_cpu(void);
 
 
 /**
- * @brief Obtiene la estructura de un proceso por su PID.
- * @param pid PID a buscar.
- * @return Puntero a la struct Process, o NULL si no existe.
+ * @brief Get a process by PID.
+ * @param pid PID to look up.
+ * @return Pointer to Process, or NULL if it does not exist.
  */
 Process* get_process(int pid);
 
 /**
- * @brief Cambia la prioridad de un proceso.
- * @param pid PID del proceso.
- * @param new_priority Nueva prioridad (0-3).
- * @return 0 en éxito, -1 en error.
+ * @brief Change the priority of a process.
+ * @param pid Process PID.
+ * @param new_priority New priority [MIN_PRIORITY..MAX_PRIORITY].
+ * @return 0 on success, -1 on error.
  */
 int set_priority(int pid, int new_priority);
 
 /**
- * @brief Obtiene la prioridad de un proceso.
- * @param pid PID del proceso.
- * @return Prioridad del proceso, o -1 si no existe.
+ * @brief Get the priority of a process.
+ * @param pid Process PID.
+ * @return Priority value, or -1 if process does not exist.
  */
 int get_priority(int pid);
 
 /**
- * @brief Obtiene el proceso actualmente en ejecución.
- * @return Puntero al proceso RUNNING (nunca NULL, siempre hay un proceso corriendo).
+ * @brief Get the currently running process.
+ * @return Pointer to the RUNNING process.
  */
 Process* get_current_process();
 
 /**
- * @brief Cuenta cuántos procesos existen en total.
- * @return Cantidad de procesos activos (READY, RUNNING, BLOCKED).
+ * @brief Count processes in the system.
+ * @return Number of active processes (READY, RUNNING, BLOCKED).
  */
 int get_process_count();
 
 /**
- * @brief Itera sobre todos los procesos en la tabla.
- * @param callback Función que se llama para cada proceso no NULL.
- * @param arg Argumento adicional para pasar al callback.
+ * @brief Iterate over all processes.
+ * @param callback Function called for each non-NULL process.
+ * @param arg Opaque user argument passed to callback.
  */
 void foreach_process(void (*callback)(Process* p, void* arg), void* arg);
 
 /**
- * @brief Lists all processes and returns their information.
- * 
- * @param count Output parameter - will be set to the number of processes returned.
- * @return Array of ProcessInfo structs (caller must free), or NULL if no processes or error.
+ * @brief Populate a snapshot of processes into the provided array.
+ * @param process_info Buffer of size MAX_PROCESSES to be filled with process info.
+ * @return 0 on success, -1 on error.
  */
 int ps(ProcessInfo* process_info); 
 
 /**
- * @brief Termina un proceso dado su PID.
- * Libera sus recursos y lo marca como TERMINATED.
- * @param pid PID del proceso a terminar.
- * @return 0 en éxito, -1 si el proceso no existe.
+ * @brief Terminate a process by PID.
+ * Frees resources and marks the process as TERMINATED.
+ * @param pid PID of the process to terminate.
+ * @return 0 on success, -1 if process does not exist.
  */
 int kill_process(int pid);
 
 /**
- * @brief Establece si un proceso está en foreground o background.
- * @param pid PID del proceso.
- * @param ground FOREGROUND o BACKGROUND.
- * @return 0 en éxito, -1 si el proceso no existe.
+ * @brief Set whether a process runs in foreground or background.
+ * @param pid Process PID.
+ * @param ground FOREGROUND or BACKGROUND.
+ * @return 0 on success, -1 if process does not exist.
  */
 int set_ground(int pid, int ground);
 
 /**
- * @brief Obtiene si un proceso está en foreground o background.
- * @param pid PID del proceso.
- * @return FOREGROUND o BACKGROUND, -1 si no existe.
+ * @brief Get whether a process runs in foreground or background.
+ * @param pid Process PID.
+ * @return FOREGROUND or BACKGROUND, or -1 if it does not exist.
  */
 int get_ground(int pid);
 
 /**
- * @brief Mata el proceso actualmente en ejecución si está en foreground.
- * Esta función es utilizada cuando se presiona Ctrl+C.
- * @return 0 si el proceso fue matado o no estaba en foreground, -1 en error.
+ * @brief Kill the current process if it is in foreground.
+ * Typically used to handle Ctrl+C.
+ * @return 0 if killed or not in foreground, -1 on error.
  */
 int kill_foreground_processes();
 
+/**
+ * @brief Wait for a specific child to terminate.
+ * @param child_pid Child PID to wait for.
+ * @return 0 on success, -1 on error.
+ */
 int wait_child(int child_pid);
 
+/**
+ * @brief Wait for all children of the current process to terminate.
+ * @return 0 on success, -1 on error.
+ */
 int wait_all_children(void);
 
+/**
+ * @brief Get process info for a specific PID.
+ * @param info Output structure to fill.
+ * @param pid PID to query.
+ * @return 1 on success, -1 on error.
+ */
+int get_process_info(ProcessInfo * info, int pid);
+
+/**
+ * @brief Reap (free) all processes already marked as TERMINATED.
+ */
 void reap_terminated_processes(void);
 
+/**
+ * @brief Terminator routine invoked when a process returns from its entry point.
+ * Performs cleanup and yields CPU forever.
+ */
 void process_terminator(void);
 #endif 

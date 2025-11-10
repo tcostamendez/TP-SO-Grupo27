@@ -1,3 +1,8 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
+#include <stdio.h>
+#include "../shell.h"
+
 #include <stdio.h>
 #include "../shell.h"
 
@@ -22,23 +27,18 @@ int _filter(int argc, char *argv[]) {
     }
     int c;
     int printed_any = 0;
-    int last_was_newline = 0;
     while ((c = getchar()) != EOF) {
         if (c == '\n') {
             putchar('\n');
             printed_any = 1;
-            last_was_newline = 1;
             continue;
         }
-        last_was_newline = 0;
         if (!IS_VOWEL(c)) {
             putchar(c);
             printed_any = 1;
         }
     }
-    /* If nothing was printed, or the last character wasn't a newline,
-       emit a newline to keep output tidy. */
-    if (!printed_any || !last_was_newline) {
+    if (!printed_any || (printed_any && c == EOF)) {
         putchar('\n');
     }
     return 0;

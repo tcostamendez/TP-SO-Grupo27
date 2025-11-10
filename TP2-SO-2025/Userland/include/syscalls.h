@@ -7,8 +7,9 @@
 
 #define MAX_PROCESS_NAME 32
 
-// Enum of registerable keys.
-// Note: Does not include TAB or RETURN
+// ======================
+// Registerable keys (excludes TAB and RETURN)
+// ======================
 enum REGISTERABLE_KEYS {
     ESCAPE_KEY        = 0x01,
     KEY_1             = 0x02,
@@ -97,12 +98,14 @@ enum REGISTERABLE_KEYS {
     F12_KEY           = 0x58
 };
 
-// Enumeración de los estados de un proceso
+/**
+ * @brief Process states as visible to userland.
+ */
 typedef enum {
     READY,
     RUNNING,
     BLOCKED,
-    TERMINATED // Usaremos este estado para 'limpiar' procesos
+    TERMINATED
 } ProcessState;
 
 typedef struct {
@@ -111,14 +114,14 @@ typedef struct {
     size_t occupied_memory;
 } MemoryStats;
 
-// Límite de procesos que podemos tener.
+// Process limits
 #define MAX_PROCESSES 64
 #define MAX_CHILDREN 32
 
-// Nombre máximo para un proceso (debugging)
+// Maximum process name length (debugging)
 #define MAX_PROCESS_NAME 32
 
-// Prioridades del proceso
+// Process priorities
 #define MIN_PRIORITY 0
 #define MAX_PRIORITY 3
 #define DEFAULT_PRIORITY 0
@@ -134,11 +137,15 @@ typedef struct ProcessInfo {
     int ground; 
 } ProcessInfo;
 
-// Linux syscall prototypes
+// ======================
+// Linux syscalls
+// ======================
 int32_t sys_write(int64_t fd, const void * buf, int64_t count);
 int32_t sys_read(int64_t fd, void * buf, int64_t count);
 
-// Custom syscall prototypes
+// ======================
+// Custom syscalls
+// ======================
 /* SYS_START_BEEP = 10 */
 int32_t sys_start_beep(uint32_t nFrequence);
 /* SYS_STOP_BEEP = 11 */
@@ -158,7 +165,9 @@ int32_t sys_clear_screen(void);
 /* SYS_CLEAR_INPUT_BUFFER = 18 */
 int32_t sys_clear_input_buffer(void);
 
-// Date syscall prototypes
+// ======================
+// Date syscalls
+// ======================
 /* SYS_HOUR = 19 */
 int32_t sys_hour(int * hour);
 /* SYS_MINUTE = 20 */
@@ -190,9 +199,11 @@ void * sys_malloc(uint64_t size);
 
 void sys_free(void * ap);
 
-void sys_get_memory_stats(int * total, int * avaliable, int * used);
+void sys_get_memory_stats(int * total, int * available, int * used);
 
+// ======================
 // Process management syscalls (34-43)
+// ======================
 int sys_create_process(int argc, char** argv, void (*entry_point)(int, char**), int priority, int * targets, int hasForeground);
 int sys_get_pid(void);
 int sys_kill_process(int pid);
@@ -204,22 +215,30 @@ void sys_yield(void);
 int sys_wait_pid(int pid);
 int sys_wait_for_children(void);
 
+// ======================
 // Pipe syscalls (44-48)
+// ======================
 int sys_pipe_open(void);
 int sys_pipe_close(uint8_t id);
 int sys_set_read_target(uint8_t id);
 int sys_set_write_target(uint8_t id);
 
+// ======================
 // Semaphore syscalls (49-52)
+// ======================
 void * sys_sem_open(const char *name, uint16_t value);
 int sys_sem_close(void *sem);
 int sys_sem_wait(void *sem);
 int sys_sem_post(void *sem);
 
+// ======================
 // Shutdown syscall (53)
+// ======================
 void sys_shutdown(void);
 
+// ======================
 // Shared MVar value storage (minimal kernel support for userland MVar)
+// ======================
 void sys_set_mvar_value(char value);
 char sys_get_mvar_value(void);
 

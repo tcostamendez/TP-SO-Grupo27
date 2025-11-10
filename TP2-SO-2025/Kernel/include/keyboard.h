@@ -102,15 +102,46 @@ enum KEYBOARD_OPTIONS {
 };
 
 int8_t getKeyboardCharacter(enum KEYBOARD_OPTIONS keyboard_options);
+/**
+ * @brief Append a character to the keyboard buffer and optionally echo it.
+ * @param ascii ASCII character to add.
+ * @param showOutput Non-zero to display character on screen.
+ */
 void addCharToBuffer(int8_t ascii, uint8_t showOutput);
+/**
+ * @brief Clear the keyboard input buffer.
+ * @return Number of characters cleared.
+ */
 uint16_t clearBuffer();
+/**
+ * @brief Keyboard IRQ handler (reads scancode and updates buffer/state).
+ * @return 1 if handled, 0 otherwise.
+ */
 uint8_t keyboardHandler();
 
 // All special keys *EXCEPT* for TAB and RETURN can be registered
 // Printable keys, including tab (`\t`) and return (`\n`) can be obtained via `getKeyboardCharacter` (`getchar`/`sys_read`)
+/**
+ * @brief Register a special key handler (non-printable) optionally from kernel.
+ * @param scancode Key scancode to handle.
+ * @param fn Callback to invoke.
+ * @param registeredFromKernel Non-zero if registered by kernel code.
+ * @return 0 on success, non-zero on error.
+ */
 uint8_t registerSpecialKey(enum KEYS scancode, SpecialKeyHandler fn, uint8_t registeredFromKernel);
+/**
+ * @brief Clear non-kernel key handlers into the provided snapshot map.
+ * @param map Output buffer to store current handlers.
+ */
 void clearKeyFnMapNonKernel(SpecialKeyHandler * map);
+/**
+ * @brief Restore non-kernel key handlers from a snapshot map.
+ * @param map Input buffer with handlers to restore.
+ */
 void restoreKeyFnMapNonKernel(const SpecialKeyHandler * map);
 
+/**
+ * @brief Initialize keyboard semaphore(s) used for synchronization.
+ */
 void keyboard_sem_init(void);
 #endif

@@ -1,5 +1,7 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 /**
  * Note: Certain functions within this file are HOT PATHS.
  * They have been optimized as best as possible.
@@ -66,7 +68,7 @@ uint32_t getBackgroundColor(void) { return background_color; }
 
 uint16_t getXBufferPosition(void) { return xBufferPosition; }
 
-static char buffer[64] = {0};
+static char buffer[64] = {'0'};
 
 static inline void renderFromBitmap(char *bitmap, uint64_t xBase,
                                     uint64_t yBase);
@@ -84,13 +86,13 @@ static inline int64_t strlen(const char *str);
 // * Uses inline to avoid stack frames on hot paths *
 static inline void renderFromBitmap(char *bitmap, uint64_t xBase,
                                     uint64_t yBase) {
+  int xs, xo;
   for (int x = 0; x < glyphSizeX * fontSize; x++) {
-    int xs, xo;
     xs = xBase + x;
     xo = x / fontSize;
     for (int y = 0; y < glyphSizeY * fontSize; y++) {
       // Read into char * slice and mask
-      putPixel((*(bitmap + (y / fontSize)) & (1 << xo)) ? text_color
+      putPixel(*(bitmap + (y / fontSize)) & (1 << xo) ? text_color
                                                       : background_color,
                xs, yBase + y);
     }

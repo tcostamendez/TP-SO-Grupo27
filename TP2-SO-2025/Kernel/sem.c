@@ -1,5 +1,7 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "sem.h"
 #include "interrupts.h"
 #include "process.h"
@@ -7,7 +9,7 @@
 
 extern void semLock(uint8_t *lock);
 extern void semUnlock(uint8_t *lock);
-extern void _force_scheduler_interrupt(void);
+extern void _force_scheduler_interrupt();
 
 static semQueue *sQueue = NULL;
 

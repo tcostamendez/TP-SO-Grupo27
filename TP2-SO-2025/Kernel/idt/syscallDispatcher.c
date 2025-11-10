@@ -1,5 +1,7 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "buddy_system_mm.h"
 #include "fd.h"
 #include "first_fit_mm.h"
@@ -151,9 +153,9 @@ int32_t syscallDispatcher(Registers *registers) {
   }
 }
 
-// ==================================================================
+// ======================
 // Linux syscalls
-// ==================================================================
+// ======================
 
 int32_t sys_write(int32_t fd, char *__user_buf, int32_t count) {
   // Route through FD layer for transparent pipe/terminal behavior
@@ -166,9 +168,9 @@ int32_t sys_read(int32_t fd, signed char *__user_buf, int32_t count) {
   return fd_read(fd, (uint8_t *)__user_buf, count);
 }
 
-// ==================================================================
+// ======================
 // Custom system calls
-// ==================================================================
+// ======================
 
 int32_t sys_start_beep(uint32_t nFrequence) {
   play_sound(nFrequence);
@@ -211,9 +213,9 @@ uint16_t sys_window_width(void) { return getWindowWidth(); }
 
 uint16_t sys_window_height(void) { return getWindowHeight(); }
 
-// ==================================================================
+// ======================
 // Date system calls
-// ==================================================================
+// ======================
 
 int32_t sys_hour(int *hour) {
   *hour = getHour();
@@ -230,9 +232,9 @@ int32_t sys_second(int *second) {
   return 0;
 }
 
-// ==================================================================
+// ======================
 // Draw system calls
-// ==================================================================
+// ======================
 
 int32_t sys_circle(uint32_t hexColor, uint64_t topLeftX, uint64_t topLeftY,
                    uint64_t diameter) {
@@ -253,9 +255,9 @@ int32_t sys_fill_video_memory(uint32_t hexColor) {
   return 0;
 }
 
-// ==================================================================
+// ======================
 // Custom exec system call
-// ==================================================================
+// ======================
 
 int32_t sys_exec(int32_t (*fnPtr)(void)) {
   clear();
@@ -280,26 +282,26 @@ int32_t sys_exec(int32_t (*fnPtr)(void)) {
   return aux;
 }
 
-// ==================================================================
+// ======================
 // Custom keyboard system calls
-// ==================================================================
+// ======================
 
 int32_t sys_register_key(uint8_t scancode, SpecialKeyHandler fn) {
   registerSpecialKey(scancode, fn, 0);
   return 0;
 }
 
-// ==================================================================
+// ======================
 // Sleep system calls
-// ==================================================================
+// ======================
 int32_t sys_sleep_milis(uint32_t milis) {
   sleepTicks((milis * SECONDS_TO_TICKS) / 1000);
   return 0;
 }
 
-// ==================================================================
+// ======================
 // Register snapshot system calls
-// ==================================================================
+// ======================
 int32_t sys_get_register_snapshot(int64_t *registers) {
   if (register_snapshot_taken == 0)
     return 0;
@@ -316,9 +318,9 @@ int32_t sys_get_register_snapshot(int64_t *registers) {
 int32_t sys_get_character_without_display(void) {
   return getKeyboardCharacter(0);
 }
-// ==================================================================
-// Memory managment system calls
-// ==================================================================
+// ======================
+// Memory management system calls
+// ======================
 
 void *sys_malloc(size_t size) { return (void *)mm_alloc(size); }
 
@@ -331,9 +333,9 @@ void sys_get_memory_stats(int *total, int *available, int *used) {
   *used = aux.occupied_memory;
 }
 
-// ==================================================================
+// ======================
 // Process system calls
-// ==================================================================
+// ======================
 
 int sys_create_process(int argc, char **argv, ProcessEntryPoint entryPoint,
                        int priority, int targets[], int hasForeground) {
@@ -384,10 +386,13 @@ int sys_wait_pid(int pid) { return wait_child(pid); }
 
 int sys_wait_for_children() { return wait_all_children(); }
 
+int sys_get_process_info(ProcessInfo *info, int pid) {
+  return get_process_info(info, pid);
+}
 
-// ==================================================================
+// ======================
 // Pipe syscalls
-// ==================================================================
+// ======================
 int sys_pipe_open(void) { return openPipe(); }
 
 
@@ -423,9 +428,9 @@ int sys_set_write_target_sys(uint8_t id) {
   return setWriteTarget(p->targetByFd, id);
 }
 
-// ==================================================================
+// ======================
 // Semaphore syscalls
-// ==================================================================
+// ====================== 
 Sem sys_sem_open(const char *name, uint16_t value) {
   return semOpen(name, value);
 }
@@ -436,9 +441,9 @@ int sys_sem_wait(Sem sem) { return semWait(sem); }
 
 int sys_sem_post(Sem sem) { return semPost(sem); }
 
-// ==================================================================
-// Shared MVar value storage (minimal kernel support for userland MVar)
-// ==================================================================
+// ======================
+// Shared MVar syscalls
+// ======================
 void sys_set_mvar_value(char value) { set_mvar_value(value); }
 
 char sys_get_mvar_value(void) { return get_mvar_value(); }

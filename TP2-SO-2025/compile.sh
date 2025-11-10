@@ -63,3 +63,10 @@ if [ $? -ne 0 ]; then
 fi
 
 echo -e "${GREEN}Compilation finished.${NC}"
+
+# 2) Take ownership of the whole Image/ folder (safe & simple)
+sudo chown -R "$USER:$USER" Image
+
+# 3) Set sensible perms: files 644, dirs 755
+find Image -type d -exec chmod 755 {} \;
+find Image -type f -exec chmod 644 {} \;

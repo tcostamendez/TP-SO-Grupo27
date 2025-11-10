@@ -18,14 +18,31 @@ extern void (*_exceptionHandler08) (void);
 extern void (*_exceptionHandler0D) (void); 
 extern void (*_exceptionHandler0E) (void); 
 
+/**
+ * @brief Disable interrupts (CLI).
+ */
 void _cli(void);
 
+/**
+ * @brief Enable interrupts (STI).
+ */
 void _sti(void);
 
+/**
+ * @brief Halt CPU until next interrupt (HLT).
+ */
 void _hlt(void);
 
+/**
+ * @brief Mask IRQ lines on master PIC.
+ * @param mask Bitmask (1 = masked/disabled).
+ */
 void picMasterMask(uint8_t mask);
 
+/**
+ * @brief Mask IRQ lines on slave PIC.
+ * @param mask Bitmask (1 = masked/disabled).
+ */
 void picSlaveMask(uint8_t mask);
 
 #define TIMER_PIC_MASTER 0xFE

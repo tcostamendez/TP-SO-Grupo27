@@ -10,6 +10,9 @@
 #include "shared_mvar.h"
 
 
+/**
+ * @brief CPU register snapshot passed from the syscall entry stub.
+ */
 typedef struct {
     int64_t r15;
 	int64_t r14;
@@ -29,11 +32,22 @@ typedef struct {
 	int64_t rip;
 } Registers;
 
+/**
+ * @brief Dispatch a system call based on the value in RAX.
+ * @param registers Saved register frame from userland.
+ * @return Syscall result as 32-bit signed integer.
+ */
 int32_t syscallDispatcher(Registers * registers);
 
+// ======================
+// Linux syscalls
+// ======================
 int32_t sys_write(int32_t fd, char * __user_buf, int32_t count);
 int32_t sys_read(int32_t fd, signed char * __user_buf, int32_t count);
 
+// ======================
+// Custom system calls
+// ======================
 int32_t sys_start_beep(uint32_t nFrequence);
 int32_t sys_stop_beep(void);
 int32_t sys_fonts_text_color(uint32_t color);
@@ -47,36 +61,56 @@ int32_t sys_clear_input_buffer(void);
 uint16_t sys_window_width(void);
 uint16_t sys_window_height(void);
 
+// ======================
+// Date system calls
+// ======================
 int32_t sys_hour(int * hour);
 int32_t sys_minute(int * minute);
 int32_t sys_second(int * second);
 
 
+// ======================
+// Draw system calls
+// ======================
 int32_t sys_circle(uint32_t hexColor, uint64_t topLeftX, uint64_t topLeftY, uint64_t diameter);
 int32_t sys_rectangle(uint32_t color, uint64_t width_pixels, uint64_t height_pixels, uint64_t initial_pos_x, uint64_t initial_pos_y);
 int32_t sys_fill_video_memory(uint32_t hexColor);
 
-// Custom exec syscall prototype
+// ======================
+// Exec syscall
+// ======================
 int32_t sys_exec(int32_t (*fnPtr)(void));
 
-// Custom keyboard syscall prototypes
+// ======================
+// Keyboard syscalls
+// ======================
 int32_t sys_register_key(uint8_t scancode, SpecialKeyHandler fn);
 
-// System sleep
+// ======================
+// Sleep syscalls
+// ======================
 int32_t sys_sleep_milis(uint32_t milis);
 
-// Register snapshot
+// ======================
+// Register snapshot syscalls
+// ======================
 int32_t sys_get_register_snapshot(int64_t * registers);
 
-// Get character without showing
+// ======================
+// Input syscalls
+// ======================
 int32_t sys_get_character_without_display(void);
 
-// Memory manager syscalls prototypes
+// ======================
+// Memory management syscalls
+// ======================
 void * sys_malloc(uint64_t size);
 void sys_free(void * ap);
 void sys_get_memory_stats(int * total, int * available, int * used);
 
-// Process management syscalls prototypes
+// ======================
+// Process management syscalls
+// ======================
 int sys_create_process(int argc, char** argv, ProcessEntryPoint entry_point, int priority, int targets[], int hasForeground);
 int sys_get_pid(void);
 int sys_kill(int pid);
@@ -89,19 +123,25 @@ int sys_wait_pid(int pid);
 int sys_wait_for_children(void);
 int sys_ps(ProcessInfo *process_info);
 
-// Pipe syscall prototypes
+// ======================
+// Pipe syscalls
+// ======================	
 int sys_pipe_open(void);
 int sys_pipe_close(uint8_t id);
 int sys_set_read_target_sys(uint8_t id);
 int sys_set_write_target_sys(uint8_t id);
 
-// Semaphore syscall prototypes (opaque Sem handle)
+// ======================
+// Semaphore syscalls
+// ======================
 Sem sys_sem_open(const char *name, uint16_t value);
 int sys_sem_close(Sem sem);
 int sys_sem_wait(Sem sem);
 int sys_sem_post(Sem sem);
 
-// Shared MVar value storage (minimal kernel support)
+// ======================
+// Shared MVar syscalls
+// ======================
 void sys_set_mvar_value(char value);
 char sys_get_mvar_value(void);
 

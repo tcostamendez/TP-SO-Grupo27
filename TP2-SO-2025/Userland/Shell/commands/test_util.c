@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include <stdint.h>
 #include <stdio.h>
 #include "syscalls.h"
@@ -69,8 +71,7 @@ void endless_loop_print(uint64_t wait) {
   int64_t pid = my_getpid();
 
   while (1) {
-    /* Print pid as int to match project's printf support */
-    printf("%d ", (int)pid);
+    printf("%d ", pid);
     bussy_wait(wait);
   }
 }

@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "stdio.h"
 #include "string.h"
 #include "stdlib.h"
@@ -22,7 +24,6 @@ int _wc(int argc, char *argv[]){
         // Si no hubo newlines pero hubo datos, es 1 línea
         lines = 1;
     }
-    /* lines is unsigned; cast to int for project's printf */
-    printf("Se registraron %d lineas por stdin\n", (int)lines);
+    printf("Se registraron %d lineas por stdin\n", lines);
     return 0;
 }

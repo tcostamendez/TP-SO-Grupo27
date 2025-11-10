@@ -6,9 +6,9 @@
 #include <string.h>
 #include <stdint.h>
 
-// ==========================
+// ======================
 // MVar implementation (userland)
-// ==========================
+// ====================
 #define MVAR_SEM_EMPTY_NAME "mvar_empty"
 #define MVAR_SEM_FULL_NAME "mvar_full"
 
@@ -113,9 +113,9 @@ static int __attribute__((unused)) mvarClose(void) {
     return 0;
 }
 
-// ==========================
+// ======================
 // Helper functions
-// ==========================
+// ====================
 static void random_delay(void) {
 	// Busy wait with random number of yields
 	// Use a wide range with occasional longer delays to break synchronization

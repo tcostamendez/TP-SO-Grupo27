@@ -1,5 +1,7 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include <cursor.h>
 #include <fonts.h>
 #include <interrupts.h>
@@ -14,7 +16,7 @@
 #define IS_ALPHA(c) ('a' <= (c) && (c) <= 'z')
 #define TO_UPPER(c) (IS_ALPHA(c) ? ((c) - 'a' + 'A') : (c))
 
-#define IS_KEYCODE(c) (((c) >= ESCAPE_KEY) && ((c) <= F12_KEY))
+#define IS_KEYCODE(c) (c >= ESCAPE_KEY && c <= F12_KEY)
 #define IS_PRINTABLE(c)                                                              \
   (IS_KEYCODE((c)) &&                                                                \
    (((c) >= 0x02 && (c) <= 0x0D) || /* 1,2,3,4,5,6,7,8,9,0,-,= */                    \
@@ -171,7 +173,8 @@ void clearKeyFnMapNonKernel(SpecialKeyHandler *map) {
 uint8_t registerSpecialKey(enum KEYS scancode, SpecialKeyHandler fn,
                            uint8_t registeredFromKernel) {
   if (IS_KEYCODE(scancode) &&
-      ((registeredFromKernel != 0 || KeyFnMap[scancode].fn == NULL))) {
+      ((registeredFromKernel != 0 ||
+        (registeredFromKernel == 0 && KeyFnMap[scancode].fn == NULL)))) {
     KeyFnMap[scancode].fn = fn;
     KeyFnMap[scancode].registered_from_kernel = registeredFromKernel;
     return 1;
@@ -270,6 +273,8 @@ uint8_t keyboardHandler() {
     if (is_pressed)
       CAPS_LOCK_KEY_PRESSED = !CAPS_LOCK_KEY_PRESSED;
     break;
+
+    return scancode;
   }
 
   if (!(is_pressed && IS_KEYCODE(scancode)))

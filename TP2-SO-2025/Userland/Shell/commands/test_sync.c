@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include <stdint.h>
 #include <stdio.h>
 #include "syscalls.h"
@@ -27,8 +29,7 @@ uint64_t my_process_inc(uint64_t argc, char *argv[]) {
   uint64_t i;
 
   if (argc != 4) {
-    /* argc is a 64-bit value; cast to int for the project's printf */
-    printf("argc: %d (expected 4)\n", (int)argc);
+    printf("argc: %d (expected 4)\n", argc);
     return -1;
   }
 
@@ -59,10 +60,9 @@ uint64_t my_process_inc(uint64_t argc, char *argv[]) {
     if (use_sem) {
       my_sem_wait(sem);
     }
-    /* Print using %d and cast to int to match available printf support */
-    printf("Global before: %d\nSoy: %d\n", (int)global, (int)my_getpid());
+    printf("Global before: %ld\nSoy: %d\n", global, my_getpid());
     slowInc(&global, inc);
-    printf("Global after: %d\nSoy: %d\n", (int)global, (int)my_getpid());
+    printf("Global after: %ld\nSoy: %d\n", global, my_getpid());
     if (use_sem) {
       my_sem_post(sem);
     }
@@ -118,8 +118,7 @@ uint64_t _test_sync(uint64_t argc, char *argv[]) { //{process_name, value, use_s
     my_wait(pids[i + TOTAL_PAIR_PROCESSES]);
   }
 
-  /* Final value may be signed 64-bit; print as int for this printf implementation */
-  printf("Final value: %d\n", (int)global);
+  printf("Final value: %d\n", global);
 
   return 0;
 }

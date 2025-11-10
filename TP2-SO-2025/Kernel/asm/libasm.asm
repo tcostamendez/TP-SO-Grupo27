@@ -38,11 +38,11 @@ stackInit:
     push rbp
     mov rbp, rsp
 
-    ; Alineamos el stack a 16 bytes
+    ; Align stack to 16 bytes
     and rdi, -16
     mov rax, rdi
 
-    ; Preparamos frame para iretq (5 valores que iretq espera)
+    ; Prepare frame for iretq (5 values expected by iretq)
     sub rax, 8
     mov QWORD [rax], 0x0      ; SS
     sub rax, 8
@@ -54,7 +54,7 @@ stackInit:
     sub rax, 8
     mov QWORD [rax], _process_wrapper 
 
-    ; El orden es: r15, r14, r13, r12, r11, r10, r9, r8, rsi, rdi, rbp, rdx, rcx, rbx, rax
+    ; Register save order: r15, r14, r13, r12, r11, r10, r9, r8, rsi, rdi, rbp, rdx, rcx, rbx, rax
     sub rax, 8
     mov QWORD [rax], 0        ; rax
     sub rax, 8

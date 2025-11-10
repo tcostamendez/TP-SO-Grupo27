@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include <stdint.h>
 #include <stdio.h>
 #include <libsys.h>
@@ -11,18 +13,13 @@
 
 int64_t prio[TOTAL_PROCESSES] = {LOWEST, MEDIUM, HIGHEST};
 
-/* Use the canonical constant for maximum uint64_t value. The original
- * expression used `2^64 -1` which is parsed as (2 ^ 64) - 1 (bitwise XOR)
- * and triggers a warning; also shifting by 64 is undefined. Prefer the
- * macro from <stdint.h> or the bitwise inversion idiom. */
-uint64_t max_value = UINT64_MAX;
+uint64_t max_value = (2^64) -1;
 
 void zero_to_max() {
   uint64_t value = 0;
   while (value++ != max_value);
 
-  /* my_getpid() returns a pid type; print as int for this printf implementation */
-  printf("PROCESS %d DONE!\n", (int)my_getpid());
+  printf("PROCESS %d DONE!\n", my_getpid());
 }
 
 uint64_t _test_prio(uint64_t argc, char *argv[]) {
@@ -31,8 +28,7 @@ uint64_t _test_prio(uint64_t argc, char *argv[]) {
   char *ztm_argv[] = {0};
   uint64_t i;
 
-  /* argc is a 64-bit value here; project printf supports %d, so cast to int */
-  printf("argc: %d\n", (int)argc);
+  printf("argc: %d\n", argc);
   if (argc != 2)
     return -1;
 
@@ -56,7 +52,7 @@ uint64_t _test_prio(uint64_t argc, char *argv[]) {
   for (i = 0; i < TOTAL_PROCESSES; i++) {
     pids[i] = my_create_process(zero_to_max, 0, ztm_argv);
     my_nice(pids[i], prio[i]);
-    printf("PROCESS %d NEW PRIORITY: %d\n", (int)pids[i], (int)prio[i]);
+    printf("PROCESS %d NEW PRIORITY: %d\n", pids[i], prio[i]);
   }
 
   // Expect the priorities to take effect
@@ -70,7 +66,7 @@ uint64_t _test_prio(uint64_t argc, char *argv[]) {
     pids[i] = my_create_process(zero_to_max, 0, ztm_argv);
     my_block(pids[i]);
     my_nice(pids[i], prio[i]);
-    printf("PROCESS %d NEW PRIORITY: %d\n", (int)pids[i], (int)prio[i]);
+    printf("PROCESS %d NEW PRIORITY: %d\n", pids[i], prio[i]);
   }
 
   for (i = 0; i < TOTAL_PROCESSES; i++)

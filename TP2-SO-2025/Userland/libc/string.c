@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -79,4 +81,4 @@ char *strtok(char *s1, const char *s2) {
   return s1;
 }
 
-void perror(const char *s1) { fprintf(FD_STDERR, "%s", s1); }
+void perror(const char *s1) { fprintf(FD_STDERR, s1); }

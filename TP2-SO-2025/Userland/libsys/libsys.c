@@ -96,9 +96,9 @@ int waitPid(int pid) { return sys_wait_pid(pid); }
 int waitForChildren(void) { return sys_wait_for_children(); }
 
 
-// ==========================
+// ======================
 // Pipe wrappers
-// ==========================
+// ======================
 int pipeOpen(void) { return sys_pipe_open(); }
 
 int pipeClose(uint8_t id) { return sys_pipe_close(id); }
@@ -107,9 +107,9 @@ int setReadTarget(uint8_t id) { return sys_set_read_target(id); }
 
 int setWriteTarget(uint8_t id) { return sys_set_write_target(id); }
 
-// ==========================
+// ======================
 // Semaphore wrappers
-// ==========================
+// ======================
 sem_t semOpen(const char *name, uint16_t initialValue) {
   return (sem_t)sys_sem_open(name, initialValue);
 }
@@ -120,9 +120,11 @@ int semWait(sem_t s) { return sys_sem_wait(s); }
 
 int semPost(sem_t s) { return sys_sem_post(s); }
 
-void shutdown(void) { sys_shutdown(); }
-
-/* MVar value wrappers (kernel provides a minimal shared MVar value API) */
+// ======================
+// Shared MVar value wrappers
+// ======================
 void setMVarValue(char value) { sys_set_mvar_value(value); }
 
 char getMVarValue(void) { return sys_get_mvar_value(); }
+
+void shutdown(void) { sys_shutdown(); }

@@ -5,6 +5,11 @@
 
 #include <stdint.h>
 
+/**
+ * @brief Parse ANSI escape sequence starting at string[i] and apply effects.
+ * @param string Input string containing escape sequences.
+ * @param i In/out index into string; advanced past the sequence.
+ */
 void parseANSI(const char * string, int * i);
 
 #endif

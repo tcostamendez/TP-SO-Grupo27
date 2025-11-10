@@ -14,68 +14,64 @@ extern Process* idle_proc;
 extern Process* shell_proc;
 
 /**
- * @brief Inicializa el scheduler.
- * (Para Round Robin, esto inicializa la lista/array de procesos).
+ * @brief Initialize the scheduler.
+ * For Round Robin with priorities, initializes ready queues and state.
  */
 void init_scheduler();
 
 /**
- * @brief Añade un proceso a la cola de 'READY' del scheduler.
- * @param p Puntero al PCB del proceso.
+ * @brief Add a process to the scheduler READY queue.
+ * @param p Process control block pointer.
  */
 void add_to_scheduler(Process *p);
 
 /**
- * @brief Remueve un proceso específico del scheduler (de cualquier priority queue).
- * @param p Puntero al PCB del proceso a remover.
+ * @brief Remove a specific process from the scheduler queues.
+ * @param p Process to remove from its priority queue.
  */
 void remove_process_from_scheduler(Process* p);
 
 /**
- * @brief El corazón del scheduler.
- * Esta función es llamada en C desde el handler de ASM (irq00Handler).
- * 1. Obtiene el proceso actual (el que fue interrumpido).
- * 2. Si el proceso está 'RUNNING', guarda su 'current_rsp' en process->rsp
- * y lo pone en 'READY'.
- * 3. Elige el siguiente proceso 'READY' de la cola (Round Robin).
- * 4. Marca el nuevo proceso como 'RUNNING'.
- * 5. Retorna el 'process->rsp' del nuevo proceso.
- * * @param current_rsp El RSP del proceso que acaba de ser interrumpido 
- * (pasado desde el handler ASM).
- * @return El RSP del proceso que debe ejecutarse ahora.
+ * @brief Core scheduling function.
+ * Called from the ASM timer handler (irq00Handler).
+ * - Saves current RSP for the interrupted RUNNING process and requeues it.
+ * - Picks the next READY process (Round Robin with priorities).
+ * - Marks it RUNNING and returns its saved RSP.
+ * @param current_rsp RSP of the interrupted process (from ASM).
+ * @return RSP of the next process to run.
  */
 uint64_t schedule(uint64_t current_rsp);
 
 /**
- * @brief Obtiene el proceso actualmente en ejecución.
- * @return Puntero al proceso RUNNING.
+ * @brief Get the currently running process.
+ * @return Pointer to the RUNNING process.
  */
 Process* get_running_process();
 
 /**
- * @brief Obtiene el proceso idle.
- * @return Puntero al proceso idle.
+ * @brief Get the idle process.
+ * @return Pointer to the idle process.
  */
 Process* get_idle_process();
 
 /**
- * @brief Obtiene el proceso shell.
- * @return Puntero al proceso shell, o NULL si no existe.
+ * @brief Get the shell process, if present.
+ * @return Pointer to the shell process, or NULL if not available.
  */
 Process* get_shell_process();
 
 /**
- * @brief Desbloquea un proceso y lo mueve a la cola de listos.
- * Cambia su estado a READY y lo agrega nuevamente a su priority queue.
- * @param p Puntero al proceso a desbloquear.
+ * @brief Unblock a process and move it to the READY queue.
+ * Changes its state to READY and re-enqueues it according to priority.
+ * @param p Process to unblock.
  */
 int unblock_process(Process* p);
 
 /**
- * @brief Bloquea un proceso cambiando su estado a BLOCKED.
- * Lo remueve de su priority queue y lo deja solo en la PCB table.
- * Al desbloquear, debe ser agregado nuevamente a su priority queue.
- * @param p Puntero al proceso a bloquear.
+ * @brief Block a process.
+ * Removes it from its priority queue and marks as BLOCKED.
+ * When unblocked it must be re-added to the correct queue.
+ * @param p Process to block.
  */
 int block_process(Process* p);
 

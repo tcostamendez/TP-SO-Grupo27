@@ -6,6 +6,9 @@
 #include <defs.h>
 #include <interrupts.h>
 
+/**
+ * @brief Load and activate the Interrupt Descriptor Table (IDT).
+ */
 void load_idt();
 
 #endif
