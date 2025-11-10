@@ -49,24 +49,24 @@ Command commands[] = {
      .isBuiltIn = 1},
     {.name = "test_mm",
      .function = (int (*)(int, char**))entry_test_mm,
-     .description = "Corre el test de stress del Memory Manager.\n\t\t\tUso: test_mm <bytes>", 
+     .description = "Runs the Memory Manager stress test.\n\t\t\tUsage: test_mm <bytes>", 
      .isBuiltIn=0},
     {
       .name = "test_prio",
       .function = (int (*)(int, char**))entry_test_prio,
-      .description = "Corre el test de prioridades.\n\t\t\tUso: test_prio <prioridad>",
+      .description = "Runs the priority test.\n\t\t\tUsage: test_prio <priority>",
       .isBuiltIn = 0
     },
     {
       .name = "test_processes",
       .function = (int (*)(int, char**))entry_test_processes,
-      .description = "Corre el test de procesos.\n\t\t\tUso: test_processes <procesos>",
+      .description = "Runs the process test.\n\t\t\tUsage: test_processes <processes>",
       .isBuiltIn = 0
     },
     {
       .name = "test_sync",
       .function = (int (*)(int, char**))entry_test_sync,
-      .description = "Corre el test de sincronizacion.\n\t\t\tUso: test_sync <valor> <flag>",
+      .description = "Runs the synchronization test.\n\t\t\tUsage: test_sync <value> <flag>",
       .isBuiltIn = 0
     },
     {.name = "ps",
@@ -76,15 +76,15 @@ Command commands[] = {
     {.name = "loop",
      .function = (int (*)(int, char **))entry_loop,
      .description =
-         "Prints hello message every N seconds\n\t\t\tUso: loop <delay_seconds>",
+         "Prints hello message every N seconds\n\t\t\tUsage: loop <delay_seconds>",
      .isBuiltIn = 0},
     {.name = "kill",
      .function = (int (*)(int, char **))entry_kill,
-     .description = "Kills a process by PID\n\t\t\tUso: kill <pid>",
+     .description = "Kills a process by PID\n\t\t\tUsage: kill <pid>",
      .isBuiltIn = 0},
     {.name = "nice",
      .function = (int (*)(int, char **))entry_nice,
-     .description = "Changes process priority\n\t\t\tUso: nice <pid> <priority>",
+     .description = "Changes process priority\n\t\t\tUsage: nice <pid> <priority>",
      .isBuiltIn = 0},
     {.name = "mem",
      .function = (int (*)(int, char **))entry_mem,
@@ -122,7 +122,7 @@ static int parse_command(char *buffer, char *command, ParsedCommand *parsedComma
     return -1;
   }
 
-  // Salteo pipes iniciales (si vengo de un parse anterior quedó parado en '|')
+  // Skip initial pipes (if coming from a previous parse it was stopped at '|')
   while (tok && strcmp(tok, "|") == 0) {
     tok = strtok(NULL, " ");
   }
@@ -169,7 +169,7 @@ static int parse_command(char *buffer, char *command, ParsedCommand *parsedComma
     parsedCommand->argc++;
   }
 
-  // No avanzar un token extra: dejar strtok posicionado justo después de '|'
+  // Don't advance an extra token: leave strtok positioned right after '|'
   parsedCommand->argv[parsedCommand->argc] = NULL;
 
   parsedCommand->isBuiltIn = commands[command_i].isBuiltIn;

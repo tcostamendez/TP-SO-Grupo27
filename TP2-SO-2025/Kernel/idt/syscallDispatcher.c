@@ -25,8 +25,6 @@
 extern int64_t register_snapshot[18];
 extern int64_t register_snapshot_taken;
 
-// @todo Note: Technically.. registers on the stack are modifiable (since its a
-// struct pointer, not struct).
 int32_t syscallDispatcher(Registers *registers) {
   switch (registers->rax) {
   case SYS_READ:

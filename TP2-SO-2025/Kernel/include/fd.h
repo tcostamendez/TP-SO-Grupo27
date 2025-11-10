@@ -8,6 +8,7 @@
 #define WRITE_FD 1
 #define ERR_FD 2
 
+
 int setReadTarget(uint8_t targetByFd[2], uint8_t target);
 int setWriteTarget(uint8_t targetByFd[2], uint8_t target);
 
