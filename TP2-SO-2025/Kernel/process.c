@@ -48,7 +48,7 @@ static char* build_wait_semaphore_name(int pid) {
         my_strcpy(name, "wait_");
         catenate(name, pid_str);
     }
-    
+    mm_free(pid_str);
     return name;
 }
 

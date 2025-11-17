@@ -295,7 +295,7 @@ uint64_t schedule(uint64_t current_rsp) {
             return idle_proc->rsp;
         }
     }
-    
+    // reap_terminated_processes();
     return next->rsp;
 }
 
